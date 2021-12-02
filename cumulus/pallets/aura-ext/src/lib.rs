@@ -107,9 +107,9 @@ pub mod pallet {
 ///
 /// When executing the block it will verify the block seal to ensure that the correct author created
 /// the block.
-pub struct BlockExecutor<T, I>(sp_std::marker::PhantomData<(T, I)>);
+pub struct BlockExecutorVer<T, I>(sp_std::marker::PhantomData<(T, I)>);
 
-impl<Block, T, I> ExecuteBlock<Block> for BlockExecutor<T, I>
+impl<Block, T, I> ExecuteBlock<Block> for BlockExecutorVer<T, I>
 where
 	Block: BlockT,
 	T: Config,
@@ -154,6 +154,6 @@ where
 			panic!("Invalid AuRa seal");
 		}
 
-		I::execute_block(Block::new(header, extrinsics));
+		I::execute_block_ver(Block::new(header, extrinsics));
 	}
 }
