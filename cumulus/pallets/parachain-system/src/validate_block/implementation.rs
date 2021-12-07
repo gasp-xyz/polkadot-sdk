@@ -17,7 +17,7 @@
 //! The actual implementation of the validate block functionality.
 
 use frame_support::traits::{ExecuteBlock, ExtrinsicCall, Get, IsSubType};
-use sp_runtime::traits::{Block as BlockT, Extrinsic, HashFor, Header as HeaderT, NumberFor};
+use sp_runtime::traits::{Block as BlockT, Extrinsic, HashFor, Header as HeaderT, NumberFor, One, Zero};
 
 use sp_io::KillStorageResult;
 use sp_std::prelude::*;
@@ -131,26 +131,28 @@ where
 		})
 		.expect("Could not find `set_validation_data` inherent");
 
-	run_with_externalities::<B, _, _>(&backend, || {
-		let relay_chain_proof = crate::RelayChainStateProof::new(
-			PSC::SelfParaId::get(),
-			inherent_data.validation_data.relay_parent_storage_root,
-			inherent_data.relay_chain_state.clone(),
-		)
-		.expect("Invalid relay chain state proof");
+    if block.header().number().is_zero() || block.header().number().is_one() {
+        run_with_externalities::<B, _, _>(&backend, || {
+            let relay_chain_proof = crate::RelayChainStateProof::new(
+                PSC::SelfParaId::get(),
+                inherent_data.validation_data.relay_parent_storage_root,
+                inherent_data.relay_chain_state.clone(),
+            )
+            .expect("Invalid relay chain state proof");
 
-		let res = CI::check_inherents(&block, &relay_chain_proof);
+            let res = CI::check_inherents(&block, &relay_chain_proof);
 
-		if !res.ok() {
-			if log::log_enabled!(log::Level::Error) {
-				res.into_errors().for_each(|e| {
-					log::error!("Checking inherent with identifier `{:?}` failed", e.0)
-				});
-			}
+            if !res.ok() {
+                if log::log_enabled!(log::Level::Error) {
+                    res.into_errors().for_each(|e| {
+                        log::error!("Checking inherent with identifier `{:?}` failed", e.0)
+                    });
+                }
 
-			panic!("Checking inherents failed");
-		}
-	});
+                panic!("Checking inherents failed");
+            }
+        });
+    }
 
 	run_with_externalities::<B, _, _>(&backend, || {
 		super::set_and_run_with_validation_params(params, || {
