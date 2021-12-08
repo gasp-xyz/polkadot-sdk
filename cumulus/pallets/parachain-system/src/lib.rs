@@ -46,7 +46,7 @@ use frame_system::{ensure_none, ensure_root};
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use relay_state_snapshot::MessagingStateSnapshot;
 use sp_runtime::{
-	traits::{BlakeTwo256, Block as BlockT, BlockNumberProvider, Hash},
+	traits::{BlakeTwo256, Block as BlockT, BlockNumberProvider, Hash, One, Zero},
 	transaction_validity::{
 		InvalidTransaction, TransactionLongevity, TransactionSource, TransactionValidity,
 		ValidTransaction,
@@ -139,10 +139,13 @@ pub mod pallet {
 			<DidSetValidationCode<T>>::kill();
 			<UpgradeRestrictionSignal<T>>::kill();
 
-			assert!(
-				<ValidationData<T>>::exists(),
-				"set_validation_data inherent needs to be present in every block!"
-			);
+			
+			if !<frame_system::Module<T>>::block_number().is_zero() && !<frame_system::Module<T>>::block_number().is_one(){
+                assert!(
+                    <ValidationData<T>>::exists(),
+                    "set_validation_data inherent needs to be present in every block!"
+                );
+            }
 
 			let host_config = match Self::host_configuration() {
 				Some(ok) => ok,
