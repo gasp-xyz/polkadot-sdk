@@ -131,7 +131,7 @@ where
 		})
 		.expect("Could not find `set_validation_data` inherent");
 
-    if block.header().number().is_zero() || block.header().number().is_one() {
+    // if !block.header().number().is_zero() && !block.header().number().is_one() {
         run_with_externalities::<B, _, _>(&backend, || {
             let relay_chain_proof = crate::RelayChainStateProof::new(
                 PSC::SelfParaId::get(),
@@ -152,7 +152,7 @@ where
                 panic!("Checking inherents failed");
             }
         });
-    }
+    // }
 
 	run_with_externalities::<B, _, _>(&backend, || {
 		super::set_and_run_with_validation_params(params, || {
