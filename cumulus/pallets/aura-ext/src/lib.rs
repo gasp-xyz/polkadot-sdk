@@ -157,3 +157,58 @@ where
 		I::execute_block_ver(Block::new(header, extrinsics));
 	}
 }
+
+/// The block executor used when validating a PoV at the relay chain.
+///
+/// When executing the block it will verify the block seal to ensure that the correct author created
+/// the block.
+pub struct BlockExecutor<T, I>(sp_std::marker::PhantomData<(T, I)>);
+
+impl<Block, T, I> ExecuteBlock<Block> for BlockExecutor<T, I>
+where
+	Block: BlockT,
+	T: Config,
+	I: ExecuteBlock<Block>,
+{
+	fn execute_block(block: Block) {
+		let (mut header, extrinsics) = block.deconstruct();
+		// We need to fetch the authorities before we execute the block, to get the authorities
+		// before any potential update.
+		let authorities = Authorities::<T>::get();
+
+		let mut seal = None;
+		header.digest_mut().logs.retain(|s| {
+			let s =
+				CompatibleDigestItem::<<T::AuthorityId as RuntimeAppPublic>::Signature>::as_aura_seal(s);
+			match (s, seal.is_some()) {
+				(Some(_), true) => panic!("Found multiple AuRa seal digests"),
+				(None, _) => true,
+				(Some(s), false) => {
+					seal = Some(s);
+					false
+				},
+			}
+		});
+
+		let seal = seal.expect("Could not find an AuRa seal digest!");
+
+		let author = Aura::<T>::find_author(
+			header.digest().logs().iter().filter_map(|d| d.as_pre_runtime()),
+		)
+		.expect("Could not find AuRa author index!");
+
+		let pre_hash = header.hash();
+
+		if !authorities
+			.get(author as usize)
+			.unwrap_or_else(|| {
+				panic!("Invalid AuRa author index {} for authorities: {:?}", author, authorities)
+			})
+			.verify(&pre_hash, &seal)
+		{
+			panic!("Invalid AuRa seal");
+		}
+
+		I::execute_block(Block::new(header, extrinsics));
+	}
+}

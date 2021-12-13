@@ -6,17 +6,17 @@ edition = "2018"
 
 [dependencies]
 # Substrate dependencies
-sp-inherents = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.12" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.12" }
-sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12" }
-sp-state-machine = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.12" }
-sp-trie = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12" }
-sp-api = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.12" }
+sp-inherents = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
+sp-core = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
+sc-client-api = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
+sp-runtime = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
+sp-std = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
+sp-state-machine = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
+sp-trie = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
+sp-api = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
 
 # Polkadot dependencies
-polkadot-client = { git = "https://github.com/paritytech/polkadot", optional = true, branch = "release-v0.9.12" }
+polkadot-client = { git = "https://github.com/mangata-finance/polkadot", optional = true, branch = "mangata-dev-v4" }
 
 # Cumulus dependencies
 cumulus-primitives-core = { path = "../core", default-features = false }
