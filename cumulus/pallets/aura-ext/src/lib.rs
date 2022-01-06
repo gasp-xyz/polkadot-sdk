@@ -109,6 +109,23 @@ pub mod pallet {
 /// the block.
 pub struct BlockExecutorVer<T, I>(sp_std::marker::PhantomData<(T, I)>);
 
+pub fn get_block_signer_pub_key<T: Config, Block: BlockT>(block: &Block) -> sp_std::vec::Vec<u8> {
+	// before any potential update.
+	let header = block.header();
+	let authorities = Authorities::<T>::get();
+
+	let author =
+		Aura::<T>::find_author(header.digest().logs().iter().filter_map(|d| d.as_pre_runtime()))
+			.expect("Could not find AuRa author index!");
+
+	return authorities
+		.get(author as usize)
+		.unwrap_or_else(|| {
+			panic!("Invalid AuRa author index {} for authorities: {:?}", author, authorities)
+		})
+		.to_raw_vec()
+}
+
 impl<Block, T, I> ExecuteBlock<Block> for BlockExecutorVer<T, I>
 where
 	Block: BlockT,
@@ -154,7 +171,14 @@ where
 			panic!("Invalid AuRa seal");
 		}
 
-		I::execute_block_ver(Block::new(header, extrinsics));
+		let public_key = authorities
+			.get(author as usize)
+			.unwrap_or_else(|| {
+				panic!("Invalid AuRa author index {} for authorities: {:?}", author, authorities)
+			})
+			.to_raw_vec();
+
+		I::execute_block_ver(Block::new(header, extrinsics), public_key);
 	}
 }
 
@@ -208,7 +232,6 @@ where
 		{
 			panic!("Invalid AuRa seal");
 		}
-
 		I::execute_block(Block::new(header, extrinsics));
 	}
 }
