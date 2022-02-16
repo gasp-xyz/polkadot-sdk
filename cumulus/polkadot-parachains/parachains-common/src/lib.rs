@@ -47,10 +47,17 @@ mod types {
 	pub type Hash = sp_core::H256;
 
 	/// Digest item type.
-	pub type DigestItem = sp_runtime::generic::DigestItem<Hash>;
+	pub type DigestItem = sp_runtime::generic::DigestItem;
 
 	// Aura consensus authority.
 	pub type AuraId = sp_consensus_aura::sr25519::AuthorityId;
+
+	// Aura consensus authority used by Statemint.
+	//
+	// Because of registering the authorities with an ed25519 key before switching from Shell
+	// to Statemint, we were required to deploy a hotfix that changed Statemint to ed22519.
+	// In the future that may change again.
+	pub type StatemintAuraId = sp_consensus_aura::ed25519::AuthorityId;
 
 	// Id used for identifying assets.
 	pub type AssetId = u32;

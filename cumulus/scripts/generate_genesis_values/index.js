@@ -2,6 +2,10 @@ const fs = require("fs");
 const { exit } = require("process");
 const { xxhashAsHex } = require("@polkadot/util-crypto");
 
+// Utility script scraping a chain spec for the genesis keys and values and writing them out as a
+// json array of pairs. Filters the keys for anything already present in a shell runtime and sorts
+// the output for reproducibility.
+
 if (!process.argv[2] || !process.argv[3]) {
   console.log("usage: node generate_keys <input chainspec> <output json>");
   exit();
@@ -45,10 +49,11 @@ fs.readFile(input, "utf8", (err, data) => {
 
   const spec = JSON.parse(data);
 
-  const genesis = Object.fromEntries(
+  const genesis =
     Object.entries(spec.genesis.raw.top).filter(
       ([key, value]) => !startsWith(key, filter_prefixes)
-    )
-  );
+    );
+  genesis.sort();
+
   fs.writeFileSync(output, JSON.stringify(genesis));
 });

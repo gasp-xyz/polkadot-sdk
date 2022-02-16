@@ -2,25 +2,24 @@
 name = "cumulus-primitives-parachain-inherent"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 # Substrate dependencies
-sp-inherents = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
-sp-core = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
-sc-client-api = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
-sp-runtime = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
-sp-std = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
-sp-state-machine = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
-sp-trie = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
-sp-api = { git = "https://github.com/mangata-finance/substrate", optional = true , branch = "mangata-dev-v4" }
-
-# Polkadot dependencies
-polkadot-client = { git = "https://github.com/mangata-finance/polkadot", optional = true, branch = "mangata-dev-v4" }
+sp-inherents = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.16" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.16" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
+sp-state-machine = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.16" }
+sp-trie = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
+sp-api = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.16" }
+sp-storage = { git = "https://github.com/paritytech/substrate", optional = true , branch = "polkadot-v0.9.16" }
 
 # Cumulus dependencies
 cumulus-primitives-core = { path = "../core", default-features = false }
 cumulus-test-relay-sproof-builder = { path = "../../test/relay-sproof-builder", optional = true }
+cumulus-relay-chain-interface = { path = "../../client/relay-chain-interface", optional = true }
 
 # Other dependencies
 async-trait = { version = "0.1.42", optional = true }
@@ -44,6 +43,8 @@ std = [
 	"sp-runtime",
 	"sc-client-api",
 	"sp-api",
-	"polkadot-client",
+	"sp-storage",
+	"cumulus-test-relay-sproof-builder",
+	"cumulus-relay-chain-interface",
 	"cumulus-test-relay-sproof-builder"
 ]
