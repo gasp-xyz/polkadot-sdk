@@ -2,26 +2,27 @@
 name = "cumulus-client-collator"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 # Substrate dependencies
-sp-runtime = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-core = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-consensus = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-api = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sc-client-api = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
 
 # Polkadot dependencies
-polkadot-primitives = { git = "https://github.com/mangata-finance/polkadot", branch = "mangata-dev-v4" }
-polkadot-node-primitives = { git = "https://github.com/mangata-finance/polkadot", branch = "mangata-dev-v4" }
-polkadot-overseer = { git = "https://github.com/mangata-finance/polkadot", branch = "mangata-dev-v4" }
-polkadot-node-subsystem = { git = "https://github.com/mangata-finance/polkadot", branch = "mangata-dev-v4" }
+polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
+polkadot-node-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
+polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
+polkadot-node-subsystem = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
 
 # Cumulus dependencies
 cumulus-client-network = { path = "../network" }
 cumulus-client-consensus-common = { path = "../consensus/common" }
 cumulus-primitives-core = { path = "../../primitives/core" }
+cumulus-relay-chain-interface = { path = "../relay-chain-interface" }
 
 # Other dependencies
 codec = { package = "parity-scale-codec", version = "2.3.0", features = [ "derive" ] }
@@ -31,15 +32,15 @@ tracing = "0.1.25"
 
 [dev-dependencies]
 # Polkadot dependencies
-polkadot-node-subsystem-test-helpers = { git = "https://github.com/mangata-finance/polkadot", branch = "mangata-dev-v4" }
+polkadot-node-subsystem-test-helpers = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
 
 # Cumulus dependencies
 cumulus-test-runtime = { path = "../../test/runtime" }
 cumulus-test-client = { path = "../../test/client" }
 # Substrate dependencies
 
-sp-state-machine = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-tracing = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
+sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-tracing = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
 
 # Other dependencies
 async-trait = "0.1.42"

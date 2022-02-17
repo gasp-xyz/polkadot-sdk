@@ -17,7 +17,7 @@
 //! The actual implementation of the validate block functionality.
 
 use frame_support::traits::{ExecuteBlock, ExtrinsicCall, Get, IsSubType};
-use sp_runtime::traits::{Block as BlockT, Extrinsic, HashFor, Header as HeaderT, NumberFor, One, Zero};
+use sp_runtime::traits::{Block as BlockT, Extrinsic, HashFor, Header as HeaderT};
 
 use sp_io::KillStorageResult;
 use sp_std::prelude::*;
@@ -26,13 +26,13 @@ use polkadot_parachain::primitives::{HeadData, ValidationParams, ValidationResul
 
 use codec::{Decode, Encode};
 
-use sp_core::storage::ChildInfo;
+use sp_core::storage::{ChildInfo, StateVersion};
 use sp_externalities::{set_and_run_with_externalities, Externalities};
 use sp_trie::MemoryDB;
 
 type TrieBackend<B> = sp_state_machine::TrieBackend<MemoryDB<HashFor<B>>, HashFor<B>>;
 
-type Ext<'a, B> = sp_state_machine::Ext<'a, HashFor<B>, NumberFor<B>, TrieBackend<B>>;
+type Ext<'a, B> = sp_state_machine::Ext<'a, HashFor<B>, TrieBackend<B>>;
 
 fn with_externalities<F: FnOnce(&mut dyn Externalities) -> R, R>(f: F) -> R {
 	sp_externalities::with_externalities(f).expect("Environmental externalities not set.")
@@ -68,7 +68,7 @@ where
 
 	// Uncompress
 	let mut db = MemoryDB::default();
-	let root = match sp_trie::decode_compact::<sp_trie::Layout<HashFor<B>>, _, _>(
+	let root = match sp_trie::decode_compact::<sp_trie::LayoutV1<HashFor<B>>, _, _>(
 		&mut db,
 		storage_proof.iter_compact_encoded_nodes(),
 		Some(parent_head.state_root()),
@@ -89,7 +89,6 @@ where
 		sp_io::storage::host_clear.replace_implementation(host_storage_clear),
 		sp_io::storage::host_root.replace_implementation(host_storage_root),
 		sp_io::storage::host_clear_prefix.replace_implementation(host_storage_clear_prefix),
-		sp_io::storage::host_changes_root.replace_implementation(host_storage_changes_root),
 		sp_io::storage::host_append.replace_implementation(host_storage_append),
 		sp_io::storage::host_next_key.replace_implementation(host_storage_next_key),
 		sp_io::storage::host_start_transaction
@@ -131,28 +130,26 @@ where
 		})
 		.expect("Could not find `set_validation_data` inherent");
 
-    // if !block.header().number().is_zero() && !block.header().number().is_one() {
-        run_with_externalities::<B, _, _>(&backend, || {
-            let relay_chain_proof = crate::RelayChainStateProof::new(
-                PSC::SelfParaId::get(),
-                inherent_data.validation_data.relay_parent_storage_root,
-                inherent_data.relay_chain_state.clone(),
-            )
-            .expect("Invalid relay chain state proof");
+	run_with_externalities::<B, _, _>(&backend, || {
+		let relay_chain_proof = crate::RelayChainStateProof::new(
+			PSC::SelfParaId::get(),
+			inherent_data.validation_data.relay_parent_storage_root,
+			inherent_data.relay_chain_state.clone(),
+		)
+		.expect("Invalid relay chain state proof");
 
-            let res = CI::check_inherents(&block, &relay_chain_proof);
+		let res = CI::check_inherents(&block, &relay_chain_proof);
 
-            if !res.ok() {
-                if log::log_enabled!(log::Level::Error) {
-                    res.into_errors().for_each(|e| {
-                        log::error!("Checking inherent with identifier `{:?}` failed", e.0)
-                    });
-                }
+		if !res.ok() {
+			if log::log_enabled!(log::Level::Error) {
+				res.into_errors().for_each(|e| {
+					log::error!("Checking inherent with identifier `{:?}` failed", e.0)
+				});
+			}
 
-                panic!("Checking inherents failed");
-            }
-        });
-    // }
+			panic!("Checking inherents failed");
+		}
+	});
 
 	run_with_externalities::<B, _, _>(&backend, || {
 		super::set_and_run_with_validation_params(params, || {
@@ -163,6 +160,13 @@ where
 			let processed_downward_messages = crate::ProcessedDownwardMessages::<PSC>::get();
 			let horizontal_messages = crate::HrmpOutboundMessages::<PSC>::get();
 			let hrmp_watermark = crate::HrmpWatermark::<PSC>::get();
+
+			let head_data =
+				if let Some(custom_head_data) = crate::CustomValidationHeadData::<PSC>::get() {
+					HeadData(custom_head_data)
+				} else {
+					head_data
+				};
 
 			ValidationResult {
 				head_data,
@@ -218,7 +222,7 @@ fn host_storage_clear(key: &[u8]) {
 }
 
 fn host_storage_root() -> Vec<u8> {
-	with_externalities(|ext| ext.storage_root())
+	with_externalities(|ext| ext.storage_root(StateVersion::V0))
 }
 
 fn host_storage_clear_prefix(prefix: &[u8], limit: Option<u32>) -> KillStorageResult {
@@ -229,10 +233,6 @@ fn host_storage_clear_prefix(prefix: &[u8], limit: Option<u32>) -> KillStorageRe
 			false => KillStorageResult::SomeRemaining(num_removed),
 		}
 	})
-}
-
-fn host_storage_changes_root(parent_hash: &[u8]) -> Option<Vec<u8>> {
-	with_externalities(|ext| ext.storage_changes_root(parent_hash).ok().flatten())
 }
 
 fn host_storage_append(key: &[u8], value: Vec<u8>) {
@@ -329,7 +329,7 @@ fn host_default_child_storage_clear_prefix(
 
 fn host_default_child_storage_root(storage_key: &[u8]) -> Vec<u8> {
 	let child_info = ChildInfo::new_default(storage_key);
-	with_externalities(|ext| ext.child_storage_root(&child_info))
+	with_externalities(|ext| ext.child_storage_root(&child_info, StateVersion::V0))
 }
 
 fn host_default_child_storage_next_key(storage_key: &[u8], key: &[u8]) -> Option<Vec<u8>> {

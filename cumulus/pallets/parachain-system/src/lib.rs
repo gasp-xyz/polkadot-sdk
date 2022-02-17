@@ -27,13 +27,14 @@
 //!
 //! Users must ensure that they register this pallet as an inherent provider.
 
+use codec::Encode;
 use cumulus_primitives_core::{
 	relay_chain, AbridgedHostConfiguration, ChannelStatus, CollationInfo, DmpMessageHandler,
-	GetChannelInfo, InboundDownwardMessage, InboundHrmpMessage, MessageSendError, OnValidationData,
+	GetChannelInfo, InboundDownwardMessage, InboundHrmpMessage, MessageSendError,
 	OutboundHrmpMessage, ParaId, PersistedValidationData, UpwardMessage, UpwardMessageSender,
 	XcmpMessageHandler, XcmpMessageSource,
 };
-use cumulus_primitives_parachain_inherent::ParachainInherentData;
+use cumulus_primitives_parachain_inherent::{MessageQueueChain, ParachainInherentData};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	ensure,
@@ -96,6 +97,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::storage_version(migration::STORAGE_VERSION)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
@@ -104,7 +106,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// Something which can be notified when the validation data is set.
-		type OnValidationData: OnValidationData;
+		type OnSystemEvent: OnSystemEvent;
 
 		/// Returns the parachain ID we are running with.
 		type SelfParaId: Get<ParaId>;
@@ -239,8 +241,9 @@ pub mod pallet {
 			HrmpWatermark::<T>::kill();
 			UpwardMessages::<T>::kill();
 			HrmpOutboundMessages::<T>::kill();
+			CustomValidationHeadData::<T>::kill();
 
-			weight += T::DbWeight::get().writes(5);
+			weight += T::DbWeight::get().writes(6);
 
 			// Here, in `on_initialize` we must report the weight for both `on_initialize` and
 			// `on_finalize`.
@@ -330,6 +333,7 @@ pub mod pallet {
 					let validation_code = <PendingValidationCode<T>>::take();
 
 					Self::put_parachain_code(&validation_code);
+					<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
 					Self::deposit_event(Event::ValidationFunctionApplied(vfp.relay_parent_number));
 				},
 				Some(relay_chain::v1::UpgradeGoAhead::Abort) => {
@@ -355,7 +359,7 @@ pub mod pallet {
 			<RelevantMessagingState<T>>::put(relevant_messaging_state.clone());
 			<HostConfiguration<T>>::put(host_config);
 
-			<T::OnValidationData as OnValidationData>::on_validation_data(&vfp);
+			<T::OnSystemEvent as OnSystemEvent>::on_validation_data(&vfp);
 
 			// TODO: This is more than zero, but will need benchmarking to figure out what.
 			let mut total_weight = 0;
@@ -398,7 +402,7 @@ pub mod pallet {
 			code: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			Self::validate_authorized_upgrade(&code[..])?;
-			Self::set_code_impl(code)?;
+			Self::schedule_code_upgrade(code)?;
 			AuthorizedUpgrade::<T>::kill();
 			Ok(Pays::No.into())
 		}
@@ -570,6 +574,12 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type AuthorizedUpgrade<T: Config> = StorageValue<_, T::Hash>;
 
+	/// A custom head data that should be returned as result of `validate_block`.
+	///
+	/// See [`Pallet::set_custom_validation_head_data`] for more information.
+	#[pallet::storage]
+	pub(super) type CustomValidationHeadData<T: Config> = StorageValue<_, Vec<u8>, OptionQuery>;
+
 	#[pallet::inherent]
 	impl<T: Config> ProvideInherent for Pallet<T> {
 		type Call = Call<T>;
@@ -598,7 +608,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig {
 		fn build(&self) {
-			//TODO: Remove after https://github.com/paritytech/cumulus/issues/479
+			// TODO: Remove after https://github.com/paritytech/cumulus/issues/479
 			sp_io::storage::set(b":c", &[]);
 		}
 	}
@@ -612,7 +622,7 @@ pub mod pallet {
 				if let Ok(hash) = Self::validate_authorized_upgrade(code) {
 					return Ok(ValidTransaction {
 						priority: 100,
-						requires: vec![],
+						requires: Vec::new(),
 						provides: vec![hash.as_ref().to_vec()],
 						longevity: TransactionLongevity::max_value(),
 						propagate: true,
@@ -695,6 +705,9 @@ impl<T: Config> Pallet<T> {
 	/// import, this is a no-op.
 	///
 	/// # Panics
+	///
+	/// Panics while validating the `PoV` on the relay chain if the [`PersistedValidationData`]
+	/// passed by the block author was incorrect.
 	fn validate_validation_data(validation_data: &PersistedValidationData) {
 		validate_block::with_validation_params(|params| {
 			assert_eq!(
@@ -717,8 +730,10 @@ impl<T: Config> Pallet<T> {
 	/// Checks if the sequence of the messages is valid, dispatches them and communicates the
 	/// number of processed messages to the collator via a storage update.
 	///
-	/// **Panics** if it turns out that after processing all messages the Message Queue Chain
-	///            hash doesn't match the expected.
+	/// # Panics
+	///
+	/// If it turns out that after processing all messages the Message Queue Chain
+	/// hash doesn't match the expected.
 	fn process_inbound_downward_messages(
 		expected_dmq_mqc_head: relay_chain::Hash,
 		downward_messages: Vec<InboundDownwardMessage>,
@@ -741,7 +756,7 @@ impl<T: Config> Pallet<T> {
 			weight_used += T::DmpMessageHandler::handle_dmp_messages(message_iter, max_weight);
 			<LastDmqMqcHead<T>>::put(&dmq_head);
 
-			Self::deposit_event(Event::DownwardMessagesProcessed(weight_used, dmq_head.0));
+			Self::deposit_event(Event::DownwardMessagesProcessed(weight_used, dmq_head.head()));
 		}
 
 		// After hashing each message in the message queue chain submitted by the collator, we
@@ -749,7 +764,7 @@ impl<T: Config> Pallet<T> {
 		//
 		// A mismatch means that at least some of the submitted messages were altered, omitted or
 		// added improperly.
-		assert_eq!(dmq_head.0, expected_dmq_mqc_head);
+		assert_eq!(dmq_head.head(), expected_dmq_mqc_head);
 
 		ProcessedDownwardMessages::<T>::put(dm_count);
 
@@ -873,7 +888,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// The implementation of the runtime upgrade functionality for parachains.
-	fn set_code_impl(validation_function: Vec<u8>) -> DispatchResult {
+	pub fn schedule_code_upgrade(validation_function: Vec<u8>) -> DispatchResult {
 		// Ensure that `ValidationData` exists. We do not care about the validation data per se,
 		// but we do care about the [`UpgradeRestrictionSignal`] which arrives with the same inherent.
 		ensure!(<ValidationData<T>>::exists(), Error::<T>::ValidationDataNotAvailable,);
@@ -899,16 +914,39 @@ impl<T: Config> Pallet<T> {
 
 	/// Returns the [`CollationInfo`] of the current active block.
 	///
+	/// The given `header` is the header of the built block we are collecting the collation info for.
+	///
 	/// This is expected to be used by the
 	/// [`CollectCollationInfo`](cumulus_primitives_core::CollectCollationInfo) runtime api.
-	pub fn collect_collation_info() -> CollationInfo {
+	pub fn collect_collation_info(header: &T::Header) -> CollationInfo {
 		CollationInfo {
 			hrmp_watermark: HrmpWatermark::<T>::get(),
 			horizontal_messages: HrmpOutboundMessages::<T>::get(),
 			upward_messages: UpwardMessages::<T>::get(),
 			processed_downward_messages: ProcessedDownwardMessages::<T>::get(),
 			new_validation_code: NewValidationCode::<T>::get().map(Into::into),
+			// Check if there is a custom header that will also be returned by the validation phase.
+			// If so, we need to also return it here.
+			head_data: CustomValidationHeadData::<T>::get()
+				.map_or_else(|| header.encode(), |v| v)
+				.into(),
 		}
+	}
+
+	/// Set a custom head data that should be returned as result of `validate_block`.
+	///
+	/// This will overwrite the head data that is returned as result of `validate_block` while
+	/// validating a `PoV` on the relay chain. Normally the head data that is being returned
+	/// by `validate_block` is the header of the block that is validated, thus it can be
+	/// enacted as the new best block. However, for features like forking it can be useful
+	/// to overwrite the head data with a custom header.
+	///
+	/// # Attention
+	///
+	/// This should only be used when you are sure what you are doing as this can brick
+	/// your Parachain.
+	pub fn set_custom_validation_head_data(head_data: Vec<u8>) {
+		CustomValidationHeadData::<T>::put(head_data);
 	}
 }
 
@@ -916,44 +954,7 @@ pub struct ParachainSetCode<T>(sp_std::marker::PhantomData<T>);
 
 impl<T: Config> frame_system::SetCode<T> for ParachainSetCode<T> {
 	fn set_code(code: Vec<u8>) -> DispatchResult {
-		Pallet::<T>::set_code_impl(code)
-	}
-}
-
-/// This struct provides ability to extend a message queue chain (MQC) and compute a new head.
-///
-/// MQC is an instance of a [hash chain] applied to a message queue. Using a hash chain it's
-/// possible to represent a sequence of messages using only a single hash.
-///
-/// A head for an empty chain is agreed to be a zero hash.
-///
-/// [hash chain]: https://en.wikipedia.org/wiki/Hash_chain
-#[derive(Default, Clone, codec::Encode, codec::Decode, scale_info::TypeInfo)]
-struct MessageQueueChain(relay_chain::Hash);
-
-impl MessageQueueChain {
-	fn extend_hrmp(&mut self, horizontal_message: &InboundHrmpMessage) -> &mut Self {
-		let prev_head = self.0;
-		self.0 = BlakeTwo256::hash_of(&(
-			prev_head,
-			horizontal_message.sent_at,
-			BlakeTwo256::hash_of(&horizontal_message.data),
-		));
-		self
-	}
-
-	fn extend_downward(&mut self, downward_message: &InboundDownwardMessage) -> &mut Self {
-		let prev_head = self.0;
-		self.0 = BlakeTwo256::hash_of(&(
-			prev_head,
-			downward_message.sent_at,
-			BlakeTwo256::hash_of(&downward_message.msg),
-		));
-		self
-	}
-
-	fn head(&self) -> relay_chain::Hash {
-		self.0
+		Pallet::<T>::schedule_code_upgrade(code)
 	}
 }
 
@@ -1011,7 +1012,22 @@ pub trait CheckInherents<Block: BlockT> {
 	) -> frame_support::inherent::CheckInherentsResult;
 }
 
-/// Implements [`BlockNumberProvider`] that returns relaychain block number fetched from
+/// Something that should be informed about system related events.
+///
+/// This includes events like [`on_validation_data`](Self::on_validation_data) that is being
+/// called when the parachain inherent is executed that contains the validation data.
+/// Or like [`on_validation_code_applied`](Self::on_validation_code_applied) that is called
+/// when the new validation is written to the state. This means that
+/// from the next block the runtime is being using this new code.
+#[impl_trait_for_tuples::impl_for_tuples(30)]
+pub trait OnSystemEvent {
+	/// Called in each blocks once when the validation data is set by the inherent.
+	fn on_validation_data(data: &PersistedValidationData);
+	/// Called when the validation code is being applied, aka from the next block on this is the new runtime.
+	fn on_validation_code_applied();
+}
+
+/// Implements [`BlockNumberProvider`] that returns relay chain block number fetched from
 /// validation data.
 /// NTOE: When validation data is not available (e.g. within on_initialize), 0 will be returned.
 pub struct RelaychainBlockNumberProvider<T>(sp_std::marker::PhantomData<T>);

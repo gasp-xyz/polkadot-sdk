@@ -3,31 +3,34 @@ name = "cumulus-client-consensus-common"
 description = "Cumulus specific common consensus implementations"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 # Substrate deps
-sc-consensus = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sc-client-api = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-consensus = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-runtime = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-blockchain = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-api = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
-sp-trie = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
+sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
 
 # Polkadot deps
-polkadot-primitives = { git = "https://github.com/mangata-finance/polkadot", branch = "mangata-dev-v4" }
+polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
+
+# Cumulus deps
+cumulus-relay-chain-interface = { path = "../../relay-chain-interface" }
 
 # Other deps
 futures = { version = "0.3.8", features = ["compat"] }
 codec = { package = "parity-scale-codec", version = "2.3.0", features = [ "derive" ] }
 tracing = "0.1.25"
-async-trait = "0.1.42"
+async-trait = "0.1.52"
 dyn-clone = "1.0.4"
 
 [dev-dependencies]
 # Substrate deps
-sp-tracing = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
+sp-tracing = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
 # Cumulus dependencies
 cumulus-test-client = { path = "../../../test/client" }
 # Other deps

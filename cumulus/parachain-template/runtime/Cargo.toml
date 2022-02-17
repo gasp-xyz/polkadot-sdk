@@ -5,20 +5,21 @@ authors = ["Anonymous"]
 description = "A new Cumulus FRAME-based Substrate Runtime, ready for hacking together a parachain."
 license = "Unlicense"
 homepage = "https://substrate.io"
-repository = "https://github.com/mangata-finance/cumulus/"
-edition = "2018"
+repository = "https://github.com/paritytech/cumulus/"
+edition = "2021"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder = { git = "https://github.com/mangata-finance/substrate", branch = "mangata-dev-v4" }
+substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
 
 [dependencies]
+hex-literal = { version = "0.3.1", optional = true }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
 log = { version = "0.4.14", default-features = false }
 scale-info = { version = "1.0.0", default-features = false, features = ["derive"] }
-serde = { version = "1.0.119", optional = true, features = ["derive"] }
+serde = { version = "1.0.132", optional = true, features = ["derive"] }
 smallvec = "1.6.1"
 
 # Local Dependencies
@@ -26,37 +27,37 @@ pallet-template = { path = "../pallets/template", default-features = false }
 
 # Substrate Dependencies
 ## Substrate Primitive Dependencies
-sp-api = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-block-builder = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-consensus-aura = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-core = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-inherents = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-io = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-offchain = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-runtime = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-session = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-std = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-transaction-pool = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-sp-version = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
+sp-api = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-block-builder = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-consensus-aura = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-inherents = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-io = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-offchain = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-session = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-transaction-pool = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+sp-version = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
 
 ## Substrate FRAME Dependencies
-frame-benchmarking = { git = "https://github.com/mangata-finance/substrate", default-features = false, optional = true , branch = "mangata-dev-v4" }
-frame-executive = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-frame-support = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev-v4" }
-frame-system = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-frame-system-benchmarking = { git = "https://github.com/mangata-finance/substrate", default-features = false, optional = true , branch = "mangata-dev-v4" }
-frame-system-rpc-runtime-api = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true , branch = "polkadot-v0.9.16" }
+frame-try-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true , branch = "polkadot-v0.9.16" }
+frame-executive = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
+frame-system = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+frame-system-benchmarking = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true , branch = "polkadot-v0.9.16" }
+frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
 
 ## Substrate Pallet Dependencies
-pallet-aura = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-authorship = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-balances = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-randomness-collective-flip = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-session = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-sudo = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-timestamp = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-transaction-payment = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
-pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/mangata-finance/substrate", default-features = false , branch = "mangata-dev-v4" }
+pallet-aura = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+pallet-authorship = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+pallet-balances = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+pallet-session = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+pallet-sudo = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", default-features = false , branch = "polkadot-v0.9.16" }
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext = { path = "../../pallets/aura-ext", default-features = false }
@@ -69,14 +70,15 @@ cumulus-primitives-timestamp = { path = "../../primitives/timestamp", default-fe
 cumulus-primitives-utility = { path = "../../primitives/utility", default-features = false }
 pallet-collator-selection = { path = "../../pallets/collator-selection", default-features = false }
 parachain-info = { path = "../../polkadot-parachains/pallets/parachain-info", default-features = false }
+cumulus-pallet-session-benchmarking = {path = "../../pallets/session-benchmarking", default-features = false, version = "3.0.0"}
 
 # Polkadot Dependencies
-pallet-xcm = { git = "https://github.com/mangata-finance/polkadot", default-features = false , branch = "mangata-dev-v4" }
-polkadot-parachain = { git = "https://github.com/mangata-finance/polkadot", default-features = false , branch = "mangata-dev-v4" }
-polkadot-runtime-common = { git = "https://github.com/mangata-finance/polkadot", default-features = false, branch = "mangata-dev-v4" }
-xcm = { git = "https://github.com/mangata-finance/polkadot", default-features = false , branch = "mangata-dev-v4" }
-xcm-builder = { git = "https://github.com/mangata-finance/polkadot", default-features = false , branch = "mangata-dev-v4" }
-xcm-executor = { git = "https://github.com/mangata-finance/polkadot", default-features = false , branch = "mangata-dev-v4" }
+pallet-xcm = { git = "https://github.com/paritytech/polkadot", default-features = false , branch = "release-v0.9.16" }
+polkadot-parachain = { git = "https://github.com/paritytech/polkadot", default-features = false , branch = "release-v0.9.16" }
+polkadot-runtime-common = { git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.16" }
+xcm = { git = "https://github.com/paritytech/polkadot", default-features = false , branch = "release-v0.9.16" }
+xcm-builder = { git = "https://github.com/paritytech/polkadot", default-features = false , branch = "release-v0.9.16" }
+xcm-executor = { git = "https://github.com/paritytech/polkadot", default-features = false , branch = "release-v0.9.16" }
 
 [features]
 default = [
@@ -106,7 +108,6 @@ std = [
 	"pallet-authorship/std",
 	"pallet-balances/std",
 	"pallet-collator-selection/std",
-	"pallet-randomness-collective-flip/std",
 	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-template/std",
@@ -130,9 +131,10 @@ std = [
 ]
 
 runtime-benchmarks = [
+	"hex-literal",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
-	"frame-benchmarking",
+	"frame-benchmarking/runtime-benchmarks",
 	"frame-system-benchmarking",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
@@ -141,4 +143,10 @@ runtime-benchmarks = [
 	"pallet-template/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
+	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
+]
+
+try-runtime = [
+	"frame-try-runtime",
+	"frame-executive/try-runtime",
 ]
