@@ -38,7 +38,7 @@
 use frame_support::traits::{ExecuteBlock, FindAuthor};
 use sp_application_crypto::RuntimeAppPublic;
 use sp_consensus_aura::digests::CompatibleDigestItem;
-use sp_runtime::traits::{Block as BlockT, Header as HeaderT, One};
+use sp_runtime::traits::{Block as BlockT, Header as HeaderT};
 
 type Aura<T> = pallet_aura::Pallet<T>;
 
@@ -108,7 +108,7 @@ pub mod pallet {
 ///
 /// When executing the block it will verify the block seal to ensure that the correct author created
 /// the block.
-pub struct BlockExecutorVer<T, I, S>(sp_std::marker::PhantomData<(T, I, S)>);
+pub struct BlockExecutorVer<T, I>(sp_std::marker::PhantomData<(T, I)>);
 
 pub fn get_block_signer_pub_key<T: Config, Block: BlockT>(block: &Block) -> sp_std::vec::Vec<u8> {
 	// before any potential update.
@@ -127,12 +127,11 @@ pub fn get_block_signer_pub_key<T: Config, Block: BlockT>(block: &Block) -> sp_s
 		.to_raw_vec()
 }
 
-impl<Block, T, I, S> ExecuteBlock<Block> for BlockExecutorVer<T, I, S>
+impl<Block, T, I> ExecuteBlock<Block> for BlockExecutorVer<T, I>
 where
 	Block: BlockT,
 	T: Config,
 	I: ExecuteBlock<Block>,
-	S: pallet_session::ShouldEndSession<<Block::Header as HeaderT>::Number>,
 {
 	fn execute_block(block: Block) {
 		let (mut header, extrinsics) = block.deconstruct();
@@ -180,8 +179,7 @@ where
 			})
 			.to_raw_vec();
 
-		let is_next_block_new_session = S::should_end_session(*header.number() + One::one());
-		I::execute_block_ver(Block::new(header, extrinsics), public_key, is_next_block_new_session);
+		I::execute_block_ver(Block::new(header, extrinsics), public_key);
 	}
 }
 
