@@ -1635,6 +1635,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-aura",
+ "pallet-session",
  "parity-scale-codec",
  "scale-info",
  "serde",
