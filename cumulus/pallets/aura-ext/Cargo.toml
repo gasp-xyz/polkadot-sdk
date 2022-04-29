@@ -15,7 +15,6 @@ sp-consensus-aura = { git = "https://github.com/paritytech/substrate", default-f
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
 sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
-pallet-session = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.16" }
 
 # Other Dependencies
 codec = { package = "parity-scale-codec", version = "2.3.0", default-features = false, features = ["derive"]}
