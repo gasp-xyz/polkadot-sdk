@@ -26,7 +26,7 @@ use sp_runtime::{
 };
 use xcm::prelude::*;
 use xcm_builder::{
-	CurrencyAdapter, FixedWeightBounds, IsConcrete, LocationInverter, NativeAsset, ParentIsDefault,
+	CurrencyAdapter, FixedWeightBounds, IsConcrete, LocationInverter, NativeAsset, ParentIsPreset,
 };
 use xcm_executor::traits::ConvertOrigin;
 
@@ -132,7 +132,7 @@ pub type LocalAssetTransactor = CurrencyAdapter<
 	(),
 >;
 
-pub type LocationToAccountId = (ParentIsDefault<AccountId>,);
+pub type LocationToAccountId = (ParentIsPreset<AccountId>,);
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
