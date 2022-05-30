@@ -6,32 +6,32 @@ authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2021"
 
 [dependencies]
-# Substrate deps
-sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
-sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
-sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
-sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
-sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
+futures = { version = "0.3.8", features = ["compat"] }
+codec = { package = "parity-scale-codec", version = "3.0.0", features = [ "derive" ] }
+tracing = "0.1.32"
+async-trait = "0.1.52"
+dyn-clone = "1.0.5"
 
-# Polkadot deps
-polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.17" }
+# Substrate
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
+sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
 
-# Cumulus deps
+# Polkadot
+polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.18" }
+
+# Cumulus
 cumulus-relay-chain-interface = { path = "../../relay-chain-interface" }
 
-# Other deps
-futures = { version = "0.3.8", features = ["compat"] }
-codec = { package = "parity-scale-codec", version = "2.3.0", features = [ "derive" ] }
-tracing = "0.1.31"
-async-trait = "0.1.52"
-dyn-clone = "1.0.4"
-
 [dev-dependencies]
-# Substrate deps
-sp-tracing = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17" }
-# Cumulus dependencies
-cumulus-test-client = { path = "../../../test/client" }
-# Other deps
 futures-timer = "3.0.2"
+
+# Substrate
+sp-tracing = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.18" }
+
+# Cumulus
+cumulus-test-client = { path = "../../../test/client" }

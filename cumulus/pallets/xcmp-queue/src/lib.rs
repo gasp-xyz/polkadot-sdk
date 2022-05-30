@@ -33,6 +33,11 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
+
 use codec::{Decode, DecodeLimit, Encode};
 use cumulus_primitives_core::{
 	relay_chain::BlockNumber as RelayBlockNumber, ChannelStatus, GetChannelInfo, MessageSendError,
@@ -93,6 +98,9 @@ pub mod pallet {
 		/// The conversion function used to attempt to convert an XCM `MultiLocation` origin to a
 		/// superuser origin.
 		type ControllerOriginConverter: ConvertOrigin<Self::Origin>;
+
+		/// The weight information of this pallet.
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::hooks]
@@ -122,7 +130,7 @@ pub mod pallet {
 		///
 		/// Events:
 		/// - `OverweightServiced`: On success.
-		#[pallet::weight(weight_limit.saturating_add(1_000_000))]
+		#[pallet::weight((weight_limit.saturating_add(1_000_000), DispatchClass::Operational,))]
 		pub fn service_overweight(
 			origin: OriginFor<T>,
 			index: OverweightIndex,
@@ -132,9 +140,11 @@ pub mod pallet {
 
 			let (sender, sent_at, data) =
 				Overweight::<T>::get(index).ok_or(Error::<T>::BadOverweightIndex)?;
-			let xcm =
-				VersionedXcm::<T::Call>::decode_all_with_depth_limit(MAX_XCM_DECODE_DEPTH, &data)
-					.map_err(|_| Error::<T>::BadXcm)?;
+			let xcm = VersionedXcm::<T::Call>::decode_all_with_depth_limit(
+				MAX_XCM_DECODE_DEPTH,
+				&mut data.as_slice(),
+			)
+			.map_err(|_| Error::<T>::BadXcm)?;
 			let used = Self::handle_xcm_message(sender, sent_at, xcm, weight_limit)
 				.map_err(|_| Error::<T>::WeightOverLimit)?;
 			Overweight::<T>::remove(index);
@@ -145,7 +155,7 @@ pub mod pallet {
 		/// Suspends all XCM executions for the XCMP queue, regardless of the sender's origin.
 		///
 		/// - `origin`: Must pass `ControllerOrigin`.
-		#[pallet::weight(T::DbWeight::get().writes(1))]
+		#[pallet::weight((T::DbWeight::get().writes(1), DispatchClass::Operational,))]
 		pub fn suspend_xcm_execution(origin: OriginFor<T>) -> DispatchResult {
 			T::ControllerOrigin::ensure_origin(origin)?;
 
@@ -159,7 +169,7 @@ pub mod pallet {
 		/// Note that this function doesn't change the status of the in/out bound channels.
 		///
 		/// - `origin`: Must pass `ControllerOrigin`.
-		#[pallet::weight(T::DbWeight::get().writes(1))]
+		#[pallet::weight((T::DbWeight::get().writes(1), DispatchClass::Operational,))]
 		pub fn resume_xcm_execution(origin: OriginFor<T>) -> DispatchResult {
 			T::ControllerOrigin::ensure_origin(origin)?;
 
@@ -173,7 +183,7 @@ pub mod pallet {
 		///
 		/// - `origin`: Must pass `Root`.
 		/// - `new`: Desired value for `QueueConfigData.suspend_value`
-		#[pallet::weight(10_000_000 as Weight + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight((T::WeightInfo::set_config_with_u32(), DispatchClass::Operational,))]
 		pub fn update_suspend_threshold(origin: OriginFor<T>, new: u32) -> DispatchResult {
 			ensure_root(origin)?;
 			QueueConfig::<T>::mutate(|data| data.suspend_threshold = new);
@@ -186,7 +196,7 @@ pub mod pallet {
 		///
 		/// - `origin`: Must pass `Root`.
 		/// - `new`: Desired value for `QueueConfigData.drop_threshold`
-		#[pallet::weight(10_000_000 as Weight + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight((T::WeightInfo::set_config_with_u32(),DispatchClass::Operational,))]
 		pub fn update_drop_threshold(origin: OriginFor<T>, new: u32) -> DispatchResult {
 			ensure_root(origin)?;
 			QueueConfig::<T>::mutate(|data| data.drop_threshold = new);
@@ -198,8 +208,8 @@ pub mod pallet {
 		/// message sending may recommence after it has been suspended.
 		///
 		/// - `origin`: Must pass `Root`.
-		/// - `new`: Desired value for `QueueConfigData.resume_threshold`                                
-		#[pallet::weight(10_000_000 as Weight + T::DbWeight::get().reads_writes(1, 1))]
+		/// - `new`: Desired value for `QueueConfigData.resume_threshold`
+		#[pallet::weight((T::WeightInfo::set_config_with_u32(), DispatchClass::Operational,))]
 		pub fn update_resume_threshold(origin: OriginFor<T>, new: u32) -> DispatchResult {
 			ensure_root(origin)?;
 			QueueConfig::<T>::mutate(|data| data.resume_threshold = new);
@@ -210,8 +220,8 @@ pub mod pallet {
 		/// Overwrites the amount of remaining weight under which we stop processing messages.
 		///
 		/// - `origin`: Must pass `Root`.
-		/// - `new`: Desired value for `QueueConfigData.threshold_weight`                                
-		#[pallet::weight(10_000_000 as Weight + T::DbWeight::get().reads_writes(1, 1))]
+		/// - `new`: Desired value for `QueueConfigData.threshold_weight`
+		#[pallet::weight((T::WeightInfo::set_config_with_weight(), DispatchClass::Operational,))]
 		pub fn update_threshold_weight(origin: OriginFor<T>, new: Weight) -> DispatchResult {
 			ensure_root(origin)?;
 			QueueConfig::<T>::mutate(|data| data.threshold_weight = new);
@@ -223,8 +233,8 @@ pub mod pallet {
 		/// A lower number results in a faster progression. A value of 1 makes the entire weight available initially.
 		///
 		/// - `origin`: Must pass `Root`.
-		/// - `new`: Desired value for `QueueConfigData.weight_restrict_decay`.                                
-		#[pallet::weight(10_000_000 as Weight + T::DbWeight::get().reads_writes(1, 1))]
+		/// - `new`: Desired value for `QueueConfigData.weight_restrict_decay`.
+		#[pallet::weight((T::WeightInfo::set_config_with_weight(), DispatchClass::Operational,))]
 		pub fn update_weight_restrict_decay(origin: OriginFor<T>, new: Weight) -> DispatchResult {
 			ensure_root(origin)?;
 			QueueConfig::<T>::mutate(|data| data.weight_restrict_decay = new);
@@ -236,8 +246,8 @@ pub mod pallet {
 		/// Messages above this weight go into the overweight queue and may only be serviced explicitly.
 		///
 		/// - `origin`: Must pass `Root`.
-		/// - `new`: Desired value for `QueueConfigData.xcmp_max_individual_weight`.                                
-		#[pallet::weight(10_000_000 as Weight + T::DbWeight::get().reads_writes(1, 1))]
+		/// - `new`: Desired value for `QueueConfigData.xcmp_max_individual_weight`.
+		#[pallet::weight((T::WeightInfo::set_config_with_weight(), DispatchClass::Operational,))]
 		pub fn update_xcmp_max_individual_weight(
 			origin: OriginFor<T>,
 			new: Weight,
@@ -492,10 +502,8 @@ impl<T: Config> Pallet<T> {
 		let have_active = s[index].last_index > s[index].first_index;
 		let appended = have_active &&
 			<OutboundXcmpMessages<T>>::mutate(recipient, s[index].last_index - 1, |s| {
-				if XcmpMessageFormat::decode_and_advance_with_depth_limit(
-					MAX_XCM_DECODE_DEPTH,
-					&mut &s[..],
-				) != Ok(format)
+				if XcmpMessageFormat::decode_with_depth_limit(MAX_XCM_DECODE_DEPTH, &mut &s[..]) !=
+					Ok(format)
 				{
 					return false
 				}
@@ -563,9 +571,7 @@ impl<T: Config> Pallet<T> {
 		let mut shuffled = (0..len).collect::<Vec<_>>();
 		for i in 0..len {
 			let j = (rng.next_u32() as usize) % len;
-			let a = shuffled[i];
-			shuffled[i] = shuffled[j];
-			shuffled[j] = a;
+			shuffled.as_mut_slice().swap(i, j);
 		}
 		shuffled
 	}
@@ -619,7 +625,7 @@ impl<T: Config> Pallet<T> {
 			XcmpMessageFormat::ConcatenatedVersionedXcm => {
 				while !remaining_fragments.is_empty() {
 					last_remaining_fragments = remaining_fragments;
-					if let Ok(xcm) = VersionedXcm::<T::Call>::decode_and_advance_with_depth_limit(
+					if let Ok(xcm) = VersionedXcm::<T::Call>::decode_with_depth_limit(
 						MAX_XCM_DECODE_DEPTH,
 						&mut remaining_fragments,
 					) {
@@ -893,7 +899,7 @@ impl<T: Config> XcmpMessageHandler for Pallet<T> {
 		for (sender, sent_at, data) in iter {
 			// Figure out the message format.
 			let mut data_ref = data;
-			let format = match XcmpMessageFormat::decode_and_advance_with_depth_limit(
+			let format = match XcmpMessageFormat::decode_with_depth_limit(
 				MAX_XCM_DECODE_DEPTH,
 				&mut data_ref,
 			) {
