@@ -325,7 +325,7 @@ pub mod pallet {
 				.read_upgrade_go_ahead_signal()
 				.expect("Invalid upgrade go ahead signal");
 			match upgrade_go_ahead_signal {
-				Some(relay_chain::v1::UpgradeGoAhead::GoAhead) => {
+				Some(relay_chain::v2::UpgradeGoAhead::GoAhead) => {
 					assert!(
 						<PendingValidationCode<T>>::exists(),
 						"No new validation function found in storage, GoAhead signal is not expected",
@@ -336,7 +336,7 @@ pub mod pallet {
 					<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
 					Self::deposit_event(Event::ValidationFunctionApplied(vfp.relay_parent_number));
 				},
-				Some(relay_chain::v1::UpgradeGoAhead::Abort) => {
+				Some(relay_chain::v2::UpgradeGoAhead::Abort) => {
 					<PendingValidationCode<T>>::kill();
 					Self::deposit_event(Event::ValidationFunctionDiscarded);
 				},
@@ -487,7 +487,7 @@ pub mod pallet {
 	/// set after the inherent.
 	#[pallet::storage]
 	pub(super) type UpgradeRestrictionSignal<T: Config> =
-		StorageValue<_, Option<relay_chain::v1::UpgradeRestriction>, ValueQuery>;
+		StorageValue<_, Option<relay_chain::v2::UpgradeRestriction>, ValueQuery>;
 
 	/// The state proof for the last relay parent block.
 	///
@@ -546,7 +546,7 @@ pub mod pallet {
 	/// This will be cleared in `on_initialize` of each new block.
 	#[pallet::storage]
 	pub(super) type HrmpWatermark<T: Config> =
-		StorageValue<_, relay_chain::v1::BlockNumber, ValueQuery>;
+		StorageValue<_, relay_chain::v2::BlockNumber, ValueQuery>;
 
 	/// HRMP messages that were sent in a block.
 	///
@@ -794,7 +794,7 @@ impl<T: Config> Pallet<T> {
 	fn process_inbound_horizontal_messages(
 		ingress_channels: &[(ParaId, cumulus_primitives_core::AbridgedHrmpChannel)],
 		horizontal_messages: BTreeMap<ParaId, Vec<InboundHrmpMessage>>,
-		relay_parent_number: relay_chain::v1::BlockNumber,
+		relay_parent_number: relay_chain::v2::BlockNumber,
 	) -> Weight {
 		// First, check that all submitted messages are sent from channels that exist. The
 		// channel exists if its MQC head is present in `vfp.hrmp_mqc_heads`.
