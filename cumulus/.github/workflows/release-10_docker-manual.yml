@@ -9,7 +9,7 @@ on:
     inputs:
       tag:
         description: release tag to build image for
-        default: polkadot-v0.9.19
+        default: polkadot-v0.9.20
         required: true
       prerelease:
         description: is prerelease
