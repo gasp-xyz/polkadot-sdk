@@ -18,7 +18,7 @@ use super::{
 	WeightToFee, XcmpQueue,
 };
 use frame_support::{
-	match_type, parameter_types,
+	match_types, parameter_types,
 	traits::{EnsureOneOf, Everything, Nothing},
 	weights::Weight,
 };
@@ -107,13 +107,13 @@ parameter_types! {
 	pub const MaxInstructions: u32 = 100;
 }
 
-match_type! {
+match_types! {
 	pub type ParentOrParentsExecutivePlurality: impl Contains<MultiLocation> = {
 		MultiLocation { parents: 1, interior: Here } |
 		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Executive, .. }) }
 	};
 }
-match_type! {
+match_types! {
 	pub type ParentOrSiblings: impl Contains<MultiLocation> = {
 		MultiLocation { parents: 1, interior: Here } |
 		MultiLocation { parents: 1, interior: X1(_) }

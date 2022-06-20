@@ -17,10 +17,10 @@
 use std::{pin::Pin, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
+use polkadot_service::ParachainHost;
 use cumulus_primitives_core::{
 	relay_chain::{
 		v2::{CommittedCandidateReceipt, OccupiedCoreAssumption, SessionIndex, ValidatorId},
-		v2::ParachainHost,
 		Block as PBlock, BlockId, Hash as PHash, Header as PHeader, InboundHrmpMessage,
 	},
 	InboundDownwardMessage, ParaId, PersistedValidationData,

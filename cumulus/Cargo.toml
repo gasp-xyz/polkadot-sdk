@@ -198,6 +198,7 @@ sp-state-machine = { git = "https://github.com/mangata-finance//substrate", bran
 sp-block-builder = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev-v0.9.20" }
 sp-wasm-interface = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev-v0.9.20" }
 sp-npos-elections = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev-v0.9.20" }
+sp-mmr-primitives = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev-v0.9.20" }
 #sp-npos-elections-solution-type = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev-v0.9.20" }
 sp-application-crypto = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev-v0.9.20" }
 sp-serializer = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev-v0.9.20" }
