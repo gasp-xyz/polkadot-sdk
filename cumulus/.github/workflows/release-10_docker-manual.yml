@@ -9,7 +9,7 @@ on:
     inputs:
       tag:
         description: release tag to build image for
-        default: polkadot-v0.9.20
+        default: polkadot-v0.9.24
         required: true
       prerelease:
         description: is prerelease
@@ -19,11 +19,11 @@ on:
 jobs:
   docker_build_publish:
     env:
-      BINARY: polkadot-collator
+      BINARY: polkadot-parachain
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.release.tag_name }}
 
@@ -80,7 +80,7 @@ jobs:
           ./docker/scripts/build-injected-image.sh
 
       - name: Login to Dockerhub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
