@@ -49,7 +49,7 @@ pub use frame_support::{
 	traits::Randomness,
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		DispatchClass, IdentityFee, Weight,
+		ConstantMultiplier, DispatchClass, IdentityFee, Weight,
 	},
 	StorageValue,
 };
@@ -68,7 +68,7 @@ impl_opaque_keys! {
 	pub struct SessionKeys {}
 }
 
-/// Some key that we set in genesis and only read in [`TestRuntimeUpgrade`] to ensure that
+/// Some key that we set in genesis and only read in [`TestOnRuntimeUpgrade`] to ensure that
 /// [`OnRuntimeUpgrade`] works as expected.
 pub const TEST_RUNTIME_UPGRADE_KEY: &[u8] = b"+test_runtime_upgrade_key+";
 
@@ -245,8 +245,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
-	type TransactionByteFee = TransactionByteFee;
 	type WeightToFee = IdentityFee<Balance>;
+	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
 	type FeeMultiplierUpdate = ();
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }

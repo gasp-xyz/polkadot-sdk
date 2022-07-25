@@ -6,4 +6,6 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-polkadot-node-core-pvf = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
+
+# Polkadot
+polkadot-node-core-pvf = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.24" }

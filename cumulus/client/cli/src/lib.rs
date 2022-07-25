@@ -18,7 +18,7 @@
 
 #![warn(missing_docs)]
 
-use sc_cli;
+use clap::Parser;
 use sc_service::{
 	config::{PrometheusConfig, TelemetryEndpoints},
 	BasePath, TransactionPoolOptions,
@@ -28,21 +28,21 @@ use std::{
 	io::{self, Write},
 	net::SocketAddr,
 };
-use structopt::StructOpt;
+use url::Url;
 
 /// The `purge-chain` command used to remove the whole chain: the parachain and the relay chain.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct PurgeChainCmd {
 	/// The base struct of the purge-chain command.
-	#[structopt(flatten)]
+	#[clap(flatten)]
 	pub base: sc_cli::PurgeChainCmd,
 
 	/// Only delete the para chain database
-	#[structopt(long, aliases = &["para"])]
+	#[clap(long, aliases = &["para"])]
 	pub parachain: bool,
 
 	/// Only delete the relay chain database
-	#[structopt(long, aliases = &["relay"])]
+	#[clap(long, aliases = &["relay"])]
 	pub relaychain: bool,
 }
 
@@ -119,18 +119,47 @@ impl sc_cli::CliConfiguration for PurgeChainCmd {
 	}
 }
 
+fn validate_relay_chain_url(arg: &str) -> Result<(), String> {
+	let url = Url::parse(arg).map_err(|e| e.to_string())?;
+
+	if url.scheme() == "ws" {
+		Ok(())
+	} else {
+		Err(format!(
+			"'{}' URL scheme not supported. Only websocket RPC is currently supported",
+			url.scheme()
+		))
+	}
+}
+
 /// The `run` command used to run a node.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct RunCmd {
 	/// The cumulus RunCmd inherents from sc_cli's
-	#[structopt(flatten)]
+	#[clap(flatten)]
 	pub base: sc_cli::RunCmd,
 
 	/// Run node as collator.
 	///
 	/// Note that this is the same as running with `--validator`.
-	#[structopt(long, conflicts_with = "validator")]
+	#[clap(long, conflicts_with = "validator")]
 	pub collator: bool,
+
+	/// EXPERIMENTAL: Specify an URL to a relay chain full node to communicate with.
+	#[clap(
+		long,
+		parse(try_from_str),
+		validator = validate_relay_chain_url,
+		conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "two"]	)
+	]
+	pub relay_chain_rpc_url: Option<Url>,
+}
+
+/// Options only relevant for collator nodes
+#[derive(Clone, Debug)]
+pub struct CollatorOptions {
+	/// Location of relay chain full node
+	pub relay_chain_rpc_url: Option<Url>,
 }
 
 /// A non-redundant version of the `RunCmd` that sets the `validator` field when the
@@ -149,6 +178,11 @@ impl RunCmd {
 		new_base.validator = self.base.validator || self.collator;
 
 		NormalizedRunCmd { base: new_base }
+	}
+
+	/// Create [`CollatorOptions`] representing options only relevant to parachain collator nodes
+	pub fn collator_options(&self) -> CollatorOptions {
+		CollatorOptions { relay_chain_rpc_url: self.relay_chain_rpc_url.clone() }
 	}
 }
 
@@ -246,6 +280,10 @@ impl sc_cli::CliConfiguration for NormalizedRunCmd {
 
 	fn max_runtime_instances(&self) -> sc_cli::Result<Option<usize>> {
 		self.base.max_runtime_instances()
+	}
+
+	fn runtime_cache_size(&self) -> sc_cli::Result<u8> {
+		self.base.runtime_cache_size()
 	}
 
 	fn base_path(&self) -> sc_cli::Result<Option<BasePath>> {

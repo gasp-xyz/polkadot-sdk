@@ -6,39 +6,38 @@ description = "Cumulus-specific networking protocol"
 edition = "2021"
 
 [dependencies]
-# Substrate deps
-sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-sp-maybe-compressed-blob = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+codec = { package = "parity-scale-codec", version = "3.0.0", features = [ "derive" ] }
+futures = { version = "0.3.1", features = ["compat"] }
+futures-timer = "3.0.2"
+rand = "0.8.5"
+tracing = "0.1.34"
 
-# Polkadot deps
-polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
-polkadot-node-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
-polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
-polkadot-node-subsystem = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.16" }
+# Substrate
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-maybe-compressed-blob = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
 
-# Cumulus deps
+# Polkadot
+polkadot-node-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.24" }
+polkadot-node-subsystem = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.24" }
+polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.24" }
+polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.24" }
+
+# Cumulus
 cumulus-primitives-core = { path = "../../primitives/core" }
 cumulus-relay-chain-interface = {path = "../relay-chain-interface"}
 
-# other deps
-codec = { package = "parity-scale-codec", version = "2.3.0", features = [ "derive" ] }
-futures = { version = "0.3.1", features = ["compat"] }
-futures-timer = "3.0.2"
-tracing = "0.1.22"
-rand = "0.8.3"
-
 [dev-dependencies]
-tokio = { version = "1.10", features = ["macros"] }
+tokio = { version = "1.18.2", features = ["macros"] }
 
-# Cumulus deps
+# Cumulus
 cumulus-test-service = { path = "../../test/service" }
 
-# substrate deps
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-substrate-test-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
-sc-service = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16" }
+# Substrate
+sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sc-service = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+substrate-test-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }

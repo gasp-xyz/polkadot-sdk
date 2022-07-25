@@ -66,19 +66,15 @@ where
 	let block = B::new(header, extrinsics);
 	assert!(parent_head.hash() == *block.header().parent_hash(), "Invalid parent hash",);
 
-	// Uncompress
-	let mut db = MemoryDB::default();
-	let root = match sp_trie::decode_compact::<sp_trie::LayoutV1<HashFor<B>>, _, _>(
-		&mut db,
-		storage_proof.iter_compact_encoded_nodes(),
-		Some(parent_head.state_root()),
-	) {
-		Ok(root) => root,
+	// Create the db
+	let (db, root) = match storage_proof.to_memory_db(Some(parent_head.state_root())) {
+		Ok((db, root)) => (db, root),
 		Err(_) => panic!("Compact proof decoding failure."),
 	};
+
 	sp_std::mem::drop(storage_proof);
 
-	let backend = sp_state_machine::TrieBackend::new(db, root);
+	let backend = sp_state_machine::TrieBackend::new(db, *parent_head.state_root());
 
 	let _guard = (
 		// Replace storage calls with our own implementations
@@ -221,8 +217,8 @@ fn host_storage_clear(key: &[u8]) {
 	with_externalities(|ext| ext.place_storage(key.to_vec(), None))
 }
 
-fn host_storage_root() -> Vec<u8> {
-	with_externalities(|ext| ext.storage_root(StateVersion::V0))
+fn host_storage_root(version: StateVersion) -> Vec<u8> {
+	with_externalities(|ext| ext.storage_root(version))
 }
 
 fn host_storage_clear_prefix(prefix: &[u8], limit: Option<u32>) -> KillStorageResult {
@@ -327,9 +323,9 @@ fn host_default_child_storage_clear_prefix(
 	})
 }
 
-fn host_default_child_storage_root(storage_key: &[u8]) -> Vec<u8> {
+fn host_default_child_storage_root(storage_key: &[u8], version: StateVersion) -> Vec<u8> {
 	let child_info = ChildInfo::new_default(storage_key);
-	with_externalities(|ext| ext.child_storage_root(&child_info, StateVersion::V0))
+	with_externalities(|ext| ext.child_storage_root(&child_info, version))
 }
 
 fn host_default_child_storage_next_key(storage_key: &[u8], key: &[u8]) -> Option<Vec<u8>> {

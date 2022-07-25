@@ -30,7 +30,7 @@ use cumulus_test_service::{initial_head_data, run_relay_chain_validator_node, Ke
 use sc_client_api::{BlockBackend, UsageProvider};
 use sp_runtime::generic::BlockId;
 
-#[substrate_test_utils::test]
+#[substrate_test_utils::test(flavor = "multi_thread")]
 #[ignore]
 async fn test_migrate_solo_to_para() {
 	let mut builder = sc_cli::LoggerBuilder::new("");
@@ -42,11 +42,17 @@ async fn test_migrate_solo_to_para() {
 	let tokio_handle = tokio::runtime::Handle::current();
 
 	// start alice
-	let alice = run_relay_chain_validator_node(tokio_handle.clone(), Alice, || {}, Vec::new());
+	let alice =
+		run_relay_chain_validator_node(tokio_handle.clone(), Alice, || {}, Vec::new(), None);
 
 	// start bob
-	let bob =
-		run_relay_chain_validator_node(tokio_handle.clone(), Bob, || {}, vec![alice.addr.clone()]);
+	let bob = run_relay_chain_validator_node(
+		tokio_handle.clone(),
+		Bob,
+		|| {},
+		vec![alice.addr.clone()],
+		None,
+	);
 
 	// register parachain
 	alice

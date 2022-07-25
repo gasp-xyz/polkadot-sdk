@@ -3,9 +3,9 @@
 steps=50
 repeat=20
 
-statemineOutput=./polkadot-parachains/statemine/src/weights
-statemintOutput=./polkadot-parachains/statemint/src/weights
-westmintOutput=./polkadot-parachains/westmint/src/weights
+statemineOutput=./parachains/runtimes/statemine/src/weights
+statemintOutput=./parachains/runtimes/statemint/src/weights
+westmintOutput=./parachains/runtimes/westmint/src/weights
 
 statemineChain=statemine-dev
 statemintChain=statemint-dev
@@ -20,13 +20,14 @@ pallets=(
 	pallet_session
 	pallet_timestamp
 	pallet_utility
-    pallet_uniques
-    frame_system
+	pallet_uniques
+	cumulus_pallet_xcmp_queue
+	frame_system
 )
 
 for p in ${pallets[@]}
 do
-	./target/release/polkadot-collator benchmark \
+	./target/production/polkadot-parachain benchmark pallet \
 		--chain=$statemineChain \
 		--execution=wasm \
 		--wasm-execution=compiled \
@@ -34,11 +35,11 @@ do
 		--extrinsic='*' \
 		--steps=$steps  \
 		--repeat=$repeat \
-		--raw  \
+		--json-file=./bench-statemine.json \
         --header=./file_header.txt \
 		--output=$statemineOutput
 
-	./target/release/polkadot-collator benchmark \
+	./target/production/polkadot-parachain benchmark pallet \
 		--chain=$statemintChain \
 		--execution=wasm \
 		--wasm-execution=compiled \
@@ -46,11 +47,11 @@ do
 		--extrinsic='*' \
 		--steps=$steps  \
 		--repeat=$repeat \
-		--raw  \
+		--json-file=./bench-statemint.json \
         --header=./file_header.txt \
 		--output=$statemintOutput
 
-	./target/release/polkadot-collator benchmark \
+	./target/production/polkadot-parachain benchmark pallet \
 		--chain=$westmintChain \
 		--execution=wasm \
 		--wasm-execution=compiled \
@@ -58,7 +59,7 @@ do
 		--extrinsic='*' \
 		--steps=$steps  \
 		--repeat=$repeat \
-		--raw  \
+		--json-file=./bench-westmint.json \
         --header=./file_header.txt \
 		--output=$westmintOutput
 done

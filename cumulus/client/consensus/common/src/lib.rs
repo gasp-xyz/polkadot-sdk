@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
 
-use polkadot_primitives::v1::{Hash as PHash, PersistedValidationData};
+use polkadot_primitives::v2::{Hash as PHash, PersistedValidationData};
 use sc_consensus::BlockImport;
 use sp_runtime::traits::Block as BlockT;
 
@@ -104,7 +104,7 @@ where
 		mut block_import_params: sc_consensus::BlockImportParams<Block, Self::Transaction>,
 		cache: std::collections::HashMap<sp_consensus::CacheKeyId, Vec<u8>>,
 	) -> Result<sc_consensus::ImportResult, Self::Error> {
-		// Best block is determined by the relay chain, or if we are doing the intial sync
+		// Best block is determined by the relay chain, or if we are doing the initial sync
 		// we import all blocks as new best.
 		block_import_params.fork_choice = Some(sc_consensus::ForkChoiceStrategy::Custom(
 			block_import_params.origin == sp_consensus::BlockOrigin::NetworkInitialSync,
