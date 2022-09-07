@@ -5,23 +5,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.24" }
-polkadot-service = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.24" }
+polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.26" }
+polkadot-service = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.26" }
 
 cumulus-primitives-core = { path = "../../primitives/core" }
 
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
-sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
-sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
-sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
-sc-service = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26" }
+sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26" }
 
 futures = "0.3.21"
-parking_lot = "0.12.0"
+parking_lot = "0.12.1"
 derive_more = "0.99.2"
-async-trait = "0.1.53"
+async-trait = "0.1.56"
 thiserror = "1.0.31"
-jsonrpsee-core = "0.13.1"
-parity-scale-codec = "3.1.2"
+jsonrpsee-core = "0.14.0"
+parity-scale-codec = "3.1.5"
