@@ -46,7 +46,7 @@ use frame_support::{
 use frame_system::{ensure_none, ensure_root};
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use sp_runtime::{
-	traits::{BlakeTwo256, Block as BlockT, BlockNumberProvider, Hash, One, Zero},
+	traits::{Block as BlockT, BlockNumberProvider, Hash, One, Zero},
 	transaction_validity::{
 		InvalidTransaction, TransactionLongevity, TransactionSource, TransactionValidity,
 		ValidTransaction,
