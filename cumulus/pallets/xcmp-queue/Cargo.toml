@@ -26,7 +26,6 @@ cumulus-primitives-core = { path = "../../primitives/core", default-features = f
 # Optional import for benchmarking
 frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 
-
 [dev-dependencies]
 
 # Substrate
