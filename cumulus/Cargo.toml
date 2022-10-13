@@ -34,7 +34,9 @@ members = [
 	"parachains/runtimes/assets/statemint",
 	"parachains/runtimes/assets/statemine",
 	"parachains/runtimes/assets/westmint",
+	"parachains/runtimes/collectives/collectives-polkadot",
 	"parachains/runtimes/contracts/contracts-rococo",
+	"parachains/runtimes/testing/penpal",
 	"test/client",
 	"test/relay-sproof-builder",
 	"test/relay-validation-worker-provider",
@@ -127,6 +129,7 @@ sc-tracing = { git = "https://github.com/mangata-finance//substrate", branch = "
 sc-client-db = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev" }
 sc-sync-state-rpc = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev" }
 sc-network = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev" }
+sc-network-common = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev" }
 sc-authority-discovery = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev" }
 sc-utils = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev" }
 sc-keystore = { git = "https://github.com/mangata-finance//substrate", branch = "mangata-dev" }
