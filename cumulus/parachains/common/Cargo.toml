@@ -44,7 +44,6 @@ sp-io = { git = "https://github.com/paritytech/substrate", default-features = fa
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29" }
 
-
 [features]
 default = ["std"]
 std = [
