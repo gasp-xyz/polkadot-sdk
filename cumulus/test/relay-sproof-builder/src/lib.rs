@@ -28,7 +28,7 @@ pub struct RelayStateSproofBuilder {
 	/// The para id of the current parachain.
 	///
 	/// This doesn't get into the storage proof produced by the builder, however, it is used for
-	/// generation of the storage image and by auxilary methods.
+	/// generation of the storage image and by auxiliary methods.
 	///
 	/// It's recommended to change this value once in the very beginning of usage.
 	///
@@ -44,6 +44,7 @@ pub struct RelayStateSproofBuilder {
 	pub hrmp_channels: BTreeMap<relay_chain::v2::HrmpChannelId, AbridgedHrmpChannel>,
 	pub current_slot: relay_chain::v2::Slot,
 	pub current_epoch: u64,
+	pub randomness: relay_chain::Hash,
 }
 
 impl Default for RelayStateSproofBuilder {
@@ -69,6 +70,7 @@ impl Default for RelayStateSproofBuilder {
 			hrmp_channels: BTreeMap::new(),
 			current_slot: 0.into(),
 			current_epoch: 0u64,
+			randomness: relay_chain::Hash::default(),
 		}
 	}
 }
@@ -156,6 +158,10 @@ impl RelayStateSproofBuilder {
 				insert(relay_chain::well_known_keys::hrmp_channels(channel), metadata.encode());
 			}
 			insert(relay_chain::well_known_keys::EPOCH_INDEX.to_vec(), self.current_epoch.encode());
+			insert(
+				relay_chain::well_known_keys::ONE_EPOCH_AGO_RANDOMNESS.to_vec(),
+				self.randomness.encode(),
+			);
 			insert(relay_chain::well_known_keys::CURRENT_SLOT.to_vec(), self.current_slot.encode());
 		}
 
