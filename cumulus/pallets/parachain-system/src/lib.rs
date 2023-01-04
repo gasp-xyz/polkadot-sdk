@@ -53,6 +53,7 @@ use sp_runtime::{
 	},
 };
 use sp_std::{cmp, collections::btree_map::BTreeMap, prelude::*};
+use mangata_types::traits::GetMaintenanceStatusTrait;
 
 mod migration;
 mod relay_state_snapshot;
@@ -177,6 +178,8 @@ pub mod pallet {
 
 		/// Something that can check the associated relay parent block number.
 		type CheckAssociatedRelayNumber: CheckAssociatedRelayNumber;
+
+		type MaintenanceStatusProvider: GetMaintenanceStatusTrait;
 	}
 
 	#[pallet::hooks]
@@ -220,57 +223,59 @@ pub mod pallet {
 				},
 			};
 
-			<PendingUpwardMessages<T>>::mutate(|up| {
-				let (count, size) = relevant_messaging_state.relay_dispatch_queue_size;
+			if !T::MaintenanceStatusProvider::is_maintenance(){
+				<PendingUpwardMessages<T>>::mutate(|up| {
+					let (count, size) = relevant_messaging_state.relay_dispatch_queue_size;
 
-				let available_capacity = cmp::min(
-					host_config.max_upward_queue_count.saturating_sub(count),
-					host_config.max_upward_message_num_per_candidate,
-				);
-				let available_size = host_config.max_upward_queue_size.saturating_sub(size);
+					let available_capacity = cmp::min(
+						host_config.max_upward_queue_count.saturating_sub(count),
+						host_config.max_upward_message_num_per_candidate,
+					);
+					let available_size = host_config.max_upward_queue_size.saturating_sub(size);
 
-				// Count the number of messages we can possibly fit in the given constraints, i.e.
-				// available_capacity and available_size.
-				let num = up
-					.iter()
-					.scan((available_capacity as usize, available_size as usize), |state, msg| {
-						let (cap_left, size_left) = *state;
-						match (cap_left.checked_sub(1), size_left.checked_sub(msg.len())) {
-							(Some(new_cap), Some(new_size)) => {
-								*state = (new_cap, new_size);
-								Some(())
-							},
-							_ => None,
-						}
-					})
-					.count();
+					// Count the number of messages we can possibly fit in the given constraints, i.e.
+					// available_capacity and available_size.
+					let num = up
+						.iter()
+						.scan((available_capacity as usize, available_size as usize), |state, msg| {
+							let (cap_left, size_left) = *state;
+							match (cap_left.checked_sub(1), size_left.checked_sub(msg.len())) {
+								(Some(new_cap), Some(new_size)) => {
+									*state = (new_cap, new_size);
+									Some(())
+								},
+								_ => None,
+							}
+						})
+						.count();
 
-				// TODO: #274 Return back messages that do not longer fit into the queue.
+					// TODO: #274 Return back messages that do not longer fit into the queue.
 
-				UpwardMessages::<T>::put(&up[..num]);
-				*up = up.split_off(num);
-			});
+					UpwardMessages::<T>::put(&up[..num]);
+					*up = up.split_off(num);
+				});
 
-			// Sending HRMP messages is a little bit more involved. There are the following
-			// constraints:
-			//
-			// - a channel should exist (and it can be closed while a message is buffered),
-			// - at most one message can be sent in a channel,
-			// - the sent out messages should be ordered by ascension of recipient para id.
-			// - the capacity and total size of the channel is limited,
-			// - the maximum size of a message is limited (and can potentially be changed),
+				// Sending HRMP messages is a little bit more involved. There are the following
+				// constraints:
+				//
+				// - a channel should exist (and it can be closed while a message is buffered),
+				// - at most one message can be sent in a channel,
+				// - the sent out messages should be ordered by ascension of recipient para id.
+				// - the capacity and total size of the channel is limited,
+				// - the maximum size of a message is limited (and can potentially be changed),
 
-			let maximum_channels = host_config
-				.hrmp_max_message_num_per_candidate
-				.min(<AnnouncedHrmpMessagesPerCandidate<T>>::take()) as usize;
+				let maximum_channels = host_config
+					.hrmp_max_message_num_per_candidate
+					.min(<AnnouncedHrmpMessagesPerCandidate<T>>::take()) as usize;
 
-			let outbound_messages =
-				T::OutboundXcmpMessageSource::take_outbound_messages(maximum_channels)
-					.into_iter()
-					.map(|(recipient, data)| OutboundHrmpMessage { recipient, data })
-					.collect::<Vec<_>>();
+				let outbound_messages =
+					T::OutboundXcmpMessageSource::take_outbound_messages(maximum_channels)
+						.into_iter()
+						.map(|(recipient, data)| OutboundHrmpMessage { recipient, data })
+						.collect::<Vec<_>>();
 
-			HrmpOutboundMessages::<T>::put(outbound_messages);
+				HrmpOutboundMessages::<T>::put(outbound_messages);
+			}
 		}
 
 		fn on_initialize(_n: T::BlockNumber) -> Weight {
@@ -383,17 +388,21 @@ pub mod pallet {
 				.expect("Invalid upgrade go ahead signal");
 			match upgrade_go_ahead_signal {
 				Some(relay_chain::v2::UpgradeGoAhead::GoAhead) => {
-					assert!(
-						<PendingValidationCode<T>>::exists(),
-						"No new validation function found in storage, GoAhead signal is not expected",
-					);
-					let validation_code = <PendingValidationCode<T>>::take();
+					
+					if T::MaintenanceStatusProvider::is_upgradable(){
+						assert!(
+							<PendingValidationCode<T>>::exists(),
+							"No new validation function found in storage, GoAhead signal is not expected",
+						);
+						let validation_code = <PendingValidationCode<T>>::take();
 
-					Self::put_parachain_code(&validation_code);
-					<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
-					Self::deposit_event(Event::ValidationFunctionApplied {
-						relay_chain_block_num: vfp.relay_parent_number,
-					});
+						Self::put_parachain_code(&validation_code);
+						<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
+						Self::deposit_event(Event::ValidationFunctionApplied {
+							relay_chain_block_num: vfp.relay_parent_number,
+						});
+					}
+
 				},
 				Some(relay_chain::v2::UpgradeGoAhead::Abort) => {
 					<PendingValidationCode<T>>::kill();
@@ -452,6 +461,8 @@ pub mod pallet {
 		pub fn authorize_upgrade(origin: OriginFor<T>, code_hash: T::Hash) -> DispatchResult {
 			ensure_root(origin)?;
 
+			ensure!(T::MaintenanceStatusProvider::is_upgradable(), Error::<T>::UpgradeBlockedByMaintenanceMode);
+
 			AuthorizedUpgrade::<T>::put(&code_hash);
 
 			Self::deposit_event(Event::UpgradeAuthorized { code_hash });
@@ -507,6 +518,8 @@ pub mod pallet {
 		NothingAuthorized,
 		/// The given code upgrade has not been authorized.
 		Unauthorized,
+		/// Upgrades are blocked due to maintenance mode
+		UpgradeBlockedByMaintenanceMode
 	}
 
 	/// In case of a scheduled upgrade, this storage field contains the validation code to be applied.
@@ -972,6 +985,7 @@ impl<T: Config> Pallet<T> {
 		// but we do care about the [`UpgradeRestrictionSignal`] which arrives with the same inherent.
 		ensure!(<ValidationData<T>>::exists(), Error::<T>::ValidationDataNotAvailable,);
 		ensure!(<UpgradeRestrictionSignal<T>>::get().is_none(), Error::<T>::ProhibitedByPolkadot);
+		ensure!(T::MaintenanceStatusProvider::is_upgradable(), Error::<T>::UpgradeBlockedByMaintenanceMode);
 
 		ensure!(!<PendingValidationCode<T>>::exists(), Error::<T>::OverlappingUpgrades);
 		let cfg = Self::host_configuration().ok_or(Error::<T>::HostConfigurationNotAvailable)?;

@@ -42,6 +42,7 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+use mangata_types::traits::GetMaintenanceStatusTrait;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -260,8 +261,21 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+pub struct MockMaintenanceStatusProvider;
+
+impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
+	fn is_maintenance() -> bool{
+		false
+	}
+
+	fn is_upgradable() -> bool{
+		true
+	}
+}
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type SelfParaId = ParachainId;
+	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type RuntimeEvent = RuntimeEvent;
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
