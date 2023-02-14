@@ -3,19 +3,18 @@ on:
     branches:
       - mangata-dev
   push:
-    branches: [ mangata-dev ]
+    branches: [mangata-dev]
 
 name: CI
 
 env:
-  TOOLCHAIN: nightly-2022-05-11
-
+  TOOLCHAIN: nightly-2022-11-15
 
 jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install ${{ env.TOOLCHAIN }}
         uses: actions-rs/toolchain@v1
         with:
@@ -30,9 +29,13 @@ jobs:
           args: --all -- --check
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: cumulus-repo-worker-2004
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install ${{ env.TOOLCHAIN }}
         uses: actions-rs/toolchain@v1
         with:
@@ -47,9 +50,13 @@ jobs:
           args: --release
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: cumulus-repo-test-job-workers
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install ${{ env.TOOLCHAIN }}
         uses: actions-rs/toolchain@v1
         with:
@@ -61,4 +68,4 @@ jobs:
         with:
           toolchain: ${{ env.TOOLCHAIN }}
           command: test
-
+          args: -j1

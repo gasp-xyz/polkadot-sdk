@@ -27,7 +27,7 @@ use codec::{Decode, DecodeLimit, Encode};
 use cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler};
 use frame_support::{
 	traits::EnsureOrigin,
-	weights::{constants::WEIGHT_PER_MILLIS, Weight},
+	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight},
 };
 pub use pallet::*;
 use scale_info::TypeInfo;
@@ -37,6 +37,8 @@ use xcm::{
 	latest::{prelude::*, Weight as XcmWeight},
 	VersionedXcm, MAX_XCM_DECODE_DEPTH,
 };
+
+const DEFAULT_POV_SIZE: u64 = 64 * 1024; // 64 KB
 
 #[derive(Copy, Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ConfigData {
@@ -49,7 +51,10 @@ pub struct ConfigData {
 impl Default for ConfigData {
 	fn default() -> Self {
 		Self {
-			max_individual: 10u64 * WEIGHT_PER_MILLIS, // 10 ms of execution time maximum by default
+			max_individual: Weight::from_parts(
+				10u64 * WEIGHT_REF_TIME_PER_MILLIS, // 10 ms of execution time maximum by default
+				DEFAULT_POV_SIZE,                   // 64 KB of proof size by default
+			),
 		}
 	}
 }
@@ -151,6 +156,7 @@ pub mod pallet {
 		///
 		/// Events:
 		/// - `OverweightServiced`: On success.
+		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_ref_time(weight_limit.saturating_add(1_000_000)))]
 		pub fn service_overweight(
 			origin: OriginFor<T>,

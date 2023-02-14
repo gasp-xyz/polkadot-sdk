@@ -16,11 +16,11 @@
 
 //! A module that is responsible for migration of storage.
 
-use crate::{Config, Pallet, Store};
+use crate::{Config, Pallet, Store, DEFAULT_POV_SIZE};
 use frame_support::{
 	pallet_prelude::*,
 	traits::StorageVersion,
-	weights::{constants::WEIGHT_PER_MILLIS, Weight},
+	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight},
 };
 use xcm::latest::Weight as XcmWeight;
 
@@ -62,7 +62,7 @@ mod v1 {
 				resume_threshold: 1,
 				threshold_weight: 100_000,
 				weight_restrict_decay: 2,
-				xcmp_max_individual_weight: 20u64 * WEIGHT_PER_MILLIS.ref_time(),
+				xcmp_max_individual_weight: 20u64 * WEIGHT_REF_TIME_PER_MILLIS,
 			}
 		}
 	}
@@ -81,7 +81,10 @@ pub fn migrate_to_v2<T: Config>() -> Weight {
 			resume_threshold: pre.resume_threshold,
 			threshold_weight: Weight::from_ref_time(pre.threshold_weight),
 			weight_restrict_decay: Weight::from_ref_time(pre.weight_restrict_decay),
-			xcmp_max_individual_weight: Weight::from_ref_time(pre.xcmp_max_individual_weight),
+			xcmp_max_individual_weight: Weight::from_parts(
+				pre.xcmp_max_individual_weight,
+				DEFAULT_POV_SIZE,
+			),
 		}
 	};
 
