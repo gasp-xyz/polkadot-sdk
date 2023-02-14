@@ -139,22 +139,6 @@ dependencies = [
 [[package]]
 name = "aquamarine"
 version = "0.1.12"
-<<<<<<< HEAD
-=======
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a941c39708478e8eea39243b5983f1c42d2717b3620ee91f4a52115fd02ac43f"
-dependencies = [
- "itertools 0.9.0",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "array-bytes"
-version = "4.1.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a941c39708478e8eea39243b5983f1c42d2717b3620ee91f4a52115fd02ac43f"
 dependencies = [
@@ -475,10 +459,7 @@ dependencies = [
 [[package]]
 name = "beefy-gadget"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "async-trait",
@@ -515,10 +496,7 @@ dependencies = [
 [[package]]
 name = "beefy-gadget-rpc"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "beefy-gadget",
  "futures",
@@ -538,10 +516,7 @@ dependencies = [
 [[package]]
 name = "beefy-merkle-tree"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "sp-api",
  "sp-beefy",
@@ -549,25 +524,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
-name = "beefy-primitives"
-version = "4.0.0-dev"
-dependencies = [
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-api",
- "sp-application-crypto",
- "sp-core",
- "sp-io",
- "sp-mmr-primitives",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
->>>>>>> 9a074c6a (Node maintenance mode)
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -741,7 +697,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kusama-runtime-constants",
+ "kusama-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -755,7 +711,7 @@ dependencies = [
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
  "pallet-xcm",
- "pallet-xcm-benchmarks",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "parachain-info",
  "parachains-common",
  "parity-scale-codec",
@@ -817,14 +773,14 @@ dependencies = [
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
  "pallet-xcm",
- "pallet-xcm-benchmarks",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "parachain-info",
  "parachains-common",
  "parity-scale-codec",
  "polkadot-core-primitives",
  "polkadot-parachain",
  "polkadot-runtime-common",
- "rococo-runtime-constants",
+ "rococo-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "scale-info",
  "serde",
  "smallvec",
@@ -1221,7 +1177,7 @@ dependencies = [
  "polkadot-core-primitives",
  "polkadot-parachain",
  "polkadot-runtime-common",
- "polkadot-runtime-constants 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "polkadot-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "scale-info",
  "smallvec",
  "sp-api",
@@ -1300,7 +1256,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kusama-runtime-constants 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "kusama-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -1864,7 +1820,7 @@ dependencies = [
  "sc-client-api",
  "sc-consensus",
  "sc-service",
- "sc-sysinfo 6.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
+ "sc-sysinfo",
  "sc-telemetry",
  "sp-api",
  "sp-blockchain",
@@ -2122,11 +2078,7 @@ dependencies = [
  "prioritized-metered-channel",
  "sc-cli",
  "sc-client-api",
-<<<<<<< HEAD
- "sc-sysinfo 6.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
-=======
  "sc-sysinfo",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sc-telemetry",
  "sc-tracing",
  "sp-api",
@@ -2180,11 +2132,6 @@ dependencies = [
  "sc-keystore",
  "sc-network",
  "sc-network-common",
-<<<<<<< HEAD
-=======
- "sc-network-light",
- "sc-network-sync",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sc-service",
  "sc-telemetry",
  "sc-tracing",
@@ -2870,10 +2817,7 @@ dependencies = [
 [[package]]
 name = "extrinsic-shuffler"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "derive_more",
  "log",
@@ -3042,10 +2986,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 [[package]]
 name = "fork-tree"
 version = "3.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
 ]
@@ -3068,10 +3009,7 @@ checksum = "6c2141d6d6c8512188a7891b4b01590a45f6dac67afb4f255c4124dbb86d4eaa"
 [[package]]
 name = "frame-benchmarking"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3095,10 +3033,7 @@ dependencies = [
 [[package]]
 name = "frame-benchmarking-cli"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "Inflector",
  "array-bytes 4.2.0",
@@ -3129,11 +3064,7 @@ dependencies = [
  "sc-consensus",
  "sc-executor",
  "sc-service",
-<<<<<<< HEAD
- "sc-sysinfo 6.0.0-dev (git+https://github.com/mangata-finance//substrate?branch=mangata-dev)",
-=======
  "sc-sysinfo",
->>>>>>> 9a074c6a (Node maintenance mode)
  "serde",
  "serde_json",
  "serde_nanos",
@@ -3151,7 +3082,6 @@ dependencies = [
  "sp-std",
  "sp-storage",
  "sp-trie",
- "sp-ver",
  "tempfile",
  "thiserror",
  "thousands",
@@ -3161,10 +3091,7 @@ dependencies = [
 [[package]]
 name = "frame-election-provider-solution-type"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3175,10 +3102,7 @@ dependencies = [
 [[package]]
 name = "frame-election-provider-support"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-election-provider-solution-type",
  "frame-support",
@@ -3195,10 +3119,7 @@ dependencies = [
 [[package]]
 name = "frame-executive"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "aquamarine",
  "extrinsic-shuffler",
@@ -3251,10 +3172,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "bitflags",
  "frame-metadata",
@@ -3287,10 +3205,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "Inflector",
  "cfg-expr",
@@ -3304,10 +3219,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support-procedural-tools-derive",
  "proc-macro-crate",
@@ -3319,10 +3231,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "3.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3332,10 +3241,7 @@ dependencies = [
 [[package]]
 name = "frame-system"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "extrinsic-shuffler",
  "frame-support",
@@ -3355,7 +3261,7 @@ dependencies = [
 [[package]]
 name = "frame-system-benchmarking"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3370,10 +3276,7 @@ dependencies = [
 [[package]]
 name = "frame-system-rpc-runtime-api"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -3382,10 +3285,7 @@ dependencies = [
 [[package]]
 name = "frame-try-runtime"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -4116,15 +4016,6 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
@@ -4303,13 +4194,8 @@ dependencies = [
 
 [[package]]
 name = "kusama-runtime"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -4321,7 +4207,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kusama-runtime-constants 0.9.31 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
+ "kusama-runtime-constants 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "log",
  "pallet-authority-discovery",
  "pallet-authorship",
@@ -4334,7 +4220,7 @@ dependencies = [
  "pallet-conviction-voting",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
- "pallet-election-provider-support-benchmarking 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
+ "pallet-election-provider-support-benchmarking",
  "pallet-elections-phragmen",
  "pallet-fast-unstake",
  "pallet-grandpa",
@@ -4368,7 +4254,7 @@ dependencies = [
  "pallet-vesting",
  "pallet-whitelist",
  "pallet-xcm",
- "pallet-xcm-benchmarks 0.9.31 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "parity-scale-codec",
  "polkadot-primitives",
  "polkadot-runtime-common",
@@ -4405,12 +4291,8 @@ dependencies = [
 
 [[package]]
 name = "kusama-runtime-constants"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -4423,9 +4305,8 @@ dependencies = [
 
 [[package]]
 name = "kusama-runtime-constants"
-version = "0.9.31"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.31#32dd0c9cfcd1a1bda821747f6ab334f0e3577558"
->>>>>>> 9a074c6a (Node maintenance mode)
+version = "0.9.36"
+source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -5040,10 +4921,7 @@ dependencies = [
 [[package]]
 name = "mangata-types"
 version = "0.1.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -5192,7 +5070,7 @@ dependencies = [
 [[package]]
 name = "mmr-gadget"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "futures",
  "log",
@@ -5212,7 +5090,7 @@ dependencies = [
 [[package]]
 name = "mmr-rpc"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "anyhow",
  "jsonrpsee",
@@ -5693,11 +5571,7 @@ dependencies = [
 [[package]]
 name = "pallet-asset-tx-payment"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.31#7a4e5163091384c4c10b6d76f5cb80dac0834f38"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5715,11 +5589,7 @@ dependencies = [
 [[package]]
 name = "pallet-assets"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.31#7a4e5163091384c4c10b6d76f5cb80dac0834f38"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5734,10 +5604,7 @@ dependencies = [
 [[package]]
 name = "pallet-aura"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5753,10 +5620,7 @@ dependencies = [
 [[package]]
 name = "pallet-authority-discovery"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5772,10 +5636,7 @@ dependencies = [
 [[package]]
 name = "pallet-authorship"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5790,10 +5651,7 @@ dependencies = [
 [[package]]
 name = "pallet-babe"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5817,10 +5675,7 @@ dependencies = [
 [[package]]
 name = "pallet-bags-list"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -5840,10 +5695,7 @@ dependencies = [
 [[package]]
 name = "pallet-balances"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5858,10 +5710,7 @@ dependencies = [
 [[package]]
 name = "pallet-beefy"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5877,10 +5726,7 @@ dependencies = [
 [[package]]
 name = "pallet-beefy-mmr"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "beefy-merkle-tree",
@@ -5903,10 +5749,7 @@ dependencies = [
 [[package]]
 name = "pallet-bounties"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5924,10 +5767,7 @@ dependencies = [
 [[package]]
 name = "pallet-child-bounties"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5971,10 +5811,7 @@ dependencies = [
 [[package]]
 name = "pallet-collective"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6011,10 +5848,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
-<<<<<<< HEAD
-=======
- "sp-sandbox",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sp-std",
  "wasm-instrument 0.4.0",
  "wasmi 0.20.0",
@@ -6046,10 +5879,7 @@ dependencies = [
 [[package]]
 name = "pallet-conviction-voting"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "assert_matches",
  "frame-benchmarking",
@@ -6066,10 +5896,7 @@ dependencies = [
 [[package]]
 name = "pallet-democracy"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6087,21 +5914,14 @@ dependencies = [
 [[package]]
 name = "pallet-election-provider-multi-phase"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
  "frame-support",
  "frame-system",
  "log",
-<<<<<<< HEAD
- "pallet-election-provider-support-benchmarking 4.0.0-dev (git+https://github.com/mangata-finance//substrate?branch=mangata-dev)",
-=======
- "pallet-election-provider-support-benchmarking 4.0.0-dev",
->>>>>>> 9a074c6a (Node maintenance mode)
+ "pallet-election-provider-support-benchmarking",
  "parity-scale-codec",
  "rand 0.7.3",
  "scale-info",
@@ -6118,23 +5938,7 @@ dependencies = [
 [[package]]
 name = "pallet-election-provider-support-benchmarking"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
-dependencies = [
- "frame-benchmarking",
- "frame-election-provider-support",
- "frame-system",
- "parity-scale-codec",
- "sp-npos-elections",
- "sp-runtime",
-]
-
-[[package]]
-name = "pallet-election-provider-support-benchmarking"
-version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -6147,10 +5951,7 @@ dependencies = [
 [[package]]
 name = "pallet-elections-phragmen"
 version = "5.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6168,10 +5969,7 @@ dependencies = [
 [[package]]
 name = "pallet-fast-unstake"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -6187,28 +5985,9 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "pallet-grandpa"
 version = "4.0.0-dev"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-name = "pallet-gilt"
-version = "4.0.0-dev"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-arithmetic",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-grandpa"
-version = "4.0.0-dev"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6231,10 +6010,7 @@ dependencies = [
 [[package]]
 name = "pallet-identity"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "enumflags2",
  "frame-benchmarking",
@@ -6250,10 +6026,7 @@ dependencies = [
 [[package]]
 name = "pallet-im-online"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6273,10 +6046,7 @@ dependencies = [
 [[package]]
 name = "pallet-indices"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6293,10 +6063,7 @@ dependencies = [
 [[package]]
 name = "pallet-membership"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6313,10 +6080,7 @@ dependencies = [
 [[package]]
 name = "pallet-mmr"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6331,28 +6095,9 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "pallet-multisig"
 version = "4.0.0-dev"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-name = "pallet-mmr-rpc"
-version = "3.0.0"
-dependencies = [
- "jsonrpsee",
- "parity-scale-codec",
- "serde",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-mmr-primitives",
- "sp-runtime",
-]
-
-[[package]]
-name = "pallet-multisig"
-version = "4.0.0-dev"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6368,7 +6113,7 @@ dependencies = [
 [[package]]
 name = "pallet-nis"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6384,10 +6129,7 @@ dependencies = [
 [[package]]
 name = "pallet-nomination-pools"
 version = "1.0.0"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6404,7 +6146,7 @@ dependencies = [
 [[package]]
 name = "pallet-nomination-pools-benchmarking"
 version = "1.0.0"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -6424,10 +6166,7 @@ dependencies = [
 [[package]]
 name = "pallet-nomination-pools-runtime-api"
 version = "1.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -6437,10 +6176,7 @@ dependencies = [
 [[package]]
 name = "pallet-offences"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6457,7 +6193,7 @@ dependencies = [
 [[package]]
 name = "pallet-offences-benchmarking"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -6480,10 +6216,7 @@ dependencies = [
 [[package]]
 name = "pallet-preimage"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6500,10 +6233,7 @@ dependencies = [
 [[package]]
 name = "pallet-proxy"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6532,10 +6262,7 @@ dependencies = [
 [[package]]
 name = "pallet-ranked-collective"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6553,10 +6280,7 @@ dependencies = [
 [[package]]
 name = "pallet-recovery"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6571,10 +6295,7 @@ dependencies = [
 [[package]]
 name = "pallet-referenda"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "assert_matches",
  "frame-benchmarking",
@@ -6593,10 +6314,7 @@ dependencies = [
 [[package]]
 name = "pallet-scheduler"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6613,10 +6331,7 @@ dependencies = [
 [[package]]
 name = "pallet-session"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6637,7 +6352,7 @@ dependencies = [
 [[package]]
 name = "pallet-session-benchmarking"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6653,10 +6368,7 @@ dependencies = [
 [[package]]
 name = "pallet-society"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6670,10 +6382,7 @@ dependencies = [
 [[package]]
 name = "pallet-staking"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -6696,10 +6405,7 @@ dependencies = [
 [[package]]
 name = "pallet-staking-reward-curve"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -6710,10 +6416,7 @@ dependencies = [
 [[package]]
 name = "pallet-staking-reward-fn"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "log",
  "sp-arithmetic",
@@ -6739,10 +6442,7 @@ dependencies = [
 [[package]]
 name = "pallet-sudo"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6771,10 +6471,7 @@ dependencies = [
 [[package]]
 name = "pallet-timestamp"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6792,10 +6489,7 @@ dependencies = [
 [[package]]
 name = "pallet-tips"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6814,10 +6508,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6833,10 +6524,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment-rpc"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "jsonrpsee",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -6852,10 +6540,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment-rpc-runtime-api"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "pallet-transaction-payment",
  "parity-scale-codec",
@@ -6867,10 +6552,7 @@ dependencies = [
 [[package]]
 name = "pallet-treasury"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6887,11 +6569,7 @@ dependencies = [
 [[package]]
 name = "pallet-uniques"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.31#7a4e5163091384c4c10b6d76f5cb80dac0834f38"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6906,10 +6584,7 @@ dependencies = [
 [[package]]
 name = "pallet-utility"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6925,10 +6600,7 @@ dependencies = [
 [[package]]
 name = "pallet-vesting"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6943,10 +6615,7 @@ dependencies = [
 [[package]]
 name = "pallet-whitelist"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6960,13 +6629,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-xcm"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6983,12 +6647,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-xcm-benchmarks"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7004,9 +6664,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-xcm-benchmarks"
-version = "0.9.31"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.31#32dd0c9cfcd1a1bda821747f6ab334f0e3577558"
->>>>>>> 9a074c6a (Node maintenance mode)
+version = "0.9.36"
+source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7064,11 +6723,7 @@ dependencies = [
  "sc-network-common",
  "sc-rpc",
  "sc-service",
-<<<<<<< HEAD
- "sc-sysinfo 6.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
-=======
  "sc-sysinfo",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sc-telemetry",
  "sc-tracing",
  "sc-transaction-pool",
@@ -7556,13 +7211,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-approval-distribution"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "polkadot-node-network-protocol",
@@ -7576,13 +7226,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-availability-bitfield-distribution"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "polkadot-node-network-protocol",
@@ -7595,13 +7240,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-availability-distribution"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "derive_more",
  "fatality",
@@ -7623,13 +7263,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-availability-recovery"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "fatality",
  "futures",
@@ -7649,13 +7284,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-cli"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "clap 4.0.32",
  "frame-benchmarking-cli",
@@ -7669,11 +7299,7 @@ dependencies = [
  "sc-cli",
  "sc-executor",
  "sc-service",
-<<<<<<< HEAD
- "sc-sysinfo 6.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
-=======
  "sc-sysinfo",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sc-tracing",
  "sp-core",
  "sp-io",
@@ -7685,13 +7311,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-client"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "frame-benchmarking",
@@ -7733,13 +7354,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-collator-protocol"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "always-assert",
  "bitvec",
@@ -7760,13 +7376,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-core-primitives"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -7777,13 +7388,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-dispute-distribution"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "derive_more",
  "fatality",
@@ -7807,13 +7413,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-erasure-coding"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "parity-scale-codec",
  "polkadot-node-primitives",
@@ -7826,13 +7427,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-gossip-support"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "futures-timer",
@@ -7851,13 +7447,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-network-bridge"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "always-assert",
  "async-trait",
@@ -7880,13 +7471,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-collation-generation"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "parity-scale-codec",
@@ -7903,13 +7489,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-approval-voting"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "derive_more",
@@ -7937,13 +7518,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-av-store"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "futures",
@@ -7962,13 +7538,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-backing"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "fatality",
@@ -7986,13 +7557,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-bitfield-signing"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "polkadot-node-subsystem",
@@ -8006,13 +7572,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-candidate-validation"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "futures",
@@ -8030,13 +7591,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-chain-api"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "polkadot-node-subsystem",
@@ -8050,13 +7606,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-chain-selection"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "futures-timer",
@@ -8072,13 +7623,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-dispute-coordinator"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "fatality",
  "futures",
@@ -8096,13 +7642,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-parachains-inherent"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "futures",
@@ -8119,13 +7660,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-provisioner"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "fatality",
@@ -8142,13 +7678,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-pvf"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "always-assert",
  "assert_matches",
@@ -8180,13 +7711,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-pvf-checker"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "polkadot-node-primitives",
@@ -8201,13 +7727,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-core-runtime-api"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "futures",
  "lru",
@@ -8221,13 +7742,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-jaeger"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "lazy_static",
  "log",
@@ -8244,13 +7760,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-metrics"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bs58",
  "futures",
@@ -8268,13 +7779,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-network-protocol"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -8296,13 +7802,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-primitives"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bounded-vec",
  "futures",
@@ -8323,13 +7824,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-subsystem"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "polkadot-node-jaeger",
  "polkadot-node-subsystem-types",
@@ -8356,13 +7852,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-subsystem-types"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -8384,13 +7875,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-node-subsystem-util"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -8421,13 +7907,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-overseer"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "futures",
@@ -8449,13 +7930,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-parachain"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "derive_more",
  "frame-support",
@@ -8513,11 +7989,7 @@ dependencies = [
  "sc-network-common",
  "sc-rpc",
  "sc-service",
-<<<<<<< HEAD
- "sc-sysinfo 6.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
-=======
  "sc-sysinfo",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sc-telemetry",
  "sc-tracing",
  "sc-transaction-pool",
@@ -8555,13 +8027,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-performance-test"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "env_logger 0.9.3",
  "kusama-runtime",
@@ -8575,13 +8042,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-primitives"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "hex-literal",
@@ -8606,13 +8068,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-rpc"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "beefy-gadget",
  "beefy-gadget-rpc",
@@ -8643,13 +8100,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-runtime"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -8672,7 +8124,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
- "pallet-election-provider-support-benchmarking 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
+ "pallet-election-provider-support-benchmarking",
  "pallet-elections-phragmen",
  "pallet-fast-unstake",
  "pallet-grandpa",
@@ -8704,7 +8156,7 @@ dependencies = [
  "parity-scale-codec",
  "polkadot-primitives",
  "polkadot-runtime-common",
- "polkadot-runtime-constants 0.9.31 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
+ "polkadot-runtime-constants 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "polkadot-runtime-parachains",
  "rustc-hex",
  "scale-info",
@@ -8737,13 +8189,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-runtime-common"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -8790,12 +8237,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-runtime-constants"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -8808,9 +8251,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-runtime-constants"
-version = "0.9.31"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.31#32dd0c9cfcd1a1bda821747f6ab334f0e3577558"
->>>>>>> 9a074c6a (Node maintenance mode)
+version = "0.9.36"
+source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -8823,13 +8265,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-runtime-metrics"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bs58",
  "parity-scale-codec",
@@ -8840,13 +8277,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-runtime-parachains"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitflags",
  "bitvec",
@@ -8888,13 +8320,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-service"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "async-trait",
  "beefy-gadget",
@@ -8944,11 +8371,11 @@ dependencies = [
  "polkadot-primitives",
  "polkadot-rpc",
  "polkadot-runtime",
- "polkadot-runtime-constants 0.9.31 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
+ "polkadot-runtime-constants 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "polkadot-runtime-parachains",
  "polkadot-statement-distribution",
  "rococo-runtime",
- "rococo-runtime-constants",
+ "rococo-runtime-constants 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "sc-authority-discovery",
  "sc-basic-authorship",
  "sc-block-builder",
@@ -8966,11 +8393,7 @@ dependencies = [
  "sc-offchain",
  "sc-service",
  "sc-sync-state-rpc",
-<<<<<<< HEAD
- "sc-sysinfo 6.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
-=======
  "sc-sysinfo",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sc-telemetry",
  "sc-transaction-pool",
  "serde",
@@ -9004,13 +8427,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-statement-distribution"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "arrayvec 0.5.2",
  "fatality",
@@ -9030,13 +8448,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-statement-table"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "parity-scale-codec",
  "polkadot-primitives",
@@ -9070,13 +8483,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-test-runtime"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "frame-election-provider-support",
@@ -9136,13 +8544,8 @@ dependencies = [
 
 [[package]]
 name = "polkadot-test-service"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-benchmarking",
  "frame-system",
@@ -9724,25 +9127,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "456c603be3e8d448b072f410900c09faf164fbce2d480456f50eea6e25f9c848"
 
 [[package]]
-<<<<<<< HEAD
-=======
-name = "remote-externalities"
-version = "0.10.0-dev"
-dependencies = [
- "env_logger",
- "log",
- "parity-scale-codec",
- "serde",
- "serde_json",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-version",
- "substrate-rpc-client",
-]
-
-[[package]]
->>>>>>> 9a074c6a (Node maintenance mode)
 name = "remove_dir_all"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9847,13 +9231,8 @@ dependencies = [
 
 [[package]]
 name = "rococo-runtime"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "beefy-merkle-tree",
  "frame-benchmarking",
@@ -9901,13 +9280,13 @@ dependencies = [
  "pallet-utility",
  "pallet-vesting",
  "pallet-xcm",
- "pallet-xcm-benchmarks 0.9.31 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "parity-scale-codec",
  "polkadot-parachain",
  "polkadot-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
- "rococo-runtime-constants",
+ "rococo-runtime-constants 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "scale-info",
  "serde",
  "serde_derive",
@@ -9937,13 +9316,22 @@ dependencies = [
 
 [[package]]
 name = "rococo-runtime-constants"
-<<<<<<< HEAD
+version = "0.9.36"
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
+dependencies = [
+ "frame-support",
+ "polkadot-primitives",
+ "polkadot-runtime-common",
+ "smallvec",
+ "sp-core",
+ "sp-runtime",
+ "sp-weights",
+]
+
+[[package]]
+name = "rococo-runtime-constants"
 version = "0.9.36"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -10131,10 +9519,7 @@ dependencies = [
 [[package]]
 name = "sc-allocator"
 version = "4.1.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "log",
  "sp-core",
@@ -10145,10 +9530,7 @@ dependencies = [
 [[package]]
 name = "sc-authority-discovery"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -10175,12 +9557,8 @@ dependencies = [
 [[package]]
 name = "sc-basic-authorship"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
- "aquamarine",
  "futures",
  "futures-timer",
  "log",
@@ -10202,10 +9580,7 @@ dependencies = [
 [[package]]
 name = "sc-block-builder"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "sc-client-api",
@@ -10221,10 +9596,7 @@ dependencies = [
 [[package]]
 name = "sc-block-builder-ver"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "aquamarine",
  "extrinsic-shuffler",
@@ -10245,10 +9617,7 @@ dependencies = [
 [[package]]
 name = "sc-chain-spec"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "impl-trait-for-tuples",
  "memmap2",
@@ -10265,10 +9634,7 @@ dependencies = [
 [[package]]
 name = "sc-chain-spec-derive"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -10279,10 +9645,7 @@ dependencies = [
 [[package]]
 name = "sc-cli"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "chrono",
@@ -10322,10 +9685,7 @@ dependencies = [
 [[package]]
 name = "sc-client-api"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "fnv",
  "futures",
@@ -10353,10 +9713,7 @@ dependencies = [
 [[package]]
 name = "sc-client-db"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "hash-db",
  "kvdb",
@@ -10381,10 +9738,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -10409,10 +9763,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-aura"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -10441,10 +9792,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-babe"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "fork-tree",
@@ -10485,10 +9833,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-babe-rpc"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "jsonrpsee",
@@ -10510,10 +9855,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-epochs"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "fork-tree",
  "parity-scale-codec",
@@ -10526,10 +9868,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-slots"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -10555,10 +9894,7 @@ dependencies = [
 [[package]]
 name = "sc-executor"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "lru",
  "parity-scale-codec",
@@ -10582,17 +9918,10 @@ dependencies = [
 [[package]]
 name = "sc-executor-common"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "sc-allocator",
  "sp-maybe-compressed-blob",
-<<<<<<< HEAD
-=======
- "sp-sandbox",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sp-wasm-interface",
  "thiserror",
  "wasm-instrument 0.3.0",
@@ -10602,19 +9931,12 @@ dependencies = [
 [[package]]
 name = "sc-executor-wasmi"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "log",
  "sc-allocator",
  "sc-executor-common",
  "sp-runtime-interface",
-<<<<<<< HEAD
-=======
- "sp-sandbox",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sp-wasm-interface",
  "wasmi 0.13.2",
 ]
@@ -10622,10 +9944,7 @@ dependencies = [
 [[package]]
 name = "sc-executor-wasmtime"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "cfg-if",
  "libc",
@@ -10635,10 +9954,6 @@ dependencies = [
  "sc-allocator",
  "sc-executor-common",
  "sp-runtime-interface",
-<<<<<<< HEAD
-=======
- "sp-sandbox",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sp-wasm-interface",
  "wasmtime",
 ]
@@ -10646,10 +9961,7 @@ dependencies = [
 [[package]]
 name = "sc-finality-grandpa"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "ahash",
  "array-bytes 4.2.0",
@@ -10690,10 +10002,7 @@ dependencies = [
 [[package]]
 name = "sc-finality-grandpa-rpc"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "finality-grandpa",
  "futures",
@@ -10714,10 +10023,7 @@ dependencies = [
 [[package]]
 name = "sc-informant"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "ansi_term",
  "futures",
@@ -10733,10 +10039,7 @@ dependencies = [
 [[package]]
 name = "sc-keystore"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "async-trait",
@@ -10751,10 +10054,7 @@ dependencies = [
 [[package]]
 name = "sc-network"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "async-trait",
@@ -10801,10 +10101,7 @@ dependencies = [
 [[package]]
 name = "sc-network-bitswap"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "cid",
  "futures",
@@ -10824,10 +10121,7 @@ dependencies = [
 [[package]]
 name = "sc-network-common"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "bitflags",
@@ -10853,10 +10147,7 @@ dependencies = [
 [[package]]
 name = "sc-network-gossip"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "ahash",
  "futures",
@@ -10874,14 +10165,9 @@ dependencies = [
 [[package]]
 name = "sc-network-light"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "array-bytes 4.2.0",
-=======
-dependencies = [
- "array-bytes",
->>>>>>> 9a074c6a (Node maintenance mode)
  "futures",
  "libp2p",
  "log",
@@ -10900,24 +10186,15 @@ dependencies = [
 [[package]]
 name = "sc-network-sync"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "array-bytes 4.2.0",
  "async-trait",
-=======
-dependencies = [
- "array-bytes",
->>>>>>> 9a074c6a (Node maintenance mode)
  "fork-tree",
  "futures",
  "libp2p",
  "log",
-<<<<<<< HEAD
  "lru",
-=======
- "lru 0.7.8",
->>>>>>> 9a074c6a (Node maintenance mode)
  "mockall",
  "parity-scale-codec",
  "prost",
@@ -10941,10 +10218,7 @@ dependencies = [
 [[package]]
 name = "sc-network-transactions"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "futures",
@@ -10963,10 +10237,7 @@ dependencies = [
 [[package]]
 name = "sc-offchain"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "bytes",
@@ -10996,10 +10267,7 @@ dependencies = [
 [[package]]
 name = "sc-peerset"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "libp2p",
@@ -11012,10 +10280,7 @@ dependencies = [
 [[package]]
 name = "sc-proposer-metrics"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "log",
  "substrate-prometheus-endpoint",
@@ -11024,10 +10289,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "hash-db",
@@ -11057,10 +10319,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-api"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "jsonrpsee",
@@ -11083,10 +10342,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-server"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "http",
@@ -11102,10 +10358,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-spec-v2"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "hex",
@@ -11124,10 +10377,7 @@ dependencies = [
 [[package]]
 name = "sc-service"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "directories",
@@ -11160,11 +10410,7 @@ dependencies = [
  "sc-rpc",
  "sc-rpc-server",
  "sc-rpc-spec-v2",
-<<<<<<< HEAD
- "sc-sysinfo 6.0.0-dev (git+https://github.com/mangata-finance//substrate?branch=mangata-dev)",
-=======
  "sc-sysinfo",
->>>>>>> 9a074c6a (Node maintenance mode)
  "sc-telemetry",
  "sc-tracing",
  "sc-transaction-pool",
@@ -11203,10 +10449,7 @@ dependencies = [
 [[package]]
 name = "sc-state-db"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "log",
  "parity-scale-codec",
@@ -11218,10 +10461,7 @@ dependencies = [
 [[package]]
 name = "sc-sync-state-rpc"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "jsonrpsee",
  "parity-scale-codec",
@@ -11240,29 +10480,7 @@ dependencies = [
 [[package]]
 name = "sc-sysinfo"
 version = "6.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-dependencies = [
- "futures",
- "libc",
- "log",
- "rand 0.7.3",
- "rand_pcg 0.2.1",
- "regex",
- "sc-telemetry",
- "serde",
- "serde_json",
- "sp-core",
- "sp-io",
- "sp-std",
-]
-
-[[package]]
-name = "sc-sysinfo"
-version = "6.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "libc",
@@ -11281,10 +10499,7 @@ dependencies = [
 [[package]]
 name = "sc-telemetry"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "chrono",
  "futures",
@@ -11302,10 +10517,7 @@ dependencies = [
 [[package]]
 name = "sc-tracing"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "ansi_term",
  "atty",
@@ -11336,10 +10548,7 @@ dependencies = [
 [[package]]
 name = "sc-tracing-proc-macro"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -11350,10 +10559,7 @@ dependencies = [
 [[package]]
 name = "sc-transaction-pool"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -11379,10 +10585,7 @@ dependencies = [
 [[package]]
 name = "sc-transaction-pool-api"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -11396,10 +10599,7 @@ dependencies = [
 [[package]]
 name = "sc-utils"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "futures-timer",
@@ -11825,13 +11025,8 @@ checksum = "03b634d87b960ab1a38c4fe143b508576f075e7c978bfad18217645ebfdfa2ec"
 
 [[package]]
 name = "slot-range-helper"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "enumn",
  "parity-scale-codec",
@@ -11908,10 +11103,7 @@ dependencies = [
 [[package]]
 name = "sp-api"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "hash-db",
  "log",
@@ -11929,10 +11121,7 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "blake2",
  "proc-macro-crate",
@@ -11943,12 +11132,8 @@ dependencies = [
 
 [[package]]
 name = "sp-application-crypto"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -11960,12 +11145,8 @@ dependencies = [
 
 [[package]]
 name = "sp-arithmetic"
-<<<<<<< HEAD
 version = "6.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "5.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "integer-sqrt",
  "num-traits",
@@ -11980,10 +11161,7 @@ dependencies = [
 [[package]]
 name = "sp-authority-discovery"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -11996,10 +11174,7 @@ dependencies = [
 [[package]]
 name = "sp-authorship"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "parity-scale-codec",
@@ -12028,10 +11203,7 @@ dependencies = [
 [[package]]
 name = "sp-block-builder"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -12043,10 +11215,7 @@ dependencies = [
 [[package]]
 name = "sp-blockchain"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures",
  "log",
@@ -12064,10 +11233,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -12086,10 +11252,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-aura"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "parity-scale-codec",
@@ -12107,10 +11270,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-babe"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "merlin",
@@ -12133,10 +11293,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-slots"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12150,10 +11307,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-vrf"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12165,12 +11319,8 @@ dependencies = [
 
 [[package]]
 name = "sp-core"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "base58",
@@ -12215,12 +11365,8 @@ dependencies = [
 
 [[package]]
 name = "sp-core-hashing"
-<<<<<<< HEAD
 version = "5.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "4.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "blake2",
  "byteorder",
@@ -12234,10 +11380,7 @@ dependencies = [
 [[package]]
 name = "sp-core-hashing-proc-macro"
 version = "5.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -12248,10 +11391,7 @@ dependencies = [
 [[package]]
 name = "sp-database"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "kvdb",
  "parking_lot 0.12.1",
@@ -12259,12 +11399,8 @@ dependencies = [
 
 [[package]]
 name = "sp-debug-derive"
-<<<<<<< HEAD
 version = "5.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "4.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -12273,12 +11409,8 @@ dependencies = [
 
 [[package]]
 name = "sp-externalities"
-<<<<<<< HEAD
 version = "0.13.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "0.12.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -12289,10 +11421,7 @@ dependencies = [
 [[package]]
 name = "sp-finality-grandpa"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "finality-grandpa",
  "log",
@@ -12310,10 +11439,7 @@ dependencies = [
 [[package]]
 name = "sp-inherents"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "impl-trait-for-tuples",
@@ -12326,12 +11452,8 @@ dependencies = [
 
 [[package]]
 name = "sp-io"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "bytes",
  "ed25519-dalek",
@@ -12357,12 +11479,8 @@ dependencies = [
 
 [[package]]
 name = "sp-keyring"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "lazy_static",
  "sp-core",
@@ -12372,12 +11490,8 @@ dependencies = [
 
 [[package]]
 name = "sp-keystore"
-<<<<<<< HEAD
 version = "0.13.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "0.12.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures",
@@ -12394,10 +11508,7 @@ dependencies = [
 [[package]]
 name = "sp-maybe-compressed-blob"
 version = "4.1.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "thiserror",
  "zstd",
@@ -12406,10 +11517,7 @@ dependencies = [
 [[package]]
 name = "sp-mmr-primitives"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "ckb-merkle-mountain-range",
  "log",
@@ -12427,10 +11535,7 @@ dependencies = [
 [[package]]
 name = "sp-npos-elections"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12444,10 +11549,7 @@ dependencies = [
 [[package]]
 name = "sp-offchain"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "sp-api",
  "sp-core",
@@ -12456,12 +11558,8 @@ dependencies = [
 
 [[package]]
 name = "sp-panic-handler"
-<<<<<<< HEAD
 version = "5.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "4.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "backtrace",
  "lazy_static",
@@ -12471,10 +11569,7 @@ dependencies = [
 [[package]]
 name = "sp-rpc"
 version = "6.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "rustc-hash",
  "serde",
@@ -12483,12 +11578,8 @@ dependencies = [
 
 [[package]]
 name = "sp-runtime"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "either",
  "hash256-std-hasher",
@@ -12510,12 +11601,8 @@ dependencies = [
 
 [[package]]
 name = "sp-runtime-interface"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -12532,12 +11619,8 @@ dependencies = [
 
 [[package]]
 name = "sp-runtime-interface-proc-macro"
-<<<<<<< HEAD
 version = "6.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "5.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "Inflector",
  "proc-macro-crate",
@@ -12547,28 +11630,9 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "sp-serializer"
 version = "4.0.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-name = "sp-sandbox"
-version = "0.10.0-dev"
-dependencies = [
- "log",
- "parity-scale-codec",
- "sp-core",
- "sp-io",
- "sp-std",
- "sp-wasm-interface",
- "wasmi",
-]
-
-[[package]]
-name = "sp-serializer"
-version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.31#7a4e5163091384c4c10b6d76f5cb80dac0834f38"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
  "serde",
  "serde_json",
@@ -12577,10 +11641,7 @@ dependencies = [
 [[package]]
 name = "sp-session"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12594,10 +11655,7 @@ dependencies = [
 [[package]]
 name = "sp-staking"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12608,12 +11666,8 @@ dependencies = [
 
 [[package]]
 name = "sp-state-machine"
-<<<<<<< HEAD
 version = "0.13.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "0.12.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "hash-db",
  "log",
@@ -12634,7 +11688,6 @@ dependencies = [
 
 [[package]]
 name = "sp-std"
-<<<<<<< HEAD
 version = "5.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 
@@ -12642,13 +11695,6 @@ source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8
 name = "sp-storage"
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "4.0.0"
-
-[[package]]
-name = "sp-storage"
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -12659,26 +11705,9 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "sp-timestamp"
 version = "4.0.0-dev"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-name = "sp-tasks"
-version = "4.0.0-dev"
-dependencies = [
- "log",
- "sp-core",
- "sp-externalities",
- "sp-io",
- "sp-runtime-interface",
- "sp-std",
-]
-
-[[package]]
-name = "sp-timestamp"
-version = "4.0.0-dev"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "futures-timer",
@@ -12693,12 +11722,8 @@ dependencies = [
 
 [[package]]
 name = "sp-tracing"
-<<<<<<< HEAD
 version = "6.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "5.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "sp-std",
@@ -12710,10 +11735,7 @@ dependencies = [
 [[package]]
 name = "sp-transaction-pool"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "sp-api",
  "sp-runtime",
@@ -12722,10 +11744,7 @@ dependencies = [
 [[package]]
 name = "sp-transaction-storage-proof"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "log",
@@ -12740,12 +11759,8 @@ dependencies = [
 
 [[package]]
 name = "sp-trie"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "ahash",
  "hash-db",
@@ -12768,10 +11783,7 @@ dependencies = [
 [[package]]
 name = "sp-ver"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "log",
@@ -12789,10 +11801,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "5.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -12809,10 +11818,7 @@ dependencies = [
 [[package]]
 name = "sp-version-proc-macro"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "parity-scale-codec",
  "proc-macro2",
@@ -12822,12 +11828,8 @@ dependencies = [
 
 [[package]]
 name = "sp-wasm-interface"
-<<<<<<< HEAD
 version = "7.0.0"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-version = "6.0.0"
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "impl-trait-for-tuples",
  "log",
@@ -12840,10 +11842,7 @@ dependencies = [
 [[package]]
 name = "sp-weights"
 version = "4.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
@@ -12921,7 +11920,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kusama-runtime-constants 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "kusama-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "log",
  "pallet-asset-tx-payment",
  "pallet-assets",
@@ -12939,7 +11938,7 @@ dependencies = [
  "pallet-uniques",
  "pallet-utility",
  "pallet-xcm",
- "pallet-xcm-benchmarks 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "parachain-info",
  "parachains-common",
  "parity-scale-codec",
@@ -13003,14 +12002,14 @@ dependencies = [
  "pallet-uniques",
  "pallet-utility",
  "pallet-xcm",
- "pallet-xcm-benchmarks 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "parachain-info",
  "parachains-common",
  "parity-scale-codec",
  "polkadot-core-primitives",
  "polkadot-parachain",
  "polkadot-runtime-common",
- "polkadot-runtime-constants 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "polkadot-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "scale-info",
  "smallvec",
  "sp-api",
@@ -13146,10 +12145,7 @@ dependencies = [
 [[package]]
 name = "substrate-build-script-utils"
 version = "3.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "platforms 2.0.0",
 ]
@@ -13157,10 +12153,7 @@ dependencies = [
 [[package]]
 name = "substrate-frame-rpc-system"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "frame-system-rpc-runtime-api",
  "futures",
@@ -13181,10 +12174,7 @@ dependencies = [
 [[package]]
 name = "substrate-prometheus-endpoint"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "futures-util",
  "hyper",
@@ -13197,10 +12187,7 @@ dependencies = [
 [[package]]
 name = "substrate-rpc-client"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "async-trait",
  "jsonrpsee",
@@ -13213,10 +12200,7 @@ dependencies = [
 [[package]]
 name = "substrate-state-trie-migration-rpc"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 dependencies = [
  "jsonrpsee",
  "log",
@@ -13237,10 +12221,7 @@ dependencies = [
 [[package]]
 name = "substrate-test-client"
 version = "2.0.1"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "array-bytes 4.2.0",
  "async-trait",
@@ -13266,11 +12247,7 @@ dependencies = [
 [[package]]
 name = "substrate-test-utils"
 version = "4.0.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.31#7a4e5163091384c4c10b6d76f5cb80dac0834f38"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
  "futures",
  "substrate-test-utils-derive",
@@ -13280,11 +12257,7 @@ dependencies = [
 [[package]]
 name = "substrate-test-utils-derive"
 version = "0.10.0-dev"
-<<<<<<< HEAD
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.31#7a4e5163091384c4c10b6d76f5cb80dac0834f38"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -13295,10 +12268,7 @@ dependencies = [
 [[package]]
 name = "substrate-wasm-builder"
 version = "5.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "ansi_term",
  "build-helper",
@@ -13405,13 +12375,8 @@ checksum = "95059e91184749cb66be6dc994f67f182b6d897cb3df74a5bf66b5e709295fd8"
 
 [[package]]
 name = "test-runtime-constants"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -13726,13 +12691,8 @@ dependencies = [
 
 [[package]]
 name = "tracing-gum"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "polkadot-node-jaeger",
  "polkadot-primitives",
@@ -13742,13 +12702,8 @@ dependencies = [
 
 [[package]]
 name = "tracing-gum-proc-macro"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "expander 0.0.6",
  "proc-macro-crate",
@@ -13877,10 +12832,7 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 [[package]]
 name = "try-runtime-cli"
 version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "clap 4.0.32",
  "frame-remote-externalities",
@@ -14047,10 +12999,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 [[package]]
 name = "ver-api"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 dependencies = [
  "derive_more",
  "futures",
@@ -14561,13 +13510,8 @@ dependencies = [
 
 [[package]]
 name = "westend-runtime"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -14588,7 +13532,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
- "pallet-election-provider-support-benchmarking 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36)",
+ "pallet-election-provider-support-benchmarking",
  "pallet-elections-phragmen",
  "pallet-fast-unstake",
  "pallet-grandpa",
@@ -14619,7 +13563,7 @@ dependencies = [
  "pallet-utility",
  "pallet-vesting",
  "pallet-xcm",
- "pallet-xcm-benchmarks 0.9.31 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "parity-scale-codec",
  "polkadot-parachain",
  "polkadot-primitives",
@@ -14648,7 +13592,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
- "westend-runtime-constants 0.9.31 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
+ "westend-runtime-constants 0.9.36 (git+https://github.com/mangata-finance//polkadot?branch=mangata-dev)",
  "xcm",
  "xcm-builder",
  "xcm-executor",
@@ -14656,12 +13600,8 @@ dependencies = [
 
 [[package]]
 name = "westend-runtime-constants"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -14674,9 +13614,8 @@ dependencies = [
 
 [[package]]
 name = "westend-runtime-constants"
-version = "0.9.31"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.31#32dd0c9cfcd1a1bda821747f6ab334f0e3577558"
->>>>>>> 9a074c6a (Node maintenance mode)
+version = "0.9.36"
+source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
 dependencies = [
  "frame-support",
  "polkadot-primitives",
@@ -14725,7 +13664,7 @@ dependencies = [
  "pallet-uniques",
  "pallet-utility",
  "pallet-xcm",
- "pallet-xcm-benchmarks 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "pallet-xcm-benchmarks 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "parachain-info",
  "parachains-common",
  "parity-scale-codec",
@@ -14746,7 +13685,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
- "westend-runtime-constants 0.9.31 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.31)",
+ "westend-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "xcm",
  "xcm-builder",
  "xcm-executor",
@@ -14974,13 +13913,8 @@ dependencies = [
 
 [[package]]
 name = "xcm"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "derivative",
  "impl-trait-for-tuples",
@@ -14993,13 +13927,8 @@ dependencies = [
 
 [[package]]
 name = "xcm-builder"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -15018,13 +13947,8 @@ dependencies = [
 
 [[package]]
 name = "xcm-executor"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -15041,13 +13965,8 @@ dependencies = [
 
 [[package]]
 name = "xcm-procedural"
-<<<<<<< HEAD
 version = "0.9.36"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.36#dc25abc712e42b9b51d87ad1168e453a42b5f0bc"
-=======
-version = "0.9.31"
-source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#b579b1d2e269be188019edc015cc3153826a9005"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//polkadot?branch=mangata-dev#04f7ef19b393a34ba2311109648c88e8ce88c450"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -15120,15 +14039,68 @@ dependencies = [
 ]
 
 [[patch.unused]]
-<<<<<<< HEAD
-name = "node-primitives"
+name = "mp-multipurpose-liquidity"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "mp-traits"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "pallet-issuance"
 version = "2.0.0"
+
+[[patch.unused]]
+name = "pallet-maintenance"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "pallet-multipurpose-liquidity"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "pallet-xyk"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "pallet-collective-mangata"
+version = "4.0.0-dev"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
+
+[[patch.unused]]
+name = "pallet-sudo-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-utility-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata-rpc-runtime-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "sc-basic-authorship-ver"
+version = "0.10.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
 name = "pallet-crowdloan-rewards"
 version = "0.6.0"
-source = "git+https://github.com/mangata-finance//crowdloan-rewards?branch=mangata-dev#ce0527b1d183d376f124a3704b95fa978551cfaf"
->>>>>>> 9a074c6a (Node maintenance mode)
+source = "git+https://github.com/mangata-finance//crowdloan-rewards?branch=mangata-dev#d9c94c030bab8674ac043a04d4e3951b729a87c9"
 
 [[patch.unused]]
 name = "parachain-staking"
@@ -15138,34 +14110,37 @@ source = "git+https://github.com/mangata-finance//moonbeam?branch=mangata-dev#94
 [[patch.unused]]
 name = "pallet-collective-mangata"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
 
 [[patch.unused]]
 name = "pallet-sudo-mangata"
 version = "4.0.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+
+[[patch.unused]]
+name = "pallet-utility-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 
 [[patch.unused]]
 name = "pallet-vesting-mangata"
 version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 
 [[patch.unused]]
 name = "pallet-vesting-mangata-rpc"
 version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 
 [[patch.unused]]
 name = "pallet-vesting-mangata-rpc-runtime-api"
 version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 
 [[patch.unused]]
 name = "sc-basic-authorship-ver"
 version = "0.10.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
 
 [[patch.unused]]
 name = "orml-asset-registry"
@@ -15208,77 +14183,36 @@ version = "0.4.1-dev"
 source = "git+https://github.com/mangata-finance//open-runtime-module-library?branch=mangata-dev#ba84c87dc39d8ff299e3dd3f5bd5636bef046a77"
 
 [[patch.unused]]
-name = "mp-multipurpose-liquidity"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "mp-traits"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "pallet-issuance"
-version = "2.0.0"
-
-[[patch.unused]]
-name = "pallet-maintenance"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "pallet-multipurpose-liquidity"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "pallet-xyk"
-version = "0.1.0"
-
-[[patch.unused]]
 name = "pallet-collective-mangata"
 version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-sudo-mangata"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata-rpc"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata-rpc-runtime-api"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "sc-basic-authorship-ver"
-version = "0.10.0-dev"
-
-[[patch.unused]]
-name = "pallet-collective-mangata"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-sudo-mangata"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata-rpc"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata-rpc-runtime-api"
-version = "4.0.0-dev"
-
-[[patch.unused]]
-name = "sc-basic-authorship-ver"
-version = "0.10.0-dev"
-<<<<<<< HEAD
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-=======
->>>>>>> 9a074c6a (Node maintenance mode)
+
+[[patch.unused]]
+name = "pallet-sudo-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-utility-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata-rpc-runtime-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "sc-basic-authorship-ver"
+version = "0.10.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
