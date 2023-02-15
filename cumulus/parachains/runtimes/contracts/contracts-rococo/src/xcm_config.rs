@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mangata_types::traits::GetMaintenanceStatusTrait;
 use super::{
 	AccountId, Balances, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall,
 	RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
@@ -23,6 +22,7 @@ use frame_support::{
 	traits::{EitherOfDiverse, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
+use mangata_types::traits::GetMaintenanceStatusTrait;
 use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
 use parachains_common::xcm_config::{DenyReserveTransferToRelayChain, DenyThenTry};
 use polkadot_parachain::primitives::Sibling;
