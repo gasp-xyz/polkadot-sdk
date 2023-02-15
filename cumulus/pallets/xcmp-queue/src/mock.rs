@@ -25,12 +25,12 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
+use std::{cell::RefCell, thread::LocalKey};
 use xcm::prelude::*;
 use xcm_builder::{
 	CurrencyAdapter, FixedWeightBounds, IsConcrete, LocationInverter, NativeAsset, ParentIsPreset,
 };
 use xcm_executor::traits::ConvertOrigin;
-use std::{cell::RefCell, thread::LocalKey};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -196,19 +196,21 @@ impl MockMaintenanceStatusProvider {
 }
 
 impl MockMaintenanceStatusProvider {
-	pub fn set_maintenance_status(is_maintenance: bool, is_upgradable: bool ) {
-		Self::instance().with(|r| {*r.borrow_mut() = (is_maintenance, is_upgradable);});
+	pub fn set_maintenance_status(is_maintenance: bool, is_upgradable: bool) {
+		Self::instance().with(|r| {
+			*r.borrow_mut() = (is_maintenance, is_upgradable);
+		});
 	}
 }
 
 impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-	fn is_maintenance() -> bool{
+	fn is_maintenance() -> bool {
 		Self::instance().with(|r| *r.borrow()).0
 	}
 
-	fn is_upgradable() -> bool{
+	fn is_upgradable() -> bool {
 		let m = Self::instance().with(|r| *r.borrow());
-		(!m.0)||(m.0&&m.1)
+		(!m.0) || (m.0 && m.1)
 	}
 }
 

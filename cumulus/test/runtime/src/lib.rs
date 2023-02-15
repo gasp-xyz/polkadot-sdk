@@ -30,6 +30,7 @@ pub mod wasm_spec_version_incremented {
 mod test_pallet;
 
 use frame_support::traits::OnRuntimeUpgrade;
+use mangata_types::traits::GetMaintenanceStatusTrait;
 use sp_api::{decl_runtime_apis, impl_runtime_apis};
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -42,7 +43,6 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use mangata_types::traits::GetMaintenanceStatusTrait;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -264,11 +264,11 @@ impl pallet_sudo::Config for Runtime {
 pub struct MockMaintenanceStatusProvider;
 
 impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-	fn is_maintenance() -> bool{
+	fn is_maintenance() -> bool {
 		false
 	}
 
-	fn is_upgradable() -> bool{
+	fn is_upgradable() -> bool {
 		true
 	}
 }

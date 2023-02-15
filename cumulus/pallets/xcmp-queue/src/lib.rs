@@ -47,6 +47,7 @@ use frame_support::{
 	traits::EnsureOrigin,
 	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight},
 };
+use mangata_types::traits::GetMaintenanceStatusTrait;
 use rand_chacha::{
 	rand_core::{RngCore, SeedableRng},
 	ChaChaRng,
@@ -59,7 +60,6 @@ use xcm::{
 	VersionedXcm, WrapVersion, MAX_XCM_DECODE_DEPTH,
 };
 use xcm_executor::traits::ConvertOrigin;
-use mangata_types::traits::GetMaintenanceStatusTrait;
 
 pub use pallet::*;
 
@@ -146,7 +146,10 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			T::ExecuteOverweightOrigin::ensure_origin(origin)?;
 
-			ensure!(!T::MaintenanceStatusProvider::is_maintenance(), Error::<T>::XcmMsgProcessingBlockedByMaintenanceMode);
+			ensure!(
+				!T::MaintenanceStatusProvider::is_maintenance(),
+				Error::<T>::XcmMsgProcessingBlockedByMaintenanceMode
+			);
 
 			let (sender, sent_at, data) =
 				Overweight::<T>::get(index).ok_or(Error::<T>::BadOverweightIndex)?;
@@ -324,7 +327,7 @@ pub mod pallet {
 		/// Provided weight is possibly not enough to execute the message.
 		WeightOverLimit,
 		/// Xcm message processing is blocked by maintenance mode
-		XcmMsgProcessingBlockedByMaintenanceMode
+		XcmMsgProcessingBlockedByMaintenanceMode,
 	}
 
 	/// Status of the inbound XCMP channels.
@@ -810,7 +813,6 @@ impl<T: Config> Pallet<T> {
 	/// for the second &c. though empirical and or practical factors may give rise to adjusting it
 	/// further.
 	fn service_xcmp_queue(max_weight: Weight) -> Weight {
-
 		if T::MaintenanceStatusProvider::is_maintenance() {
 			return Weight::zero()
 		}

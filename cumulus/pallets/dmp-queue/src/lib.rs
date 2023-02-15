@@ -29,6 +29,7 @@ use frame_support::{
 	traits::EnsureOrigin,
 	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight},
 };
+use mangata_types::traits::GetMaintenanceStatusTrait;
 pub use pallet::*;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
@@ -37,7 +38,6 @@ use xcm::{
 	latest::{prelude::*, Weight as XcmWeight},
 	VersionedXcm, MAX_XCM_DECODE_DEPTH,
 };
-use mangata_types::traits::GetMaintenanceStatusTrait;
 
 const DEFAULT_POV_SIZE: u64 = 64 * 1024; // 64 KB
 
@@ -132,7 +132,7 @@ pub mod pallet {
 		/// The amount of weight given is possibly not enough for executing the message.
 		OverLimit,
 		/// Dmp message processing is blocked by maintenance mode
-		DmpMsgProcessingBlockedByMaintenanceMode
+		DmpMsgProcessingBlockedByMaintenanceMode,
 	}
 
 	#[pallet::hooks]
@@ -169,8 +169,11 @@ pub mod pallet {
 			weight_limit: XcmWeight,
 		) -> DispatchResultWithPostInfo {
 			T::ExecuteOverweightOrigin::ensure_origin(origin)?;
-			
-			ensure!(!T::MaintenanceStatusProvider::is_maintenance(), Error::<T>::DmpMsgProcessingBlockedByMaintenanceMode);
+
+			ensure!(
+				!T::MaintenanceStatusProvider::is_maintenance(),
+				Error::<T>::DmpMsgProcessingBlockedByMaintenanceMode
+			);
 
 			let (sent_at, data) = Overweight::<T>::get(index).ok_or(Error::<T>::Unknown)?;
 			let weight_used =
@@ -234,10 +237,10 @@ pub mod pallet {
 						// And will remain undetected in the page.
 						// Now when message processing is resumed, if overweight messages are not detected here
 						// and this do_service_queue function returns when try_service_message returns any error
-						// including overweight messages 
+						// including overweight messages
 						// Then if an overweight message was received during the maintenance mode
 						// And maintenance mode lifted then do_service_queue
-						// will always short-circuit on the overweight message and page processing will never progress 
+						// will always short-circuit on the overweight message and page processing will never progress
 						Err((message_id, required_weight)) =>
 						// Too much weight required right now.
 						{
@@ -299,7 +302,10 @@ pub mod pallet {
 					Ok(Weight::zero())
 				},
 				Ok(Ok(x)) => {
-					ensure!(!T::MaintenanceStatusProvider::is_maintenance(), (message_id, Weight::zero()));
+					ensure!(
+						!T::MaintenanceStatusProvider::is_maintenance(),
+						(message_id, Weight::zero())
+					);
 					let outcome = T::XcmExecutor::execute_xcm(Parent, x, limit.ref_time());
 					match outcome {
 						Outcome::Error(XcmError::WeightLimitReached(required)) =>
@@ -483,19 +489,21 @@ mod tests {
 	}
 
 	impl MockMaintenanceStatusProvider {
-		pub fn set_maintenance_status(is_maintenance: bool, is_upgradable: bool ) {
-			Self::instance().with(|r| {*r.borrow_mut() = (is_maintenance, is_upgradable);});
+		pub fn set_maintenance_status(is_maintenance: bool, is_upgradable: bool) {
+			Self::instance().with(|r| {
+				*r.borrow_mut() = (is_maintenance, is_upgradable);
+			});
 		}
 	}
 
 	impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-		fn is_maintenance() -> bool{
+		fn is_maintenance() -> bool {
 			Self::instance().with(|r| *r.borrow()).0
 		}
 
-		fn is_upgradable() -> bool{
+		fn is_upgradable() -> bool {
 			let m = Self::instance().with(|r| *r.borrow());
-			(!m.0)||(m.0&&m.1)
+			(!m.0) || (m.0 && m.1)
 		}
 	}
 
@@ -702,16 +710,12 @@ mod tests {
 	#[test]
 	fn service_works_maintenance_mode() {
 		new_test_ext().execute_with(|| {
-
 			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
 
 			let incoming = vec![msg(1002), msg(1003)];
 			let weight_used = handle_messages(&incoming, Weight::from_ref_time(5000));
 			assert_eq!(weight_used, Weight::from_ref_time(0));
-			assert_eq!(
-				take_trace(),
-				vec![]
-			);
+			assert_eq!(take_trace(), vec![]);
 			assert_eq!(pages_queued(), 1);
 
 			let enqueued = vec![msg(1000), msg(1001)];
@@ -719,12 +723,8 @@ mod tests {
 			enqueue(&enqueued);
 			let weight_used = handle_messages(&incoming, Weight::from_ref_time(5000));
 			assert_eq!(weight_used, Weight::from_ref_time(0));
-			assert_eq!(
-				take_trace(),
-				vec![]
-			);
+			assert_eq!(take_trace(), vec![]);
 			assert_eq!(pages_queued(), 3);
-
 
 			MockMaintenanceStatusProvider::set_maintenance_status(false, false);
 
@@ -733,9 +733,7 @@ mod tests {
 			assert_eq!(weight_used, Weight::from_ref_time(2005));
 			assert_eq!(
 				take_trace(),
-				vec![msg_complete(1002),
-				msg_complete(1003),
-				msg_limit_reached(1000)]
+				vec![msg_complete(1002), msg_complete(1003), msg_limit_reached(1000)]
 			);
 			assert_eq!(pages_queued(), 3);
 
@@ -744,14 +742,16 @@ mod tests {
 			assert_eq!(weight_used, Weight::from_ref_time(8040));
 			assert_eq!(
 				take_trace(),
-				vec![msg_complete(1000),
-				msg_complete(1001),
-				msg_complete(1004),
-				msg_complete(1005),
-				msg_complete(1006),
-				msg_complete(1007),
-				msg_complete(1008),
-				msg_complete(1009),]
+				vec![
+					msg_complete(1000),
+					msg_complete(1001),
+					msg_complete(1004),
+					msg_complete(1005),
+					msg_complete(1006),
+					msg_complete(1007),
+					msg_complete(1008),
+					msg_complete(1009),
+				]
 			);
 			assert_eq!(pages_queued(), 0);
 		});
@@ -760,7 +760,6 @@ mod tests {
 	#[test]
 	fn inline_overweight_during_maintenance_mode_sorted_first_in_queue() {
 		new_test_ext().execute_with(|| {
-
 			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
 
 			// Set the overweight threshold to 9999.
@@ -769,10 +768,7 @@ mod tests {
 			let incoming = vec![msg(1002), msg(10003)];
 			let weight_used = handle_messages(&incoming, Weight::from_ref_time(5000));
 			assert_eq!(weight_used, Weight::from_ref_time(0));
-			assert_eq!(
-				take_trace(),
-				vec![]
-			);
+			assert_eq!(take_trace(), vec![]);
 			assert_eq!(pages_queued(), 1);
 
 			let enqueued = vec![msg(1000), msg(1001)];
@@ -780,10 +776,7 @@ mod tests {
 			enqueue(&enqueued);
 			let weight_used = handle_messages(&incoming, Weight::from_ref_time(5000));
 			assert_eq!(weight_used, Weight::from_ref_time(0));
-			assert_eq!(
-				take_trace(),
-				vec![]
-			);
+			assert_eq!(take_trace(), vec![]);
 			assert_eq!(pages_queued(), 3);
 
 			MockMaintenanceStatusProvider::set_maintenance_status(false, false);
@@ -793,10 +786,12 @@ mod tests {
 			assert_eq!(weight_used, Weight::from_ref_time(2002));
 			assert_eq!(
 				take_trace(),
-				vec![msg_complete(1002),
-				msg_limit_reached(10003),
-				msg_complete(1000),
-				msg_limit_reached(1001)]
+				vec![
+					msg_complete(1002),
+					msg_limit_reached(10003),
+					msg_complete(1000),
+					msg_limit_reached(1001)
+				]
 			);
 			assert_eq!(pages_queued(), 3);
 			assert_eq!(overweights(), vec![0]);
@@ -807,13 +802,14 @@ mod tests {
 			assert_eq!(
 				take_trace(),
 				vec![
-				msg_complete(1001),
-				msg_complete(1004),
-				msg_complete(1005),
-				msg_complete(1006),
-				msg_complete(1007),
-				msg_complete(1008),
-				msg_complete(1009),]
+					msg_complete(1001),
+					msg_complete(1004),
+					msg_complete(1005),
+					msg_complete(1006),
+					msg_complete(1007),
+					msg_complete(1008),
+					msg_complete(1009),
+				]
 			);
 			assert_eq!(pages_queued(), 0);
 			assert_eq!(overweights(), vec![0]);
@@ -983,7 +979,6 @@ mod tests {
 		});
 	}
 
-
 	#[test]
 	fn overweights_should_not_be_manually_executable_during_maintenance_mode() {
 		new_test_ext().execute_with(|| {
@@ -1063,7 +1058,6 @@ mod tests {
 	#[test]
 	fn on_idle_should_not_service_queue_in_maintenance_mode() {
 		new_test_ext().execute_with(|| {
-
 			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
 			enqueue(&vec![msg(1000), msg(1001)]);
 			enqueue(&vec![msg(1002), msg(1003)]);
@@ -1071,11 +1065,7 @@ mod tests {
 
 			let weight_used = DmpQueue::on_idle(1, Weight::from_ref_time(6000));
 			assert_eq!(weight_used, Weight::from_ref_time(0));
-			assert_eq!(
-				take_trace(),
-				vec![
-				]
-			);
+			assert_eq!(take_trace(), vec![]);
 			assert_eq!(pages_queued(), 3);
 		});
 	}

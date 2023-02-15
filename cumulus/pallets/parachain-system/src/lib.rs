@@ -44,6 +44,7 @@ use frame_support::{
 	weights::Weight,
 };
 use frame_system::{ensure_none, ensure_root};
+use mangata_types::traits::GetMaintenanceStatusTrait;
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use sp_runtime::{
 	traits::{Block as BlockT, BlockNumberProvider, Hash, One, Zero},
@@ -53,7 +54,6 @@ use sp_runtime::{
 	},
 };
 use sp_std::{cmp, collections::btree_map::BTreeMap, prelude::*};
-use mangata_types::traits::GetMaintenanceStatusTrait;
 
 mod migration;
 mod relay_state_snapshot;
@@ -223,7 +223,7 @@ pub mod pallet {
 				},
 			};
 
-			if !T::MaintenanceStatusProvider::is_maintenance(){
+			if !T::MaintenanceStatusProvider::is_maintenance() {
 				<PendingUpwardMessages<T>>::mutate(|up| {
 					let (count, size) = relevant_messaging_state.relay_dispatch_queue_size;
 
@@ -237,16 +237,19 @@ pub mod pallet {
 					// available_capacity and available_size.
 					let num = up
 						.iter()
-						.scan((available_capacity as usize, available_size as usize), |state, msg| {
-							let (cap_left, size_left) = *state;
-							match (cap_left.checked_sub(1), size_left.checked_sub(msg.len())) {
-								(Some(new_cap), Some(new_size)) => {
-									*state = (new_cap, new_size);
-									Some(())
-								},
-								_ => None,
-							}
-						})
+						.scan(
+							(available_capacity as usize, available_size as usize),
+							|state, msg| {
+								let (cap_left, size_left) = *state;
+								match (cap_left.checked_sub(1), size_left.checked_sub(msg.len())) {
+									(Some(new_cap), Some(new_size)) => {
+										*state = (new_cap, new_size);
+										Some(())
+									},
+									_ => None,
+								}
+							},
+						)
 						.count();
 
 					// TODO: #274 Return back messages that do not longer fit into the queue.
@@ -266,7 +269,8 @@ pub mod pallet {
 
 				let maximum_channels = host_config
 					.hrmp_max_message_num_per_candidate
-					.min(<AnnouncedHrmpMessagesPerCandidate<T>>::take()) as usize;
+					.min(<AnnouncedHrmpMessagesPerCandidate<T>>::take())
+					as usize;
 
 				let outbound_messages =
 					T::OutboundXcmpMessageSource::take_outbound_messages(maximum_channels)
@@ -387,9 +391,8 @@ pub mod pallet {
 				.read_upgrade_go_ahead_signal()
 				.expect("Invalid upgrade go ahead signal");
 			match upgrade_go_ahead_signal {
-				Some(relay_chain::v2::UpgradeGoAhead::GoAhead) => {
-					
-					if T::MaintenanceStatusProvider::is_upgradable(){
+				Some(relay_chain::v2::UpgradeGoAhead::GoAhead) =>
+					if T::MaintenanceStatusProvider::is_upgradable() {
 						assert!(
 							<PendingValidationCode<T>>::exists(),
 							"No new validation function found in storage, GoAhead signal is not expected",
@@ -401,9 +404,7 @@ pub mod pallet {
 						Self::deposit_event(Event::ValidationFunctionApplied {
 							relay_chain_block_num: vfp.relay_parent_number,
 						});
-					}
-
-				},
+					},
 				Some(relay_chain::v2::UpgradeGoAhead::Abort) => {
 					<PendingValidationCode<T>>::kill();
 					Self::deposit_event(Event::ValidationFunctionDiscarded);
@@ -461,7 +462,10 @@ pub mod pallet {
 		pub fn authorize_upgrade(origin: OriginFor<T>, code_hash: T::Hash) -> DispatchResult {
 			ensure_root(origin)?;
 
-			ensure!(T::MaintenanceStatusProvider::is_upgradable(), Error::<T>::UpgradeBlockedByMaintenanceMode);
+			ensure!(
+				T::MaintenanceStatusProvider::is_upgradable(),
+				Error::<T>::UpgradeBlockedByMaintenanceMode
+			);
 
 			AuthorizedUpgrade::<T>::put(&code_hash);
 
@@ -519,7 +523,7 @@ pub mod pallet {
 		/// The given code upgrade has not been authorized.
 		Unauthorized,
 		/// Upgrades are blocked due to maintenance mode
-		UpgradeBlockedByMaintenanceMode
+		UpgradeBlockedByMaintenanceMode,
 	}
 
 	/// In case of a scheduled upgrade, this storage field contains the validation code to be applied.
@@ -985,7 +989,10 @@ impl<T: Config> Pallet<T> {
 		// but we do care about the [`UpgradeRestrictionSignal`] which arrives with the same inherent.
 		ensure!(<ValidationData<T>>::exists(), Error::<T>::ValidationDataNotAvailable,);
 		ensure!(<UpgradeRestrictionSignal<T>>::get().is_none(), Error::<T>::ProhibitedByPolkadot);
-		ensure!(T::MaintenanceStatusProvider::is_upgradable(), Error::<T>::UpgradeBlockedByMaintenanceMode);
+		ensure!(
+			T::MaintenanceStatusProvider::is_upgradable(),
+			Error::<T>::UpgradeBlockedByMaintenanceMode
+		);
 
 		ensure!(!<PendingValidationCode<T>>::exists(), Error::<T>::OverlappingUpgrades);
 		let cfg = Self::host_configuration().ok_or(Error::<T>::HostConfigurationNotAvailable)?;

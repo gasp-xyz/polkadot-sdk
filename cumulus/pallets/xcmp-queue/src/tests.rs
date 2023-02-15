@@ -16,7 +16,9 @@
 use super::*;
 use cumulus_primitives_core::XcmpMessageHandler;
 use frame_support::{assert_noop, assert_ok, traits::OnIdle};
-use mock::{new_test_ext, RuntimeCall, RuntimeOrigin, Test, XcmpQueue, MockMaintenanceStatusProvider};
+use mock::{
+	new_test_ext, MockMaintenanceStatusProvider, RuntimeCall, RuntimeOrigin, Test, XcmpQueue,
+};
 use sp_runtime::traits::BadOrigin;
 
 #[test]
@@ -184,11 +186,9 @@ fn service_xcmp_queue_does_not_work_in_maintenance_mode() {
 	});
 }
 
-
 #[test]
 fn on_idle_should_not_service_queue_in_maintenance_mode() {
 	new_test_ext().execute_with(|| {
-
 		MockMaintenanceStatusProvider::set_maintenance_status(true, false);
 
 		let xcm =
@@ -224,7 +224,6 @@ fn on_idle_should_not_service_queue_in_maintenance_mode() {
 		assert_eq!(queued_xcm, xcm);
 	});
 }
-
 
 #[test]
 fn update_suspend_threshold_works() {
