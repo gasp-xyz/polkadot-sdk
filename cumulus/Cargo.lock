@@ -699,6 +699,7 @@ dependencies = [
  "hex-literal",
  "kusama-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "log",
+ "mangata-types",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -761,6 +762,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "mangata-types",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -1157,6 +1159,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "mangata-types",
  "pallet-alliance",
  "pallet-aura",
  "pallet-authorship",
@@ -1258,6 +1261,7 @@ dependencies = [
  "hex-literal",
  "kusama-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "log",
+ "mangata-types",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -7019,6 +7023,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "mangata-types",
  "pallet-asset-tx-payment",
  "pallet-assets",
  "pallet-aura",
@@ -9200,6 +9205,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
+ "mangata-types",
  "pallet-assets",
  "pallet-aura",
  "pallet-balances",
@@ -10760,6 +10766,7 @@ dependencies = [
  "frame-executive",
  "frame-support",
  "frame-system",
+ "mangata-types",
  "pallet-balances",
  "pallet-sudo",
  "parachain-info",
@@ -10942,6 +10949,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-try-runtime",
+ "mangata-types",
  "parachain-info",
  "parachains-common",
  "parity-scale-codec",
@@ -11923,6 +11931,7 @@ dependencies = [
  "hex-literal",
  "kusama-runtime-constants 0.9.36 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.36)",
  "log",
+ "mangata-types",
  "pallet-asset-tx-payment",
  "pallet-assets",
  "pallet-aura",
@@ -11988,6 +11997,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "mangata-types",
  "pallet-asset-tx-payment",
  "pallet-assets",
  "pallet-aura",
@@ -13650,6 +13660,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "mangata-types",
  "pallet-asset-tx-payment",
  "pallet-assets",
  "pallet-aura",
@@ -14040,44 +14051,9 @@ dependencies = [
 ]
 
 [[patch.unused]]
-name = "pallet-crowdloan-rewards"
-version = "0.6.0"
-source = "git+https://github.com/mangata-finance//crowdloan-rewards?branch=mangata-dev#d9c94c030bab8674ac043a04d4e3951b729a87c9"
-
-[[patch.unused]]
-name = "pallet-collective-mangata"
-version = "4.0.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-
-[[patch.unused]]
-name = "pallet-sudo-mangata"
-version = "4.0.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-
-[[patch.unused]]
-name = "pallet-utility-mangata"
-version = "4.0.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata"
-version = "4.0.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata-rpc"
-version = "4.0.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-
-[[patch.unused]]
-name = "pallet-vesting-mangata-rpc-runtime-api"
-version = "4.0.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-
-[[patch.unused]]
-name = "sc-basic-authorship-ver"
-version = "0.10.0-dev"
-source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+name = "parachain-staking"
+version = "3.0.0"
+source = "git+https://github.com/mangata-finance//moonbeam?branch=mangata-dev#94a1c99f8803cbca3618e08f085a52d6b4dec2a5"
 
 [[patch.unused]]
 name = "mp-multipurpose-liquidity"
@@ -14143,11 +14119,6 @@ source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8
 name = "sc-basic-authorship-ver"
 version = "0.10.0-dev"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
-
-[[patch.unused]]
-name = "parachain-staking"
-version = "3.0.0"
-source = "git+https://github.com/mangata-finance//moonbeam?branch=mangata-dev#94a1c99f8803cbca3618e08f085a52d6b4dec2a5"
 
 [[patch.unused]]
 name = "orml-asset-registry"
@@ -14223,3 +14194,43 @@ source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8
 name = "sc-basic-authorship-ver"
 version = "0.10.0-dev"
 source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-collective-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-sudo-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-utility-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-vesting-mangata-rpc-runtime-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "sc-basic-authorship-ver"
+version = "0.10.0-dev"
+source = "git+https://github.com/mangata-finance//substrate?branch=mangata-dev#8d5b532ef66f0f06be2e9b23c0f8ecf335440075"
+
+[[patch.unused]]
+name = "pallet-crowdloan-rewards"
+version = "0.6.0"
+source = "git+https://github.com/mangata-finance//crowdloan-rewards?branch=mangata-dev#d9c94c030bab8674ac043a04d4e3951b729a87c9"
