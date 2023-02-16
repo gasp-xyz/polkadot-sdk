@@ -25,6 +25,7 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
+use std::{cell::RefCell, thread::LocalKey};
 use xcm::prelude::*;
 use xcm_builder::{
 	CurrencyAdapter, FixedWeightBounds, IsConcrete, LocationInverter, NativeAsset, ParentIsPreset,
@@ -103,6 +104,7 @@ impl pallet_balances::Config for Test {
 
 impl cumulus_pallet_parachain_system::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
+	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type OnSystemEvent = ();
 	type SelfParaId = ();
 	type OutboundXcmpMessageSource = XcmpQueue;
@@ -184,8 +186,41 @@ impl<RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin>
 	}
 }
 
+pub struct MockMaintenanceStatusProvider;
+
+#[cfg(test)]
+impl MockMaintenanceStatusProvider {
+	pub fn instance() -> &'static LocalKey<RefCell<(bool, bool)>> {
+		&MAINTENANCE_STATUS
+	}
+}
+
+impl MockMaintenanceStatusProvider {
+	pub fn set_maintenance_status(is_maintenance: bool, is_upgradable: bool) {
+		Self::instance().with(|r| {
+			*r.borrow_mut() = (is_maintenance, is_upgradable);
+		});
+	}
+}
+
+impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
+	fn is_maintenance() -> bool {
+		Self::instance().with(|r| *r.borrow()).0
+	}
+
+	fn is_upgradable() -> bool {
+		let m = Self::instance().with(|r| *r.borrow());
+		(!m.0) || (m.0 && m.1)
+	}
+}
+
+thread_local! {
+	pub static MAINTENANCE_STATUS: RefCell<(bool, bool)> = (false, false).into();
+}
+
 impl Config for Test {
 	type RuntimeEvent = RuntimeEvent;
+	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type XcmExecutor = xcm_executor::XcmExecutor<XcmConfig>;
 	type ChannelInfo = ParachainSystem;
 	type VersionWrapper = ();

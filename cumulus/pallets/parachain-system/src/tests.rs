@@ -22,7 +22,7 @@ use cumulus_primitives_core::{
 };
 use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
 use frame_support::{
-	assert_ok,
+	assert_err, assert_ok,
 	dispatch::UnfilteredDispatchable,
 	inherent::{InherentData, ProvideInherent},
 	parameter_types,
@@ -38,7 +38,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_version::RuntimeVersion;
-use std::cell::RefCell;
+use std::{cell::RefCell, thread::LocalKey};
 
 use crate as parachain_system;
 
@@ -100,6 +100,7 @@ impl frame_system::Config for Test {
 }
 impl Config for Test {
 	type RuntimeEvent = RuntimeEvent;
+	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type OnSystemEvent = ();
 	type SelfParaId = ParachainId;
 	type OutboundXcmpMessageSource = FromThreadLocal;
@@ -110,6 +111,34 @@ impl Config for Test {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
+pub struct MockMaintenanceStatusProvider;
+
+#[cfg(test)]
+impl MockMaintenanceStatusProvider {
+	pub fn instance() -> &'static LocalKey<RefCell<(bool, bool)>> {
+		&MAINTENANCE_STATUS
+	}
+}
+
+impl MockMaintenanceStatusProvider {
+	pub fn set_maintenance_status(is_maintenance: bool, is_upgradable: bool) {
+		Self::instance().with(|r| {
+			*r.borrow_mut() = (is_maintenance, is_upgradable);
+		});
+	}
+}
+
+impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
+	fn is_maintenance() -> bool {
+		Self::instance().with(|r| *r.borrow()).0
+	}
+
+	fn is_upgradable() -> bool {
+		let m = Self::instance().with(|r| *r.borrow());
+		(!m.0) || (m.0 && m.1)
+	}
+}
+
 pub struct FromThreadLocal;
 pub struct SaveIntoThreadLocal;
 
@@ -117,6 +146,7 @@ std::thread_local! {
 	static HANDLED_DMP_MESSAGES: RefCell<Vec<(relay_chain::BlockNumber, Vec<u8>)>> = RefCell::new(Vec::new());
 	static HANDLED_XCMP_MESSAGES: RefCell<Vec<(ParaId, relay_chain::BlockNumber, Vec<u8>)>> = RefCell::new(Vec::new());
 	static SENT_MESSAGES: RefCell<Vec<(ParaId, Vec<u8>)>> = RefCell::new(Vec::new());
+	static MAINTENANCE_STATUS: RefCell<(bool, bool)> = (false, false).into();
 }
 
 fn send_message(dest: ParaId, message: Vec<u8>) {
@@ -179,6 +209,8 @@ impl XcmpMessageHandler for SaveIntoThreadLocal {
 fn new_test_ext() -> sp_io::TestExternalities {
 	HANDLED_DMP_MESSAGES.with(|m| m.borrow_mut().clear());
 	HANDLED_XCMP_MESSAGES.with(|m| m.borrow_mut().clear());
+
+	MockMaintenanceStatusProvider::set_maintenance_status(false, false);
 
 	frame_system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
 }
@@ -511,6 +543,201 @@ fn checks_size() {
 }
 
 #[test]
+fn authorize_upgrade_maintenance_mode() {
+	BlockTests::new()
+		.add(123, || {
+			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+			assert_err!(
+				ParachainSystem::authorize_upgrade(RawOrigin::Root.into(), Default::default()),
+				Error::<Test>::UpgradeBlockedByMaintenanceMode
+			);
+		})
+		.add(150, || {
+			assert_err!(
+				ParachainSystem::authorize_upgrade(RawOrigin::Root.into(), Default::default()),
+				Error::<Test>::UpgradeBlockedByMaintenanceMode
+			);
+		})
+		.add_with_post_test(
+			170,
+			|| {
+				MockMaintenanceStatusProvider::set_maintenance_status(true, true);
+				assert_ok!(ParachainSystem::authorize_upgrade(
+					RawOrigin::Root.into(),
+					Default::default()
+				));
+			},
+			|| {
+				assert!(
+					<AuthorizedUpgrade<Test>>::exists(),
+					"AuthorizedUpgrade must have been set"
+				);
+				let events = System::events();
+				assert_eq!(
+					events[0].event,
+					RuntimeEvent::ParachainSystem(
+						crate::Event::UpgradeAuthorized { code_hash: Default::default() }.into()
+					)
+				);
+			},
+		);
+}
+
+#[test]
+fn enact_authorized_upgrade_maintenance_mode() {
+	BlockTests::new()
+		.add(123, || {
+			assert_ok!(ParachainSystem::authorize_upgrade(
+				RawOrigin::Root.into(),
+				Default::default()
+			));
+			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+		})
+		.add(150, || {
+			assert_err!(
+				System::set_code(RawOrigin::Root.into(), Default::default()),
+				Error::<Test>::UpgradeBlockedByMaintenanceMode
+			);
+		})
+		.add_with_post_test(
+			170,
+			|| {
+				MockMaintenanceStatusProvider::set_maintenance_status(true, true);
+				assert_ok!(System::set_code(RawOrigin::Root.into(), Default::default()));
+			},
+			|| {
+				assert!(
+					<PendingValidationCode<Test>>::exists(),
+					"PendingValidationCode must have been set"
+				);
+				let events = System::events();
+				assert_eq!(
+					events[0].event,
+					RuntimeEvent::ParachainSystem(crate::Event::ValidationFunctionStored.into())
+				);
+			},
+		);
+}
+
+#[test]
+fn scheduled_upgrade_fails_maintenance_mode_no_upgradability() {
+	BlockTests::new()
+		.with_relay_sproof_builder(|_, block_number, builder| {
+			if block_number > 123 {
+				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+			}
+		})
+		.add_with_post_test(
+			123,
+			|| {
+				assert_ok!(System::set_code(RawOrigin::Root.into(), Default::default()));
+				MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+			},
+			|| {
+				let events = System::events();
+				assert_eq!(
+					events[0].event,
+					RuntimeEvent::ParachainSystem(crate::Event::ValidationFunctionStored.into())
+				);
+			},
+		)
+		.add_with_post_test(
+			1234,
+			|| {},
+			|| {
+				assert!(
+					<PendingValidationCode<Test>>::exists(),
+					"PendingValidationCode must have been set"
+				);
+				let events = System::events();
+				assert!(events.is_empty());
+			},
+		);
+}
+
+#[test]
+fn scheduled_upgrade_works_maintenance_mode_reenabling_upgradability() {
+	BlockTests::new()
+		.with_relay_sproof_builder(|_, block_number, builder| {
+			if block_number > 123 {
+				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+			}
+		})
+		.add_with_post_test(
+			123,
+			|| {
+				assert_ok!(System::set_code(RawOrigin::Root.into(), Default::default()));
+				MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+			},
+			|| {
+				let events = System::events();
+				assert_eq!(
+					events[0].event,
+					RuntimeEvent::ParachainSystem(crate::Event::ValidationFunctionStored.into())
+				);
+			},
+		)
+		.add(500, || {
+			MockMaintenanceStatusProvider::set_maintenance_status(true, true);
+		})
+		.add_with_post_test(
+			1234,
+			|| {},
+			|| {
+				let events = System::events();
+				assert_eq!(
+					events[0].event,
+					RuntimeEvent::ParachainSystem(
+						crate::Event::ValidationFunctionApplied { relay_chain_block_num: 1234 }
+							.into()
+					)
+				);
+			},
+		);
+}
+
+#[test]
+fn scheduled_upgrade_works_disabling_maintenance_mode() {
+	BlockTests::new()
+		.with_relay_sproof_builder(|_, block_number, builder| {
+			if block_number > 123 {
+				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+			}
+		})
+		.add_with_post_test(
+			123,
+			|| {
+				assert_ok!(System::set_code(RawOrigin::Root.into(), Default::default()));
+				MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+			},
+			|| {
+				let events = System::events();
+				assert_eq!(
+					events[0].event,
+					RuntimeEvent::ParachainSystem(crate::Event::ValidationFunctionStored.into())
+				);
+			},
+		)
+		.add(500, || {
+			MockMaintenanceStatusProvider::set_maintenance_status(false, false);
+		})
+		.add_with_post_test(
+			1234,
+			|| {},
+			|| {
+				let events = System::events();
+				assert_eq!(
+					events[0].event,
+					RuntimeEvent::ParachainSystem(
+						crate::Event::ValidationFunctionApplied { relay_chain_block_num: 1234 }
+							.into()
+					)
+				);
+			},
+		);
+}
+
+#[test]
 fn send_upward_message_num_per_candidate() {
 	BlockTests::new()
 		.with_relay_sproof_builder(|_, _, sproof| {
@@ -530,6 +757,53 @@ fn send_upward_message_num_per_candidate() {
 		)
 		.add_with_post_test(
 			2,
+			|| { /* do nothing within block */ },
+			|| {
+				let v = UpwardMessages::<Test>::get();
+				assert_eq!(v, vec![b"message 2".to_vec()]);
+			},
+		);
+}
+
+#[test]
+fn do_not_send_upward_message_in_maintenance_mode() {
+	BlockTests::new()
+		.with_relay_sproof_builder(|_, _, sproof| {
+			sproof.host_config.max_upward_message_num_per_candidate = 1;
+			sproof.relay_dispatch_queue_size = None;
+		})
+		.add_with_post_test(
+			1,
+			|| {
+				MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+				ParachainSystem::send_upward_message(b"Mr F was here".to_vec()).unwrap();
+				ParachainSystem::send_upward_message(b"message 2".to_vec()).unwrap();
+			},
+			|| {
+				let v = UpwardMessages::<Test>::get();
+				assert!(v.is_empty());
+			},
+		)
+		.add_with_post_test(
+			2,
+			|| { /* do nothing within block */ },
+			|| {
+				let v = UpwardMessages::<Test>::get();
+				assert!(v.is_empty());
+			},
+		)
+		.add_with_post_test(
+			3,
+			|| {
+				MockMaintenanceStatusProvider::set_maintenance_status(false, false);
+			},
+			|| {
+				let v = UpwardMessages::<Test>::get();
+				assert_eq!(v, vec![b"Mr F was here".to_vec()]);
+			},
+		)
+		.add_with_post_test(
+			4,
 			|| { /* do nothing within block */ },
 			|| {
 				let v = UpwardMessages::<Test>::get();
@@ -660,6 +934,76 @@ fn send_hrmp_message_buffer_channel_close() {
 				assert_eq!(
 					v,
 					vec![OutboundHrmpMessage { recipient: ParaId::from(300), data: b"1".to_vec() }]
+				);
+			},
+		);
+}
+
+#[test]
+fn do_not_send_hrmp_message_in_maintenance_mode() {
+	BlockTests::new()
+		.with_relay_sproof_builder(|_, relay_block_num, sproof| {
+			//
+			// Base case setup
+			//
+			sproof.para_id = ParaId::from(200);
+			sproof.hrmp_egress_channel_index = Some(vec![ParaId::from(300), ParaId::from(400)]);
+			sproof.hrmp_channels.insert(
+				HrmpChannelId { sender: ParaId::from(200), recipient: ParaId::from(300) },
+				AbridgedHrmpChannel {
+					max_capacity: 1,
+					msg_count: 0, // <- 1/1 means the channel is full
+					max_total_size: 1024,
+					max_message_size: 8,
+					total_size: 0,
+					mqc_head: Default::default(),
+				},
+			);
+			sproof.hrmp_channels.insert(
+				HrmpChannelId { sender: ParaId::from(200), recipient: ParaId::from(400) },
+				AbridgedHrmpChannel {
+					max_capacity: 1,
+					msg_count: 0,
+					max_total_size: 1024,
+					max_message_size: 8,
+					total_size: 0,
+					mqc_head: Default::default(),
+				},
+			);
+		})
+		.add_with_post_test(
+			1,
+			|| {
+				MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+				send_message(ParaId::from(300), b"1".to_vec());
+				send_message(ParaId::from(400), b"2".to_vec());
+			},
+			|| {
+				let v = HrmpOutboundMessages::<Test>::get();
+				assert!(v.is_empty());
+			},
+		)
+		.add_with_post_test(
+			2,
+			|| {},
+			|| {
+				let v = HrmpOutboundMessages::<Test>::get();
+				assert!(v.is_empty());
+			},
+		)
+		.add_with_post_test(
+			3,
+			|| {
+				MockMaintenanceStatusProvider::set_maintenance_status(false, false);
+			},
+			|| {
+				let v = HrmpOutboundMessages::<Test>::get();
+				assert_eq!(
+					v,
+					vec![
+						OutboundHrmpMessage { recipient: ParaId::from(300), data: b"1".to_vec() },
+						OutboundHrmpMessage { recipient: ParaId::from(400), data: b"2".to_vec() }
+					]
 				);
 			},
 		);

@@ -45,6 +45,7 @@ sp-std = { git = "https://github.com/paritytech/substrate", default-features = f
 sp-transaction-pool = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
 sp-version = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
 pallet-state-trie-migration = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true , branch = "polkadot-v0.9.36" }
+mangata-types = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev" }
 
 # Polkadot
 kusama-runtime-constants = { git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.36" }

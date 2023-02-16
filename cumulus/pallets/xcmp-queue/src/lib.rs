@@ -47,6 +47,7 @@ use frame_support::{
 	traits::EnsureOrigin,
 	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight},
 };
+use mangata_types::traits::GetMaintenanceStatusTrait;
 use rand_chacha::{
 	rand_core::{RngCore, SeedableRng},
 	ChaChaRng,
@@ -83,6 +84,8 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
+		type MaintenanceStatusProvider: GetMaintenanceStatusTrait;
 
 		/// Something to execute an XCM message. We need this to service the XCMoXCMP queue.
 		type XcmExecutor: ExecuteXcm<Self::RuntimeCall>;
@@ -142,6 +145,11 @@ pub mod pallet {
 			weight_limit: XcmWeight,
 		) -> DispatchResultWithPostInfo {
 			T::ExecuteOverweightOrigin::ensure_origin(origin)?;
+
+			ensure!(
+				!T::MaintenanceStatusProvider::is_maintenance(),
+				Error::<T>::XcmMsgProcessingBlockedByMaintenanceMode
+			);
 
 			let (sender, sent_at, data) =
 				Overweight::<T>::get(index).ok_or(Error::<T>::BadOverweightIndex)?;
@@ -318,6 +326,8 @@ pub mod pallet {
 		BadOverweightIndex,
 		/// Provided weight is possibly not enough to execute the message.
 		WeightOverLimit,
+		/// Xcm message processing is blocked by maintenance mode
+		XcmMsgProcessingBlockedByMaintenanceMode,
 	}
 
 	/// Status of the inbound XCMP channels.
@@ -803,6 +813,10 @@ impl<T: Config> Pallet<T> {
 	/// for the second &c. though empirical and or practical factors may give rise to adjusting it
 	/// further.
 	fn service_xcmp_queue(max_weight: Weight) -> Weight {
+		if T::MaintenanceStatusProvider::is_maintenance() {
+			return Weight::zero()
+		}
+
 		let suspended = QueueSuspended::<T>::get();
 
 		let mut status = <InboundXcmpStatus<T>>::get(); // <- sorted.
