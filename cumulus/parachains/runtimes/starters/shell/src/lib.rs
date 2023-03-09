@@ -34,7 +34,7 @@ pub mod xcm_config;
 use codec::{Decode, Encode};
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::unsigned::TransactionValidityError;
-use mangata_types::traits::GetMaintenanceStatusTrait;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;

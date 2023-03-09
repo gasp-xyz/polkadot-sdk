@@ -58,7 +58,7 @@ mod weights;
 pub mod xcm_config;
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use mangata_types::traits::GetMaintenanceStatusTrait;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{

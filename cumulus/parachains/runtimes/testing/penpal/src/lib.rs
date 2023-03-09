@@ -46,7 +46,7 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureRoot, EnsureSigned,
 };
-use mangata_types::traits::GetMaintenanceStatusTrait;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;

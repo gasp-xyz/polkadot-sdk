@@ -29,7 +29,7 @@ use frame_support::{
 	traits::EnsureOrigin,
 	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight},
 };
-use mangata_types::traits::GetMaintenanceStatusTrait;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 pub use pallet::*;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;

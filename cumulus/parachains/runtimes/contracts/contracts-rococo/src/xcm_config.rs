@@ -22,7 +22,7 @@ use frame_support::{
 	traits::{EitherOfDiverse, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
-use mangata_types::traits::GetMaintenanceStatusTrait;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
 use parachains_common::xcm_config::{DenyReserveTransferToRelayChain, DenyThenTry};
 use polkadot_parachain::primitives::Sibling;
