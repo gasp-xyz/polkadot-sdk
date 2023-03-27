@@ -44,7 +44,7 @@ use frame_support::{
 	weights::Weight,
 };
 use frame_system::{ensure_none, ensure_root};
-use mangata_types::traits::GetMaintenanceStatusTrait;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use sp_runtime::{
 	traits::{Block as BlockT, BlockNumberProvider, Hash, One, Zero},

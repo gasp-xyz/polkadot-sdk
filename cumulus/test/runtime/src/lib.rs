@@ -30,7 +30,7 @@ pub mod wasm_spec_version_incremented {
 mod test_pallet;
 
 use frame_support::traits::OnRuntimeUpgrade;
-use mangata_types::traits::GetMaintenanceStatusTrait;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use sp_api::{decl_runtime_apis, impl_runtime_apis};
 use sp_core::OpaqueMetadata;
 use sp_runtime::{

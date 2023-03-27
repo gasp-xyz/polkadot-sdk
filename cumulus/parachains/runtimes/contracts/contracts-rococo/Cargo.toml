@@ -49,7 +49,7 @@ pallet-utility = { git = "https://github.com/paritytech/substrate", default-feat
 pallet-sudo = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
 pallet-contracts = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
 pallet-contracts-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
-mangata-types = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev" }
+mangata-support = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev" }
 
 # Polkadot
 kusama-runtime-constants = { git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.36" }
@@ -130,6 +130,7 @@ std = [
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
+	"mangata-support/std"
 ]
 
 runtime-benchmarks = [

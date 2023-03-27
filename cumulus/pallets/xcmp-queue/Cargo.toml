@@ -15,7 +15,7 @@ frame-support = { git = "https://github.com/paritytech/substrate", default-featu
 frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
-mangata-types = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev" }
+mangata-support = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "mangata-dev" }
 
 # Polkadot
 xcm = { git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.36" }
@@ -53,6 +53,7 @@ std = [
 	"sp-std/std",
 	"xcm-executor/std",
 	"xcm/std",
+	"mangata-support/std"
 ]
 
 runtime-benchmarks = [
