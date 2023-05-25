@@ -31,11 +31,12 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use hex_literal::hex;
-use relay_chain::v2::HrmpChannelId;
-use sp_core::H256;
+use relay_chain::HrmpChannelId;
+use sp_core::{blake2_256, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
+	DispatchErrorWithPostInfo,
 };
 use sp_version::RuntimeVersion;
 use std::{cell::RefCell, thread::LocalKey};
@@ -423,7 +424,7 @@ fn events() {
 	BlockTests::new()
 		.with_relay_sproof_builder(|_, block_number, builder| {
 			if block_number > 123 {
-				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+				builder.upgrade_go_ahead = Some(relay_chain::UpgradeGoAhead::GoAhead);
 			}
 		})
 		.add_with_post_test(
@@ -477,7 +478,7 @@ fn manipulates_storage() {
 	BlockTests::new()
 		.with_relay_sproof_builder(|_, block_number, builder| {
 			if block_number > 123 {
-				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+				builder.upgrade_go_ahead = Some(relay_chain::UpgradeGoAhead::GoAhead);
 			}
 		})
 		.add(123, || {
@@ -505,7 +506,7 @@ fn aborted_upgrade() {
 	BlockTests::new()
 		.with_relay_sproof_builder(|_, block_number, builder| {
 			if block_number > 123 {
-				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::Abort);
+				builder.upgrade_go_ahead = Some(relay_chain::UpgradeGoAhead::Abort);
 			}
 		})
 		.add(123, || {
@@ -548,13 +549,21 @@ fn authorize_upgrade_maintenance_mode() {
 		.add(123, || {
 			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
 			assert_err!(
-				ParachainSystem::authorize_upgrade(RawOrigin::Root.into(), Default::default()),
+				ParachainSystem::authorize_upgrade(
+					RawOrigin::Root.into(),
+					Default::default(),
+					false
+				),
 				Error::<Test>::UpgradeBlockedByMaintenanceMode
 			);
 		})
 		.add(150, || {
 			assert_err!(
-				ParachainSystem::authorize_upgrade(RawOrigin::Root.into(), Default::default()),
+				ParachainSystem::authorize_upgrade(
+					RawOrigin::Root.into(),
+					Default::default(),
+					false
+				),
 				Error::<Test>::UpgradeBlockedByMaintenanceMode
 			);
 		})
@@ -564,7 +573,8 @@ fn authorize_upgrade_maintenance_mode() {
 				MockMaintenanceStatusProvider::set_maintenance_status(true, true);
 				assert_ok!(ParachainSystem::authorize_upgrade(
 					RawOrigin::Root.into(),
-					Default::default()
+					Default::default(),
+					false
 				));
 			},
 			|| {
@@ -589,7 +599,8 @@ fn enact_authorized_upgrade_maintenance_mode() {
 		.add(123, || {
 			assert_ok!(ParachainSystem::authorize_upgrade(
 				RawOrigin::Root.into(),
-				Default::default()
+				Default::default(),
+				false
 			));
 			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
 		})
@@ -624,7 +635,7 @@ fn scheduled_upgrade_fails_maintenance_mode_no_upgradability() {
 	BlockTests::new()
 		.with_relay_sproof_builder(|_, block_number, builder| {
 			if block_number > 123 {
-				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+				builder.upgrade_go_ahead = Some(relay_chain::UpgradeGoAhead::GoAhead);
 			}
 		})
 		.add_with_post_test(
@@ -660,7 +671,7 @@ fn scheduled_upgrade_works_maintenance_mode_reenabling_upgradability() {
 	BlockTests::new()
 		.with_relay_sproof_builder(|_, block_number, builder| {
 			if block_number > 123 {
-				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+				builder.upgrade_go_ahead = Some(relay_chain::UpgradeGoAhead::GoAhead);
 			}
 		})
 		.add_with_post_test(
@@ -701,7 +712,7 @@ fn scheduled_upgrade_works_disabling_maintenance_mode() {
 	BlockTests::new()
 		.with_relay_sproof_builder(|_, block_number, builder| {
 			if block_number > 123 {
-				builder.upgrade_go_ahead = Some(relay_chain::v2::UpgradeGoAhead::GoAhead);
+				builder.upgrade_go_ahead = Some(relay_chain::UpgradeGoAhead::GoAhead);
 			}
 		})
 		.add_with_post_test(
@@ -1317,4 +1328,38 @@ fn test() {
 		})
 		.add(1, || {})
 		.add(2, || {});
+}
+
+#[test]
+fn upgrade_version_checks_should_work() {
+	let test_data = vec![
+		("test", 0, 1, Err(frame_system::Error::<Test>::SpecVersionNeedsToIncrease)),
+		("test", 1, 0, Err(frame_system::Error::<Test>::SpecVersionNeedsToIncrease)),
+		("test", 1, 1, Err(frame_system::Error::<Test>::SpecVersionNeedsToIncrease)),
+		("test", 1, 2, Err(frame_system::Error::<Test>::SpecVersionNeedsToIncrease)),
+		("test2", 1, 1, Err(frame_system::Error::<Test>::InvalidSpecName)),
+	];
+
+	for (spec_name, spec_version, impl_version, expected) in test_data.into_iter() {
+		let version = RuntimeVersion {
+			spec_name: spec_name.into(),
+			spec_version,
+			impl_version,
+			..Default::default()
+		};
+		let read_runtime_version = ReadRuntimeVersion(version.encode());
+
+		let mut ext = new_test_ext();
+		ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(read_runtime_version));
+		ext.execute_with(|| {
+			let new_code = vec![1, 2, 3, 4];
+			let new_code_hash = sp_core::H256(blake2_256(&new_code));
+
+			let _authorize =
+				ParachainSystem::authorize_upgrade(RawOrigin::Root.into(), new_code_hash, true);
+			let res = ParachainSystem::enact_authorized_upgrade(RawOrigin::None.into(), new_code);
+
+			assert_eq!(expected.map_err(DispatchErrorWithPostInfo::from), res);
+		});
+	}
 }

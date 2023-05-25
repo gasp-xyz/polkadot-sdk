@@ -19,20 +19,23 @@ use crate::*;
 use async_trait::async_trait;
 use codec::Encode;
 use cumulus_client_pov_recovery::RecoveryKind;
-use cumulus_relay_chain_interface::RelayChainResult;
+use cumulus_primitives_core::{InboundDownwardMessage, InboundHrmpMessage};
+use cumulus_relay_chain_interface::{
+	CommittedCandidateReceipt, OccupiedCoreAssumption, OverseerHandle, PHeader, ParaId,
+	RelayChainInterface, RelayChainResult, SessionIndex, StorageValue, ValidatorId,
+};
 use cumulus_test_client::{
-	runtime::{Block, Header},
+	runtime::{Block, Hash, Header},
 	Backend, Client, InitBlockBuilder, TestClientBuilder, TestClientBuilderExt,
 };
 use futures::{channel::mpsc, executor::block_on, select, FutureExt, Stream, StreamExt};
 use futures_timer::Delay;
-use polkadot_primitives::v2::Id as ParaId;
 use sc_client_api::{blockchain::Backend as _, Backend as _, UsageProvider};
 use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy};
-use sp_blockchain::Error as ClientError;
 use sp_consensus::{BlockOrigin, BlockStatus};
-use sp_runtime::generic::BlockId;
 use std::{
+	collections::{BTreeMap, HashMap},
+	pin::Pin,
 	sync::{Arc, Mutex},
 	time::Duration,
 };
@@ -42,6 +45,7 @@ struct RelaychainInner {
 	finalized_heads: Option<mpsc::UnboundedReceiver<Header>>,
 	new_best_heads_sender: mpsc::UnboundedSender<Header>,
 	finalized_heads_sender: mpsc::UnboundedSender<Header>,
+	relay_chain_hash_to_header: HashMap<PHash, Header>,
 }
 
 impl RelaychainInner {
@@ -54,6 +58,7 @@ impl RelaychainInner {
 			finalized_heads_sender,
 			new_best_heads: Some(new_best_heads),
 			finalized_heads: Some(finalized_heads),
+			relay_chain_hash_to_header: Default::default(),
 		}
 	}
 }
@@ -70,50 +75,149 @@ impl Relaychain {
 }
 
 #[async_trait]
-impl crate::parachain_consensus::RelaychainClient for Relaychain {
-	type Error = ClientError;
-
-	type HeadStream = Box<dyn Stream<Item = Vec<u8>> + Send + Unpin>;
-
-	async fn new_best_heads(&self, _: ParaId) -> RelayChainResult<Self::HeadStream> {
-		let stream = self
-			.inner
-			.lock()
-			.unwrap()
-			.new_best_heads
-			.take()
-			.expect("Should only be called once");
-
-		Ok(Box::new(stream.map(|v| v.encode())))
+impl RelayChainInterface for Relaychain {
+	async fn validators(&self, _: PHash) -> RelayChainResult<Vec<ValidatorId>> {
+		unimplemented!("Not needed for test")
 	}
 
-	async fn finalized_heads(&self, _: ParaId) -> RelayChainResult<Self::HeadStream> {
-		let stream = self
+	async fn best_block_hash(&self) -> RelayChainResult<PHash> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn finalized_block_hash(&self) -> RelayChainResult<PHash> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn retrieve_dmq_contents(
+		&self,
+		_: ParaId,
+		_: PHash,
+	) -> RelayChainResult<Vec<InboundDownwardMessage>> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn retrieve_all_inbound_hrmp_channel_contents(
+		&self,
+		_: ParaId,
+		_: PHash,
+	) -> RelayChainResult<BTreeMap<ParaId, Vec<InboundHrmpMessage>>> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn persisted_validation_data(
+		&self,
+		hash: PHash,
+		_: ParaId,
+		_: OccupiedCoreAssumption,
+	) -> RelayChainResult<Option<PersistedValidationData>> {
+		Ok(Some(PersistedValidationData {
+			parent_head: self
+				.inner
+				.lock()
+				.unwrap()
+				.relay_chain_hash_to_header
+				.get(&hash)
+				.unwrap()
+				.encode()
+				.into(),
+			..Default::default()
+		}))
+	}
+
+	async fn candidate_pending_availability(
+		&self,
+		_: PHash,
+		_: ParaId,
+	) -> RelayChainResult<Option<CommittedCandidateReceipt>> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn session_index_for_child(&self, _: PHash) -> RelayChainResult<SessionIndex> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn import_notification_stream(
+		&self,
+	) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn finality_notification_stream(
+		&self,
+	) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+		let inner = self.inner.clone();
+		Ok(self
 			.inner
 			.lock()
 			.unwrap()
 			.finalized_heads
 			.take()
-			.expect("Should only be called once");
-
-		Ok(Box::new(stream.map(|v| v.encode())))
+			.unwrap()
+			.map(move |h| {
+				// Let's abuse the "parachain header" directly as relay chain header.
+				inner.lock().unwrap().relay_chain_hash_to_header.insert(h.hash(), h.clone());
+				h
+			})
+			.boxed())
 	}
 
-	async fn parachain_head_at(&self, _: PHash, _: ParaId) -> RelayChainResult<Option<Vec<u8>>> {
-		unimplemented!("Not required for tests")
+	async fn is_major_syncing(&self) -> RelayChainResult<bool> {
+		Ok(false)
+	}
+
+	fn overseer_handle(&self) -> RelayChainResult<OverseerHandle> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn get_storage_by_key(
+		&self,
+		_: PHash,
+		_: &[u8],
+	) -> RelayChainResult<Option<StorageValue>> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn prove_read(
+		&self,
+		_: PHash,
+		_: &Vec<Vec<u8>>,
+	) -> RelayChainResult<sc_client_api::StorageProof> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn wait_for_block(&self, _: PHash) -> RelayChainResult<()> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn new_best_notification_stream(
+		&self,
+	) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+		let inner = self.inner.clone();
+		Ok(self
+			.inner
+			.lock()
+			.unwrap()
+			.new_best_heads
+			.take()
+			.unwrap()
+			.map(move |h| {
+				// Let's abuse the "parachain header" directly as relay chain header.
+				inner.lock().unwrap().relay_chain_hash_to_header.insert(h.hash(), h.clone());
+				h
+			})
+			.boxed())
 	}
 }
 
 fn build_block<B: InitBlockBuilder>(
 	builder: &B,
-	at: Option<BlockId<Block>>,
+	at: Option<Hash>,
 	timestamp: Option<u64>,
 ) -> Block {
 	let builder = match at {
 		Some(at) => match timestamp {
-			Some(ts) =>
-				builder.init_block_builder_with_timestamp(&at, None, Default::default(), ts),
-			None => builder.init_block_builder_at(&at, None, Default::default()),
+			Some(ts) => builder.init_block_builder_with_timestamp(at, None, Default::default(), ts),
+			None => builder.init_block_builder_at(at, None, Default::default()),
 		},
 		None => builder.init_block_builder(None, Default::default()),
 	};
@@ -121,7 +225,7 @@ fn build_block<B: InitBlockBuilder>(
 	let mut block = builder.build().unwrap().block;
 
 	// Simulate some form of post activity (like a Seal or Other generic things).
-	// This is mostly used to excercise the `LevelMonitor` correct behavior.
+	// This is mostly used to exercise the `LevelMonitor` correct behavior.
 	// (in practice we want that header post-hash != pre-hash)
 	block.header.digest.push(sp_runtime::DigestItem::Other(vec![1, 2, 3]));
 
@@ -144,7 +248,7 @@ async fn import_block<I: BlockImport<Block>>(
 	block_import_params.body = Some(body);
 	block_import_params.post_digests.push(post_digest);
 
-	importer.import_block(block_import_params, Default::default()).await.unwrap();
+	importer.import_block(block_import_params).await.unwrap();
 }
 
 fn import_block_sync<I: BlockImport<Block>>(
@@ -161,7 +265,7 @@ fn build_and_import_block_ext<B: InitBlockBuilder, I: BlockImport<Block>>(
 	origin: BlockOrigin,
 	import_as_best: bool,
 	importer: &mut I,
-	at: Option<BlockId<Block>>,
+	at: Option<Hash>,
 	timestamp: Option<u64>,
 ) -> Block {
 	let block = build_block(builder, at, timestamp);
@@ -241,7 +345,7 @@ fn follow_new_best_with_dummy_recovery_works() {
 		new_best_heads_sender.unbounded_send(block.header().clone()).unwrap();
 		loop {
 			Delay::new(Duration::from_millis(100)).await;
-			match client.block_status(&BlockId::Hash(block.hash())).unwrap() {
+			match client.block_status(block.hash()).unwrap() {
 				BlockStatus::Unknown => {},
 				status => {
 					assert_eq!(block.hash(), client.usage_info().chain.best_hash);
@@ -319,8 +423,7 @@ fn follow_finalized_does_not_stop_on_unknown_block() {
 	let block = build_and_import_block(client.clone(), false);
 
 	let unknown_block = {
-		let block_builder =
-			client.init_block_builder_at(&BlockId::Hash(block.hash()), None, Default::default());
+		let block_builder = client.init_block_builder_at(block.hash(), None, Default::default());
 		block_builder.build().unwrap().block
 	};
 
@@ -369,8 +472,7 @@ fn follow_new_best_sets_best_after_it_is_imported() {
 	let block = build_and_import_block(client.clone(), false);
 
 	let unknown_block = {
-		let block_builder =
-			client.init_block_builder_at(&BlockId::Hash(block.hash()), None, Default::default());
+		let block_builder = client.init_block_builder_at(block.hash(), None, Default::default());
 		block_builder.build().unwrap().block
 	};
 
@@ -406,7 +508,7 @@ fn follow_new_best_sets_best_after_it_is_imported() {
 		block_import_params.body = Some(body);
 
 		// Now import the unkown block to make it "known"
-		client.import_block(block_import_params, Default::default()).await.unwrap();
+		client.import_block(block_import_params).await.unwrap();
 
 		loop {
 			Delay::new(Duration::from_millis(100)).await;
@@ -502,7 +604,7 @@ fn prune_blocks_on_level_overflow() {
 		None,
 		None,
 	);
-	let id0 = BlockId::Hash(block0.header.hash());
+	let id0 = block0.header.hash();
 
 	let blocks1 = (0..LEVEL_LIMIT)
 		.into_iter()
@@ -517,7 +619,7 @@ fn prune_blocks_on_level_overflow() {
 			)
 		})
 		.collect::<Vec<_>>();
-	let id10 = BlockId::Hash(blocks1[0].header.hash());
+	let id10 = blocks1[0].header.hash();
 
 	let blocks2 = (0..2)
 		.into_iter()
@@ -615,7 +717,7 @@ fn restore_limit_monitor() {
 		None,
 		None,
 	);
-	let id00 = BlockId::Hash(block00.header.hash());
+	let id00 = block00.header.hash();
 
 	let blocks1 = (0..LEVEL_LIMIT + 1)
 		.into_iter()
@@ -630,7 +732,7 @@ fn restore_limit_monitor() {
 			)
 		})
 		.collect::<Vec<_>>();
-	let id10 = BlockId::Hash(blocks1[0].header.hash());
+	let id10 = blocks1[0].header.hash();
 
 	let _ = (0..LEVEL_LIMIT)
 		.into_iter()

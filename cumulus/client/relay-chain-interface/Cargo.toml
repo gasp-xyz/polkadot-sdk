@@ -5,19 +5,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.36" }
-polkadot-service = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.36" }
+polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
 
 cumulus-primitives-core = { path = "../../primitives/core" }
 
-sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
-sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
-sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 
-tokio = { version = "1.21.2", features = ["sync"] }
-futures = "0.3.25"
-async-trait = "0.1.59"
+futures = "0.3.26"
+async-trait = "0.1.66"
 thiserror = "1.0.38"
 jsonrpsee-core = "0.16.2"
-parity-scale-codec = "3.2.1"
+parity-scale-codec = "3.4.0"

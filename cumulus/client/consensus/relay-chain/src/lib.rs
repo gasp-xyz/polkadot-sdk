@@ -36,7 +36,7 @@
 use cumulus_client_consensus_common::{
 	ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
 };
-use cumulus_primitives_core::{relay_chain::v2::Hash as PHash, ParaId, PersistedValidationData};
+use cumulus_primitives_core::{relay_chain::Hash as PHash, ParaId, PersistedValidationData};
 use cumulus_relay_chain_interface::RelayChainInterface;
 
 use sc_consensus::{BlockImport, BlockImportParams};
@@ -197,13 +197,7 @@ where
 			sc_consensus::StorageChanges::Changes(storage_changes),
 		);
 
-		if let Err(err) = self
-			.block_import
-			.lock()
-			.await
-			.import_block(block_import_params, Default::default())
-			.await
-		{
+		if let Err(err) = self.block_import.lock().await.import_block(block_import_params).await {
 			tracing::error!(
 				target: LOG_TARGET,
 				at = ?parent.hash(),

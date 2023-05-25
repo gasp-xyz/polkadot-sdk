@@ -232,6 +232,7 @@ where
 		{
 			panic!("Invalid AuRa seal");
 		}
+
 		I::execute_block(Block::new(header, extrinsics));
 	}
 }
