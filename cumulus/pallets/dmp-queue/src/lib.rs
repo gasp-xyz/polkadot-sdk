@@ -29,6 +29,7 @@ use frame_support::{
 	traits::EnsureOrigin,
 	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight},
 };
+use mangata_support::traits::GetMaintenanceStatusTrait;
 pub use pallet::*;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
@@ -100,6 +101,8 @@ pub mod pallet {
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
+		type MaintenanceStatusProvider: GetMaintenanceStatusTrait;
+
 		type XcmExecutor: ExecuteXcm<Self::RuntimeCall>;
 
 		/// Origin which is allowed to execute overweight messages.
@@ -135,6 +138,8 @@ pub mod pallet {
 		Unknown,
 		/// The amount of weight given is possibly not enough for executing the message.
 		OverLimit,
+		/// Dmp message processing is blocked by maintenance mode
+		DmpMsgProcessingBlockedByMaintenanceMode,
 	}
 
 	#[pallet::hooks]
@@ -160,6 +165,11 @@ pub mod pallet {
 			weight_limit: Weight,
 		) -> DispatchResultWithPostInfo {
 			T::ExecuteOverweightOrigin::ensure_origin(origin)?;
+
+			ensure!(
+				!T::MaintenanceStatusProvider::is_maintenance(),
+				Error::<T>::DmpMsgProcessingBlockedByMaintenanceMode
+			);
 
 			let (sent_at, data) = Overweight::<T>::get(index).ok_or(Error::<T>::Unknown)?;
 			let weight_used = Self::try_service_message(weight_limit, sent_at, &data[..])
@@ -212,7 +222,14 @@ pub mod pallet {
 			messages_processed: &mut u8,
 		) -> Weight {
 			let mut used = Weight::zero();
+			let config = Configuration::<T>::get();
 			while page_index.begin_used < page_index.end_used {
+				// The page is taken from storage.
+				// So later on when we detect an overweight message, all we need to do
+				// is add it to the overweight message storage and bump overweight_count
+				// This will auto ignore the processed messages (overweight and otherwise) (`&page[i..]`)
+				// when adding the remaning messages back into the page storage
+				// Or just ignore the entire page if all messages in it are processed
 				let page = Pages::<T>::take(page_index.begin_used);
 				for (i, &(sent_at, ref data)) in page.iter().enumerate() {
 					if *messages_processed >= MAX_MESSAGES_PER_BLOCK {
@@ -224,10 +241,38 @@ pub mod pallet {
 					match Self::try_service_message(limit.saturating_sub(used), sent_at, &data[..])
 					{
 						Ok(w) => used += w,
-						Err(..) => {
-							// Too much weight needed - put the remaining messages back and bail
-							Pages::<T>::insert(page_index.begin_used, &page[i..]);
-							return used
+						// During maintenance mode
+						// Due to us returning try_service_message with an Err and zero weight
+						// Overweight messages might not be picked out and placed in the overweight message storage
+						// And will remain undetected in the page.
+						// Now when message processing is resumed, if overweight messages are not detected here
+						// and this do_service_queue function returns when try_service_message returns any error
+						// including overweight messages
+						// Then if an overweight message was received during the maintenance mode
+						// And maintenance mode lifted then do_service_queue
+						// will always short-circuit on the overweight message and page processing will never progress
+						Err((message_id, required_weight)) =>
+						// Too much weight required right now.
+						{
+							if required_weight.any_gt(config.max_individual) {
+								// overweight - add to overweight queue and continue with
+								// message execution.
+								let overweight_index = page_index.overweight_count;
+								Overweight::<T>::insert(overweight_index, (sent_at, data));
+								Self::deposit_event(Event::OverweightEnqueued {
+									message_id,
+									overweight_index,
+									required_weight,
+								});
+								page_index.overweight_count += 1;
+								// Not needed for control flow, but only to ensure that the compiler
+								// understands that we won't attempt to re-use `data` later.
+								continue
+							} else {
+								// Too much weight needed - put the remaining messages back and bail
+								Pages::<T>::insert(page_index.begin_used, &page[i..]);
+								return used
+							}
 						},
 					}
 				}
@@ -267,6 +312,10 @@ pub mod pallet {
 					Ok(Weight::zero())
 				},
 				Ok(Ok(x)) => {
+					ensure!(
+						!T::MaintenanceStatusProvider::is_maintenance(),
+						(message_id, Weight::zero())
+					);
 					let outcome = T::XcmExecutor::execute_xcm(Parent, x, message_id, limit);
 					match outcome {
 						Outcome::Error(XcmError::WeightLimitReached(required)) =>
@@ -390,7 +439,7 @@ mod tests {
 		DispatchError::BadOrigin,
 	};
 	use sp_version::RuntimeVersion;
-	use std::cell::RefCell;
+	use std::{cell::RefCell, thread::LocalKey};
 	use xcm::latest::{MultiLocation, OriginKind};
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -454,8 +503,37 @@ mod tests {
 		type MaxConsumers = frame_support::traits::ConstU32<16>;
 	}
 
+	pub struct MockMaintenanceStatusProvider;
+
+	#[cfg(test)]
+	impl MockMaintenanceStatusProvider {
+		pub fn instance() -> &'static LocalKey<RefCell<(bool, bool)>> {
+			&MAINTENANCE_STATUS
+		}
+	}
+
+	impl MockMaintenanceStatusProvider {
+		pub fn set_maintenance_status(is_maintenance: bool, is_upgradable: bool) {
+			Self::instance().with(|r| {
+				*r.borrow_mut() = (is_maintenance, is_upgradable);
+			});
+		}
+	}
+
+	impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
+		fn is_maintenance() -> bool {
+			Self::instance().with(|r| *r.borrow()).0
+		}
+
+		fn is_upgradable() -> bool {
+			let m = Self::instance().with(|r| *r.borrow());
+			(!m.0) || (m.0 && m.1)
+		}
+	}
+
 	thread_local! {
 		pub static TRACE: RefCell<Vec<(Xcm, Outcome)>> = RefCell::new(Vec::new());
+		pub static MAINTENANCE_STATUS: RefCell<(bool, bool)> = (false, false).into();
 	}
 	pub fn take_trace() -> Vec<(Xcm, Outcome)> {
 		TRACE.with(|q| {
@@ -522,6 +600,7 @@ mod tests {
 
 	impl Config for Test {
 		type RuntimeEvent = RuntimeEvent;
+		type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 		type XcmExecutor = MockExec;
 		type ExecuteOverweightOrigin = frame_system::EnsureRoot<AccountId>;
 	}
@@ -682,6 +761,117 @@ mod tests {
 				]
 			);
 			assert!(queue_is_empty());
+		});
+	}
+
+	#[test]
+	fn service_works_maintenance_mode() {
+		new_test_ext().execute_with(|| {
+			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+
+			let incoming = vec![msg(1002), msg(1003)];
+			let weight_used = handle_messages(&incoming, Weight::from_parts(5000, 5000));
+			assert_eq!(weight_used, Weight::zero());
+			assert_eq!(take_trace(), vec![]);
+			assert_eq!(pages_queued(), 1);
+
+			let enqueued = vec![msg(1000), msg(1001)];
+			let incoming = vec![msg(1004), msg(1005)];
+			enqueue(&enqueued);
+			let weight_used = handle_messages(&incoming, Weight::from_parts(5000, 5000));
+			assert_eq!(weight_used, Weight::zero());
+			assert_eq!(take_trace(), vec![]);
+			assert_eq!(pages_queued(), 3);
+
+			MockMaintenanceStatusProvider::set_maintenance_status(false, false);
+
+			let incoming = vec![msg(1006), msg(1007)];
+			let weight_used = handle_messages(&incoming, Weight::from_parts(2500, 2500));
+			assert_eq!(weight_used, Weight::from_parts(2005, 2005));
+			assert_eq!(
+				take_trace(),
+				vec![msg_complete(1002), msg_complete(1003), msg_limit_reached(1000)]
+			);
+			assert_eq!(pages_queued(), 3);
+
+			let incoming = vec![msg(1008), msg(1009)];
+			let weight_used = handle_messages(&incoming, Weight::from_parts(10000, 10000));
+			assert_eq!(weight_used, Weight::from_parts(8040, 8040));
+			assert_eq!(
+				take_trace(),
+				vec![
+					msg_complete(1000),
+					msg_complete(1001),
+					msg_complete(1004),
+					msg_complete(1005),
+					msg_complete(1006),
+					msg_complete(1007),
+					msg_complete(1008),
+					msg_complete(1009),
+				]
+			);
+			assert_eq!(pages_queued(), 0);
+		});
+	}
+
+	#[test]
+	fn inline_overweight_during_maintenance_mode_sorted_first_in_queue() {
+		new_test_ext().execute_with(|| {
+			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+
+			// Set the overweight threshold to 9999.
+			Configuration::<Test>::put(ConfigData {
+				max_individual: Weight::from_parts(9999, 9999),
+			});
+
+			let incoming = vec![msg(1002), msg(10003)];
+			let weight_used = handle_messages(&incoming, Weight::from_parts(5000, 5000));
+			assert_eq!(weight_used, Weight::zero());
+			assert_eq!(take_trace(), vec![]);
+			assert_eq!(pages_queued(), 1);
+
+			let enqueued = vec![msg(1000), msg(1001)];
+			let incoming = vec![msg(1004), msg(1005)];
+			enqueue(&enqueued);
+			let weight_used = handle_messages(&incoming, Weight::from_parts(5000, 5000));
+			assert_eq!(weight_used, Weight::zero());
+			assert_eq!(take_trace(), vec![]);
+			assert_eq!(pages_queued(), 3);
+
+			MockMaintenanceStatusProvider::set_maintenance_status(false, false);
+
+			let incoming = vec![msg(1006), msg(1007)];
+			let weight_used = handle_messages(&incoming, Weight::from_parts(2500, 2500));
+			assert_eq!(weight_used, Weight::from_parts(2002, 2002));
+			assert_eq!(
+				take_trace(),
+				vec![
+					msg_complete(1002),
+					msg_limit_reached(10003),
+					msg_complete(1000),
+					msg_limit_reached(1001)
+				]
+			);
+			assert_eq!(pages_queued(), 3);
+			assert_eq!(overweights(), vec![0]);
+
+			let incoming = vec![msg(1008), msg(1009)];
+			let weight_used = handle_messages(&incoming, Weight::from_parts(10000, 10000));
+			assert_eq!(weight_used, Weight::from_parts(7040, 7040));
+			assert_eq!(
+				take_trace(),
+				vec![
+					msg_complete(1001),
+					msg_complete(1004),
+					msg_complete(1005),
+					msg_complete(1006),
+					msg_complete(1007),
+					msg_complete(1008),
+					msg_complete(1009),
+				]
+			);
+			assert_eq!(pages_queued(), 0);
+			assert_eq!(overweights(), vec![0]);
 		});
 	}
 
@@ -875,6 +1065,86 @@ mod tests {
 	}
 
 	#[test]
+	fn overweights_should_not_be_manually_executable_during_maintenance_mode() {
+		new_test_ext().execute_with(|| {
+			// Set the overweight threshold to 9999.
+			Configuration::<Test>::put(ConfigData {
+				max_individual: Weight::from_parts(9999, 9999),
+			});
+
+			let incoming = vec![msg(10000)];
+			let weight_used = handle_messages(&incoming, Weight::from_parts(2500, 2500));
+			assert_eq!(weight_used, Weight::zero());
+			assert_eq!(take_trace(), vec![msg_limit_reached(10000)]);
+			assert_eq!(overweights(), vec![0]);
+
+			assert_noop!(
+				DmpQueue::service_overweight(
+					RuntimeOrigin::signed(1),
+					0,
+					Weight::from_parts(20000, 20000)
+				),
+				BadOrigin
+			);
+			assert_noop!(
+				DmpQueue::service_overweight(
+					RuntimeOrigin::root(),
+					1,
+					Weight::from_parts(20000, 20000)
+				),
+				Error::<Test>::Unknown
+			);
+			assert_noop!(
+				DmpQueue::service_overweight(
+					RuntimeOrigin::root(),
+					0,
+					Weight::from_parts(9999, 9999)
+				),
+				Error::<Test>::OverLimit
+			);
+			assert_eq!(take_trace(), vec![msg_limit_reached(10000)]);
+
+			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+
+			assert_noop!(
+				DmpQueue::service_overweight(
+					RuntimeOrigin::root(),
+					0,
+					Weight::from_parts(20000, 20000)
+				),
+				Error::<Test>::DmpMsgProcessingBlockedByMaintenanceMode
+			);
+
+			MockMaintenanceStatusProvider::set_maintenance_status(false, false);
+
+			let base_weight =
+				super::Call::<Test>::service_overweight { index: 0, weight_limit: Weight::zero() }
+					.get_dispatch_info()
+					.weight;
+			use frame_support::dispatch::GetDispatchInfo;
+			let info = DmpQueue::service_overweight(
+				RuntimeOrigin::root(),
+				0,
+				Weight::from_parts(20000, 20000),
+			)
+			.unwrap();
+			let actual_weight = info.actual_weight.unwrap();
+			assert_eq!(actual_weight, base_weight + Weight::from_parts(10000, 10000));
+			assert_eq!(take_trace(), vec![msg_complete(10000)]);
+			assert!(overweights().is_empty());
+
+			assert_noop!(
+				DmpQueue::service_overweight(
+					RuntimeOrigin::root(),
+					0,
+					Weight::from_parts(20000, 20000)
+				),
+				Error::<Test>::Unknown
+			);
+		});
+	}
+
+	#[test]
 	fn on_idle_should_service_queue() {
 		new_test_ext().execute_with(|| {
 			enqueue(&vec![msg(1000), msg(1001)]);
@@ -895,6 +1165,21 @@ mod tests {
 				]
 			);
 			assert_eq!(pages_queued(), 1);
+		});
+	}
+
+	#[test]
+	fn on_idle_should_not_service_queue_in_maintenance_mode() {
+		new_test_ext().execute_with(|| {
+			MockMaintenanceStatusProvider::set_maintenance_status(true, false);
+			enqueue(&vec![msg(1000), msg(1001)]);
+			enqueue(&vec![msg(1002), msg(1003)]);
+			enqueue(&vec![msg(1004), msg(1005)]);
+
+			let weight_used = DmpQueue::on_idle(1, Weight::from_parts(6000, 0));
+			assert_eq!(weight_used, Weight::zero());
+			assert_eq!(take_trace(), vec![]);
+			assert_eq!(pages_queued(), 3);
 		});
 	}
 

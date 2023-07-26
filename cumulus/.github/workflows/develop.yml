@@ -1,0 +1,74 @@
+on:
+  pull_request:
+    branches:
+      - develop
+      - 'develop-v**'
+  push:
+    branches:
+      - develop
+      - 'develop-v**'
+
+name: CI
+
+env:
+  TOOLCHAIN: nightly-2022-11-15
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install ${{ env.TOOLCHAIN }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.TOOLCHAIN }}
+          default: true
+          components: rustfmt
+          target: wasm32-unknown-unknown
+      - uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.TOOLCHAIN }}
+          command: fmt
+          args: --all -- --check
+
+  build:
+    runs-on: cumulus-repo-worker-2004
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install ${{ env.TOOLCHAIN }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.TOOLCHAIN }}
+          default: true
+          components: rustfmt
+          target: wasm32-unknown-unknown
+      - uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.TOOLCHAIN }}
+          command: build
+          args: --release
+
+  test:
+    runs-on: cumulus-repo-test-job-workers
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install ${{ env.TOOLCHAIN }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.TOOLCHAIN }}
+          default: true
+          components: rustfmt
+          target: wasm32-unknown-unknown
+      - uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.TOOLCHAIN }}
+          command: test
+          args: -j1

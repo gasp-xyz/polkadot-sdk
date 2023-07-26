@@ -45,6 +45,7 @@ use frame_support::{
 	RuntimeDebug,
 };
 use frame_system::{ensure_none, ensure_root};
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -193,6 +194,8 @@ pub mod pallet {
 
 		/// Something that can check the associated relay parent block number.
 		type CheckAssociatedRelayNumber: CheckAssociatedRelayNumber;
+
+		type MaintenanceStatusProvider: GetMaintenanceStatusTrait;
 	}
 
 	#[pallet::hooks]
@@ -231,6 +234,10 @@ pub mod pallet {
 					return
 				},
 			};
+
+			if T::MaintenanceStatusProvider::is_maintenance() {
+				return
+			}
 
 			<PendingUpwardMessages<T>>::mutate(|up| {
 				let (count, size) = relevant_messaging_state.relay_dispatch_queue_size;
@@ -392,19 +399,20 @@ pub mod pallet {
 				.read_upgrade_go_ahead_signal()
 				.expect("Invalid upgrade go ahead signal");
 			match upgrade_go_ahead_signal {
-				Some(relay_chain::UpgradeGoAhead::GoAhead) => {
-					assert!(
-						<PendingValidationCode<T>>::exists(),
-						"No new validation function found in storage, GoAhead signal is not expected",
-					);
-					let validation_code = <PendingValidationCode<T>>::take();
+				Some(relay_chain::UpgradeGoAhead::GoAhead) =>
+					if T::MaintenanceStatusProvider::is_upgradable() {
+						assert!(
+							<PendingValidationCode<T>>::exists(),
+							"No new validation function found in storage, GoAhead signal is not expected",
+						);
+						let validation_code = <PendingValidationCode<T>>::take();
 
-					Self::put_parachain_code(&validation_code);
-					<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
-					Self::deposit_event(Event::ValidationFunctionApplied {
-						relay_chain_block_num: vfp.relay_parent_number,
-					});
-				},
+						Self::put_parachain_code(&validation_code);
+						<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
+						Self::deposit_event(Event::ValidationFunctionApplied {
+							relay_chain_block_num: vfp.relay_parent_number,
+						});
+					},
 				Some(relay_chain::UpgradeGoAhead::Abort) => {
 					<PendingValidationCode<T>>::kill();
 					Self::deposit_event(Event::ValidationFunctionDiscarded);
@@ -473,6 +481,12 @@ pub mod pallet {
 			check_version: bool,
 		) -> DispatchResult {
 			ensure_root(origin)?;
+
+			ensure!(
+				T::MaintenanceStatusProvider::is_upgradable(),
+				Error::<T>::UpgradeBlockedByMaintenanceMode
+			);
+
 			AuthorizedUpgrade::<T>::put(CodeUpgradeAuthorization {
 				code_hash: code_hash.clone(),
 				check_version,
@@ -542,6 +556,8 @@ pub mod pallet {
 		NothingAuthorized,
 		/// The given code upgrade has not been authorized.
 		Unauthorized,
+		/// Upgrades are blocked due to maintenance mode
+		UpgradeBlockedByMaintenanceMode,
 	}
 
 	/// In case of a scheduled upgrade, this storage field contains the validation code to be applied.
@@ -987,6 +1003,10 @@ impl<T: Config> Pallet<T> {
 		// but we do care about the [`UpgradeRestrictionSignal`] which arrives with the same inherent.
 		ensure!(<ValidationData<T>>::exists(), Error::<T>::ValidationDataNotAvailable,);
 		ensure!(<UpgradeRestrictionSignal<T>>::get().is_none(), Error::<T>::ProhibitedByPolkadot);
+		ensure!(
+			T::MaintenanceStatusProvider::is_upgradable(),
+			Error::<T>::UpgradeBlockedByMaintenanceMode
+		);
 
 		ensure!(!<PendingValidationCode<T>>::exists(), Error::<T>::OverlappingUpgrades);
 		let cfg = Self::host_configuration().ok_or(Error::<T>::HostConfigurationNotAvailable)?;

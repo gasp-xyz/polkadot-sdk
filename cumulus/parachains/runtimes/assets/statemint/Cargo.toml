@@ -46,6 +46,8 @@ sp-transaction-pool = { git = "https://github.com/paritytech/substrate", default
 sp-version = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-weights = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 
+mangata-support = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "develop" }
+
 # Polkadot
 pallet-xcm = { git = "https://github.com/paritytech/polkadot", default-features = false, branch = "master" }
 pallet-xcm-benchmarks = { git = "https://github.com/paritytech/polkadot", branch = "master", default-features = false, optional = true }
@@ -180,5 +182,6 @@ std = [
 	"parachain-info/std",
 	"parachains-common/std",
 	"assets-common/std",
+	"mangata-support/std",
 	"substrate-wasm-builder",
 ]

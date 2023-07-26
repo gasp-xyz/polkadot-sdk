@@ -26,6 +26,8 @@ sp-std = { git = "https://github.com/paritytech/substrate", default-features = f
 sp-trie = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-version = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 
+mangata-support = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "develop" }
+
 # Polkadot
 polkadot-parachain = { git = "https://github.com/paritytech/polkadot", default-features = false, features = [ "wasm-api" ], branch = "master" }
 xcm = { git = "https://github.com/paritytech/polkadot", default-features = false, branch = "master" }
@@ -68,6 +70,7 @@ std = [
 	"sp-state-machine/std",
 	"sp-std/std",
 	"sp-trie/std",
+	"mangata-support/std",
 	"xcm/std",
 ]
 

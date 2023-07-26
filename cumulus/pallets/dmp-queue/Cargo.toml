@@ -16,6 +16,8 @@ sp-io = { git = "https://github.com/paritytech/substrate", default-features = fa
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 
+mangata-support = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "develop" }
+
 # Polkadot
 xcm = { git = "https://github.com/paritytech/polkadot", default-features = false, branch = "master" }
 
@@ -39,5 +41,6 @@ std = [
 	"sp-std/std",
 	"xcm/std",
 	"cumulus-primitives-core/std",
+	"mangata-support/std"
 ]
 try-runtime = ["frame-support/try-runtime"]
