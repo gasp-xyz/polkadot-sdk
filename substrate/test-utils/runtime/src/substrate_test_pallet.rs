@@ -189,6 +189,12 @@ pub mod pallet {
 		pub fn read_and_panic(_origin: OriginFor<T>, count: u32) -> DispatchResult {
 			Self::execute_read(count, true)
 		}
+
+		#[pallet::call_index(12)]
+		#[pallet::weight(100)]
+		pub fn enqueue(_origin: OriginFor<T>, _count: u64) -> DispatchResult {
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -227,6 +233,7 @@ pub mod pallet {
 				// Some tests do not need to be complicated with signer and nonce, some need
 				// reproducible block hash (call signature can't be there).
 				// Offchain testing requires storage_change.
+				Call::enqueue { .. } |
 				Call::deposit_log_digest_item { .. } |
 				Call::storage_change { .. } |
 				Call::read { .. } |

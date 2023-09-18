@@ -22,6 +22,7 @@ use sp_api::{ApiExt, ProvideRuntimeApi};
 
 use sc_block_builder::BlockBuilderApi;
 use substrate_test_runtime::*;
+use ver_api::VerApi;
 
 /// Extension trait for test block builder.
 pub trait BlockBuilderExt {
@@ -49,7 +50,9 @@ impl<'a, A, B> BlockBuilderExt
 	for sc_block_builder::BlockBuilder<'a, substrate_test_runtime::Block, A, B>
 where
 	A: ProvideRuntimeApi<substrate_test_runtime::Block> + 'a,
-	A::Api: BlockBuilderApi<substrate_test_runtime::Block> + ApiExt<substrate_test_runtime::Block>,
+	A::Api: BlockBuilderApi<substrate_test_runtime::Block>
+		+ ApiExt<substrate_test_runtime::Block>
+		+ VerApi<substrate_test_runtime::Block>,
 	B: backend::Backend<substrate_test_runtime::Block>,
 {
 	fn push_transfer(

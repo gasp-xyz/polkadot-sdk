@@ -168,7 +168,7 @@ pub type Digest = sp_runtime::generic::Digest;
 /// A test block.
 pub type Block = sp_runtime::generic::Block<Header, Extrinsic>;
 /// A test block's header.
-pub type Header = sp_runtime::generic::Header<BlockNumber, Hashing>;
+pub type Header = sp_runtime::generic::HeaderVer<BlockNumber, Hashing>;
 /// Balance of an account.
 pub type Balance = u64;
 
@@ -484,6 +484,43 @@ impl_runtime_apis! {
 		fn initialize_block(header: &<Block as BlockT>::Header) {
 			log::trace!(target: LOG_TARGET, "initialize_block: {header:#?}");
 			Executive::initialize_block(header);
+		}
+	}
+
+	impl ver_api::VerApi<Block> for Runtime {
+		fn get_signer(
+			_tx: <Block as BlockT>::Extrinsic,
+		) -> Option<(sp_runtime::AccountId32, u32)> {
+			None
+		}
+
+		fn is_storage_migration_scheduled() -> bool{
+			false
+		}
+
+		fn store_seed(_seed: sp_core::H256){
+		}
+
+		fn can_enqueue_txs() -> bool {
+			true
+		}
+
+
+		fn create_enqueue_txs_inherent(txs: Vec<<Block as BlockT>::Extrinsic>) -> <Block as BlockT>::Extrinsic{
+			Extrinsic::new_unsigned(
+				substrate_test_pallet::pallet::Call::enqueue { count: txs.len() as u64 }.into(),
+			)
+		}
+
+		fn pop_txs(_count: u64) -> sp_application_crypto::Vec<sp_application_crypto::Vec<u8>> {
+			Default::default()
+		}
+
+		fn get_previous_block_txs() -> Vec<Vec<u8>>{
+			Default::default()
+		}
+
+		fn start_prevalidation() {
 		}
 	}
 
@@ -877,6 +914,7 @@ pub mod storage_key_generator {
 			vec![b"System", b"ParentHash"],
 			vec![b"System", b"UpgradedToTripleRefCount"],
 			vec![b"System", b"UpgradedToU32RefCount"],
+			vec![b"System", b"BlockSeed"],
 		];
 
 		let mut expected_keys = keys.iter().map(concat_hashes).collect::<Vec<String>>();
@@ -942,6 +980,8 @@ pub mod storage_key_generator {
 			"26aa394eea5630e07c48ae0c9558cef74e7b9012096b41c4eb3aaf947f6ea429",
 			//System|UpgradedToU32RefCount
 			"26aa394eea5630e07c48ae0c9558cef75684a022a34dd8bfa2baaf44f172b710",
+			//System|BlockSeed
+			"26aa394eea5630e07c48ae0c9558cef75c540941fbb0902735b83365f9a5c62f",
 			//System|ParentHash
 			"26aa394eea5630e07c48ae0c9558cef78a42f33323cb5ced3b44dd825fda9fcc",
 			//System::BlockHash|0
@@ -1060,6 +1100,14 @@ mod tests {
 			(hash, block)
 		};
 
+		futures::executor::block_on(client.import(BlockOrigin::Own, block)).unwrap();
+
+		let (new_at_hash, block) = {
+			let builder = client.new_block_at(new_at_hash, Default::default(), false).unwrap();
+			let block = builder.build().unwrap().block;
+			let hash = block.header.hash();
+			(hash, block)
+		};
 		futures::executor::block_on(client.import(BlockOrigin::Own, block)).unwrap();
 
 		// Allocation of 1024k while having ~2048k should succeed.
@@ -1253,6 +1301,8 @@ mod tests {
 				"1cb6f36e027abb2091cfb5110ab5087fdc6b171b77304263c292cc3ea5ed31ef",
 				//System|UpgradedToU32RefCount
 				"26aa394eea5630e07c48ae0c9558cef75684a022a34dd8bfa2baaf44f172b710",
+				//System|BlockSeed
+			    "26aa394eea5630e07c48ae0c9558cef75c540941fbb0902735b83365f9a5c62f",
 				//System|ParentHash
 				"26aa394eea5630e07c48ae0c9558cef78a42f33323cb5ced3b44dd825fda9fcc",
 				//System::BlockHash|0

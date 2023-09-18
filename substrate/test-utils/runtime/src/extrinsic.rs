@@ -169,6 +169,10 @@ impl ExtrinsicBuilder {
 		Self::new_unsigned(PalletCall::read_and_panic { count })
 	}
 
+	pub fn new_enqueue(count: u64) -> Self {
+		Self::new_unsigned(PalletCall::enqueue { count })
+	}
+
 	/// Unsigned `Extrinsic` will be created
 	pub fn unsigned(mut self) -> Self {
 		self.signer = None;
