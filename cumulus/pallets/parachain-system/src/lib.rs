@@ -44,6 +44,7 @@ use frame_support::{
 	weights::Weight,
 };
 use frame_system::{ensure_none, ensure_root, pallet_prelude::HeaderFor};
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -236,6 +237,8 @@ pub mod pallet {
 		/// is activated.
 		#[cfg(feature = "parameterized-consensus-hook")]
 		type ConsensusHook: ConsensusHook;
+
+		type MaintenanceStatusProvider: GetMaintenanceStatusTrait;
 	}
 
 	#[pallet::hooks]
@@ -275,6 +278,10 @@ pub mod pallet {
 					return
 				},
 			};
+
+			if T::MaintenanceStatusProvider::is_maintenance() {
+				return
+			}
 
 			// After this point, the `RelevantMessagingState` in storage reflects the
 			// unincluded segment.
@@ -560,19 +567,20 @@ pub mod pallet {
 				Some(_signal) if upgrade_signal_in_segment.is_some() => {
 					// Do nothing, processing logic was executed by unincluded ancestor.
 				},
-				Some(relay_chain::UpgradeGoAhead::GoAhead) => {
-					assert!(
-						<PendingValidationCode<T>>::exists(),
-						"No new validation function found in storage, GoAhead signal is not expected",
-					);
-					let validation_code = <PendingValidationCode<T>>::take();
+				Some(relay_chain::UpgradeGoAhead::GoAhead) =>
+					if T::MaintenanceStatusProvider::is_upgradable() {
+						assert!(
+							<PendingValidationCode<T>>::exists(),
+							"No new validation function found in storage, GoAhead signal is not expected",
+						);
+						let validation_code = <PendingValidationCode<T>>::take();
 
-					Self::put_parachain_code(&validation_code);
-					<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
-					Self::deposit_event(Event::ValidationFunctionApplied {
-						relay_chain_block_num: vfp.relay_parent_number,
-					});
-				},
+						Self::put_parachain_code(&validation_code);
+						<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
+						Self::deposit_event(Event::ValidationFunctionApplied {
+							relay_chain_block_num: vfp.relay_parent_number,
+						});
+					},
 				Some(relay_chain::UpgradeGoAhead::Abort) => {
 					<PendingValidationCode<T>>::kill();
 					Self::deposit_event(Event::ValidationFunctionDiscarded);
@@ -641,6 +649,12 @@ pub mod pallet {
 			check_version: bool,
 		) -> DispatchResult {
 			ensure_root(origin)?;
+
+			ensure!(
+				T::MaintenanceStatusProvider::is_upgradable(),
+				Error::<T>::UpgradeBlockedByMaintenanceMode
+			);
+
 			AuthorizedUpgrade::<T>::put(CodeUpgradeAuthorization { code_hash, check_version });
 
 			Self::deposit_event(Event::UpgradeAuthorized { code_hash });
@@ -707,6 +721,8 @@ pub mod pallet {
 		NothingAuthorized,
 		/// The given code upgrade has not been authorized.
 		Unauthorized,
+		/// Upgrades are blocked due to maintenance mode
+		UpgradeBlockedByMaintenanceMode,
 	}
 
 	/// Latest included block descendants the runtime accepted. In other words, these are
@@ -1343,6 +1359,10 @@ impl<T: Config> Pallet<T> {
 		// inherent.
 		ensure!(<ValidationData<T>>::exists(), Error::<T>::ValidationDataNotAvailable,);
 		ensure!(<UpgradeRestrictionSignal<T>>::get().is_none(), Error::<T>::ProhibitedByPolkadot);
+		ensure!(
+			T::MaintenanceStatusProvider::is_upgradable(),
+			Error::<T>::UpgradeBlockedByMaintenanceMode
+		);
 
 		ensure!(!<PendingValidationCode<T>>::exists(), Error::<T>::OverlappingUpgrades);
 		let cfg = Self::host_configuration().ok_or(Error::<T>::HostConfigurationNotAvailable)?;
