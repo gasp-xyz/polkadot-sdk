@@ -25,7 +25,7 @@ use sp_runtime::traits::BadOrigin;
 fn one_message_does_not_panic() {
 	new_test_ext().execute_with(|| {
 		let message_format = XcmpMessageFormat::ConcatenatedVersionedXcm.encode();
-		let messages = vec![(Default::default(), 1u32.into(), message_format.as_slice())];
+		let messages = vec![(Default::default(), 1u32, message_format.as_slice())];
 
 		// This shouldn't cause a panic
 		XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
@@ -55,8 +55,8 @@ fn bad_message_is_handled() {
 	});
 }
 
-/// Tests that a blob message is handled. Currently this isn't implemented and panics when debug assertions
-/// are enabled. When this feature is enabled, this test should be rewritten properly.
+/// Tests that a blob message is handled. Currently this isn't implemented and panics when debug
+/// assertions are enabled. When this feature is enabled, this test should be rewritten properly.
 #[test]
 #[should_panic = "Blob messages not handled."]
 #[cfg(debug_assertions)]
@@ -141,7 +141,7 @@ fn suspend_xcm_execution_works() {
 				.encode();
 		let mut message_format = XcmpMessageFormat::ConcatenatedVersionedXcm.encode();
 		message_format.extend(xcm.clone());
-		let messages = vec![(ParaId::from(999), 1u32.into(), message_format.as_slice())];
+		let messages = vec![(ParaId::from(999), 1u32, message_format.as_slice())];
 
 		// This should have executed the incoming XCM, because it came from a system parachain
 		XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
@@ -149,7 +149,7 @@ fn suspend_xcm_execution_works() {
 		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(999), 1u32);
 		assert!(queued_xcm.is_empty());
 
-		let messages = vec![(ParaId::from(2000), 1u32.into(), message_format.as_slice())];
+		let messages = vec![(ParaId::from(2000), 1u32, message_format.as_slice())];
 
 		// This shouldn't have executed the incoming XCM
 		XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
@@ -217,7 +217,7 @@ fn on_idle_should_not_service_queue_in_maintenance_mode() {
 		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(2000), 1u32);
 		assert_eq!(queued_xcm, xcm);
 
-		let weight_used = XcmpQueue::on_idle(1, Weight::from_ref_time(6000));
+		let weight_used = XcmpQueue::on_idle(1, Weight::from_parts(6000, 0));
 		assert_eq!(weight_used, Weight::zero());
 
 		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(999), 1u32);
@@ -376,7 +376,7 @@ fn xcmp_queue_does_not_consume_dest_or_msg_on_not_applicable() {
 
 	// XcmpQueue - check dest is really not applicable
 	let dest = (Parent, Parent, Parent);
-	let mut dest_wrapper = Some(dest.clone().into());
+	let mut dest_wrapper = Some(dest.into());
 	let mut msg_wrapper = Some(message.clone());
 	assert_eq!(
 		Err(SendError::NotApplicable),
@@ -384,7 +384,7 @@ fn xcmp_queue_does_not_consume_dest_or_msg_on_not_applicable() {
 	);
 
 	// check wrapper were not consumed
-	assert_eq!(Some(dest.clone().into()), dest_wrapper.take());
+	assert_eq!(Some(dest.into()), dest_wrapper.take());
 	assert_eq!(Some(message.clone()), msg_wrapper.take());
 
 	// another try with router chain with asserting sender
@@ -404,7 +404,7 @@ fn xcmp_queue_consumes_dest_and_msg_on_ok_validate() {
 
 	// XcmpQueue - check dest/msg is valid
 	let dest = (Parent, X1(Parachain(5555)));
-	let mut dest_wrapper = Some(dest.clone().into());
+	let mut dest_wrapper = Some(dest.into());
 	let mut msg_wrapper = Some(message.clone());
 	assert!(<XcmpQueue as SendXcm>::validate(&mut dest_wrapper, &mut msg_wrapper).is_ok());
 

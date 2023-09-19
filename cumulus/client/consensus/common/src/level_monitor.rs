@@ -22,6 +22,8 @@ use std::{
 	sync::Arc,
 };
 
+const LOG_TARGET: &str = "level-monitor";
+
 /// Value good enough to be used with parachains using the current backend implementation
 /// that ships with Substrate. This value may change in the future.
 pub const MAX_LEAVES_PER_LEVEL_SENSIBLE_DEFAULT: usize = 32;
@@ -100,9 +102,10 @@ where
 		let info = self.backend.blockchain().info();
 
 		log::debug!(
-			target: "parachain",
+			target: LOG_TARGET,
 			"Restoring chain level monitor from last finalized block: {} {}",
-			info.finalized_number, info.finalized_hash
+			info.finalized_number,
+			info.finalized_hash
 		);
 
 		self.lowest_level = info.finalized_number;
@@ -124,7 +127,11 @@ where
 			}
 		}
 
-		log::debug!(target: "parachain", "Restored chain level monitor up to height {}", self.import_counter);
+		log::debug!(
+			target: LOG_TARGET,
+			"Restored chain level monitor up to height {}",
+			self.import_counter
+		);
 	}
 
 	/// Check and enforce the limit bound at the given height.
@@ -161,7 +168,7 @@ where
 		let remove_count = level_len - self.level_limit + 1;
 
 		log::debug!(
-			target: "parachain",
+			target: LOG_TARGET,
 			"Detected leaves overflow at height {number}, removing {remove_count} obsolete blocks",
 		);
 
@@ -224,9 +231,11 @@ where
 							}),
 							Err(err) => {
 								log::warn!(
-									target: "parachain",
+									target: LOG_TARGET,
 									"(Lookup) Unable getting route from {:?} to {:?}: {}",
-									blk_hash, leaf_hash, err,
+									blk_hash,
+									leaf_hash,
+									err,
 								);
 								None
 							},
@@ -243,7 +252,7 @@ where
 				None => {
 					// This should never happen
 					log::error!(
-						target: "parachain",
+						target: LOG_TARGET,
 						"Unable getting route to any leaf from {:?} (this is a bug)",
 						blk_hash,
 					);
@@ -294,9 +303,9 @@ where
 		invalidated_leaves: &mut HashSet<usize>,
 	) {
 		let mut remove_leaf = |number, hash| {
-			log::debug!(target: "parachain", "Removing block (@{}) {:?}", number, hash);
+			log::debug!(target: LOG_TARGET, "Removing block (@{}) {:?}", number, hash);
 			if let Err(err) = self.backend.remove_leaf_block(hash) {
-				log::debug!(target: "parachain", "Remove not possible for {}: {}", hash, err);
+				log::debug!(target: LOG_TARGET, "Remove not possible for {}: {}", hash, err);
 				return false
 			}
 			self.levels.get_mut(&number).map(|level| level.remove(&hash));
@@ -337,9 +346,11 @@ where
 				},
 				Err(err) => {
 					log::warn!(
-						target: "parachain",
+						target: LOG_TARGET,
 						"(Removal) unable getting route from {:?} to {:?}: {}",
-						target_hash, leaf_hash, err,
+						target_hash,
+						leaf_hash,
+						err,
 					);
 				},
 				_ => (),
@@ -351,14 +362,18 @@ where
 
 	/// Add a new imported block information to the monitor.
 	pub fn block_imported(&mut self, number: NumberFor<Block>, hash: Block::Hash) {
-		self.import_counter += One::one();
-		self.freshness.insert(hash, self.import_counter);
-		self.levels.entry(number).or_default().insert(hash);
-
-		// Do cleanup once in a while, we are allowed to have some obsolete information.
 		let finalized_num = self.backend.blockchain().info().finalized_number;
+
+		if number > finalized_num {
+			// Only blocks above the last finalized block should be added to the monitor
+			self.import_counter += One::one();
+			self.freshness.insert(hash, self.import_counter);
+			self.levels.entry(number).or_default().insert(hash);
+		}
+
 		let delta: u32 = finalized_num.saturating_sub(self.lowest_level).unique_saturated_into();
 		if delta >= CLEANUP_THRESHOLD {
+			// Do cleanup once in a while, we are allowed to have some obsolete information.
 			for i in 0..delta {
 				let number = self.lowest_level + i.unique_saturated_into();
 				self.levels.remove(&number).map(|level| {
@@ -367,7 +382,6 @@ where
 					})
 				});
 			}
-
 			self.lowest_level = finalized_num;
 		}
 	}

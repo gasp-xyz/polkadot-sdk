@@ -21,7 +21,7 @@
 use codec::{Decode, Encode};
 use polkadot_parachain::primitives::HeadData;
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
+use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 
 pub use polkadot_core_primitives::InboundDownwardMessage;
@@ -31,6 +31,12 @@ pub use polkadot_parachain::primitives::{
 };
 pub use polkadot_primitives::{
 	AbridgedHostConfiguration, AbridgedHrmpChannel, PersistedValidationData,
+};
+
+pub use sp_runtime::{
+	generic::{Digest, DigestItem},
+	traits::Block as BlockT,
+	ConsensusEngineId,
 };
 
 pub use xcm::latest::prelude::*;
@@ -134,9 +140,9 @@ impl XcmpMessageSource for () {
 /// The "quality of service" considerations for message sending.
 #[derive(Eq, PartialEq, Clone, Copy, Encode, Decode, RuntimeDebug)]
 pub enum ServiceQuality {
-	/// Ensure that this message is dispatched in the same relative order as any other messages that
-	/// were also sent with `Ordered`. This only guarantees message ordering on the dispatch side,
-	/// and not necessarily on the execution side.
+	/// Ensure that this message is dispatched in the same relative order as any other messages
+	/// that were also sent with `Ordered`. This only guarantees message ordering on the dispatch
+	/// side, and not necessarily on the execution side.
 	Ordered,
 	/// Ensure that the message is dispatched as soon as possible, which could result in it being
 	/// dispatched before other messages which are larger and/or rely on relative ordering.
@@ -198,6 +204,88 @@ impl<B: BlockT> ParachainBlockData<B> {
 	}
 }
 
+/// A consensus engine ID indicating that this is a Cumulus Parachain.
+pub const CUMULUS_CONSENSUS_ID: ConsensusEngineId = *b"CMLS";
+
+/// Consensus header digests for Cumulus parachains.
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq)]
+pub enum CumulusDigestItem {
+	/// A digest item indicating the relay-parent a parachain block was built against.
+	#[codec(index = 0)]
+	RelayParent(relay_chain::Hash),
+}
+
+impl CumulusDigestItem {
+	/// Encode this as a Substrate [`DigestItem`].
+	pub fn to_digest_item(&self) -> DigestItem {
+		DigestItem::Consensus(CUMULUS_CONSENSUS_ID, self.encode())
+	}
+}
+
+/// Extract the relay-parent from the provided header digest. Returns `None` if none were found.
+///
+/// If there are multiple valid digests, this returns the value of the first one, although
+/// well-behaving runtimes should not produce headers with more than one.
+pub fn extract_relay_parent(digest: &Digest) -> Option<relay_chain::Hash> {
+	digest.convert_first(|d| match d {
+		DigestItem::Consensus(id, val) if id == &CUMULUS_CONSENSUS_ID =>
+			match CumulusDigestItem::decode(&mut &val[..]) {
+				Ok(CumulusDigestItem::RelayParent(hash)) => Some(hash),
+				_ => None,
+			},
+		_ => None,
+	})
+}
+
+/// Utilities for handling the relay-parent storage root as a digest item.
+///
+/// This is not intended to be part of the public API, as it is a workaround for
+/// <https://github.com/paritytech/cumulus/issues/303> via
+/// <https://github.com/paritytech/polkadot/issues/7191>.
+///
+/// Runtimes using the parachain-system pallet are expected to produce this digest item,
+/// but will stop as soon as they are able to provide the relay-parent hash directly.
+///
+/// The relay-chain storage root is, in practice, a unique identifier of a block
+/// in the absence of equivocations (which are slashable). This assumes that the relay chain
+/// uses BABE or SASSAFRAS, because the slot and the author's VRF randomness are both included
+/// in the relay-chain storage root in both cases.
+///
+/// Therefore, the relay-parent storage root is a suitable identifier of unique relay chain
+/// blocks in low-value scenarios such as performance optimizations.
+#[doc(hidden)]
+pub mod rpsr_digest {
+	use super::{relay_chain, ConsensusEngineId, Decode, Digest, DigestItem, Encode};
+	use codec::Compact;
+
+	/// A consensus engine ID for relay-parent storage root digests.
+	pub const RPSR_CONSENSUS_ID: ConsensusEngineId = *b"RPSR";
+
+	/// Construct a digest item for relay-parent storage roots.
+	pub fn relay_parent_storage_root_item(
+		storage_root: relay_chain::Hash,
+		number: impl Into<Compact<relay_chain::BlockNumber>>,
+	) -> DigestItem {
+		DigestItem::Consensus(RPSR_CONSENSUS_ID, (storage_root, number.into()).encode())
+	}
+
+	/// Extract the relay-parent storage root and number from the provided header digest. Returns
+	/// `None` if none were found.
+	pub fn extract_relay_parent_storage_root(
+		digest: &Digest,
+	) -> Option<(relay_chain::Hash, relay_chain::BlockNumber)> {
+		digest.convert_first(|d| match d {
+			DigestItem::Consensus(id, val) if id == &RPSR_CONSENSUS_ID => {
+				let (h, n): (relay_chain::Hash, Compact<relay_chain::BlockNumber>) =
+					Decode::decode(&mut &val[..]).ok()?;
+
+				Some((h, n.0))
+			},
+			_ => None,
+		})
+	}
+}
+
 /// Information about a collation.
 ///
 /// This was used in version 1 of the [`CollectCollationInfo`] runtime api.
@@ -211,7 +299,8 @@ pub struct CollationInfoV1 {
 	pub new_validation_code: Option<relay_chain::ValidationCode>,
 	/// The number of messages processed from the DMQ.
 	pub processed_downward_messages: u32,
-	/// The mark which specifies the block number up to which all inbound HRMP messages are processed.
+	/// The mark which specifies the block number up to which all inbound HRMP messages are
+	/// processed.
 	pub hrmp_watermark: relay_chain::BlockNumber,
 }
 
@@ -240,7 +329,8 @@ pub struct CollationInfo {
 	pub new_validation_code: Option<relay_chain::ValidationCode>,
 	/// The number of messages processed from the DMQ.
 	pub processed_downward_messages: u32,
-	/// The mark which specifies the block number up to which all inbound HRMP messages are processed.
+	/// The mark which specifies the block number up to which all inbound HRMP messages are
+	/// processed.
 	pub hrmp_watermark: relay_chain::BlockNumber,
 	/// The head data, aka encoded header, of the block that corresponds to the collation.
 	pub head_data: HeadData,

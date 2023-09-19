@@ -31,7 +31,7 @@ use sp_consensus_aura::AuraApi;
 use sp_core::crypto::Pair;
 use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
-use std::{fmt::Debug, hash::Hash, sync::Arc};
+use std::{fmt::Debug, sync::Arc};
 use substrate_prometheus_endpoint::Registry;
 
 /// Parameters for [`import_queue`].
@@ -51,7 +51,7 @@ pub struct ImportQueueParams<'a, I, C, CIDP, S> {
 }
 
 /// Start an import queue for the Aura consensus algorithm.
-pub fn import_queue<'a, P, Block, I, C, S, CIDP>(
+pub fn import_queue<P, Block, I, C, S, CIDP>(
 	ImportQueueParams {
 		block_import,
 		client,
@@ -59,8 +59,8 @@ pub fn import_queue<'a, P, Block, I, C, S, CIDP>(
 		spawner,
 		registry,
 		telemetry,
-	}: ImportQueueParams<'a, I, C, CIDP, S>,
-) -> Result<DefaultImportQueue<Block, C>, sp_consensus::Error>
+	}: ImportQueueParams<'_, I, C, CIDP, S>,
+) -> Result<DefaultImportQueue<Block>, sp_consensus::Error>
 where
 	Block: BlockT,
 	C::Api: BlockBuilderApi<Block> + AuraApi<Block, P::Public> + ApiExt<Block>,
@@ -72,13 +72,13 @@ where
 		+ AuxStore
 		+ UsageProvider<Block>
 		+ HeaderBackend<Block>,
-	I: BlockImport<Block, Error = ConsensusError, Transaction = sp_api::TransactionFor<C, Block>>
+	I: BlockImport<Block, Error = ConsensusError>
 		+ ParachainBlockImportMarker
 		+ Send
 		+ Sync
 		+ 'static,
-	P: Pair + Send + Sync + 'static,
-	P::Public: Clone + Eq + Send + Sync + Hash + Debug + Codec,
+	P: Pair + 'static,
+	P::Public: Debug + Codec,
 	P::Signature: Codec,
 	S: sp_core::traits::SpawnEssentialNamed,
 	CIDP: CreateInherentDataProviders<Block, ()> + Sync + Send + 'static,

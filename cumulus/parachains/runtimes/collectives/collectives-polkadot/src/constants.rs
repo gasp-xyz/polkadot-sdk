@@ -16,8 +16,8 @@
 pub mod account {
 	use frame_support::PalletId;
 
-	/// Relay Chain treasury pallet id, used to convert into AccountId
-	pub const RELAY_TREASURY_PALLET_ID: PalletId = PalletId(*b"py/trsry");
+	/// Polkadot treasury pallet id, used to convert into AccountId
+	pub const POLKADOT_TREASURY_PALLET_ID: PalletId = PalletId(*b"py/trsry");
 	/// Alliance pallet ID.
 	/// It is used as a temporarily place to deposit a slashed imbalance
 	/// before the teleport to the Treasury.
@@ -121,4 +121,16 @@ pub mod fee {
 			}]
 		}
 	}
+}
+
+/// Consensus-related.
+pub mod consensus {
+	/// Maximum number of blocks simultaneously accepted by the Runtime, not yet included
+	/// into the relay chain.
+	pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
+	/// How many parachain blocks are processed by the relay chain per parent. Limits the
+	/// number of blocks authored per slot.
+	pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+	/// Relay chain slot duration, in milliseconds.
+	pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
 }

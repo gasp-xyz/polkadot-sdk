@@ -18,7 +18,9 @@ use codec::{Decode, DecodeAll, Encode};
 use cumulus_primitives_core::{ParachainBlockData, PersistedValidationData};
 use cumulus_test_client::{
 	generate_extrinsic,
-	runtime::{Block, Hash, Header, TestPalletCall, UncheckedExtrinsic, WASM_BINARY},
+	runtime::{
+		self as test_runtime, Block, Hash, Header, TestPalletCall, UncheckedExtrinsic, WASM_BINARY,
+	},
 	transfer, BlockData, BuildParachainBlockData, Client, DefaultTestClientBuilderExt, HeadData,
 	InitBlockBuilder, TestClientBuilder, TestClientBuilderExt, ValidationParams,
 };
@@ -41,7 +43,7 @@ fn call_validate_block_encoded_header(
 			relay_parent_number: 1,
 			relay_parent_storage_root,
 		},
-		&WASM_BINARY.expect("You need to build the WASM binaries to run the tests!"),
+		WASM_BINARY.expect("You need to build the WASM binaries to run the tests!"),
 	)
 	.map(|v| v.head_data.0)
 }
@@ -56,10 +58,7 @@ fn call_validate_block(
 }
 
 fn create_test_client() -> (Client, Header) {
-	let client = TestClientBuilder::new()
-		// NOTE: this allows easier debugging
-		.set_execution_strategy(sc_client_api::ExecutionStrategy::NativeWhenPossible)
-		.build();
+	let client = TestClientBuilder::new().build();
 
 	let genesis_header = client
 		.header(client.chain_info().genesis_hash)
@@ -79,8 +78,10 @@ fn build_block_with_witness(
 	client: &Client,
 	extra_extrinsics: Vec<UncheckedExtrinsic>,
 	parent_head: Header,
-	sproof_builder: RelayStateSproofBuilder,
+	mut sproof_builder: RelayStateSproofBuilder,
 ) -> TestBlockData {
+	sproof_builder.para_id = test_runtime::PARACHAIN_ID.into();
+	sproof_builder.included_para_head = Some(HeadData(parent_head.encode()));
 	let (relay_parent_storage_root, _) = sproof_builder.clone().into_state_root_and_proof();
 	let mut validation_data = PersistedValidationData {
 		relay_parent_number: 1,
@@ -191,7 +192,7 @@ fn validate_block_invalid_parent_hash() {
 			.unwrap_err();
 	} else {
 		let output = Command::new(env::current_exe().unwrap())
-			.args(&["validate_block_invalid_parent_hash", "--", "--nocapture"])
+			.args(["validate_block_invalid_parent_hash", "--", "--nocapture"])
 			.env("RUN_TEST", "1")
 			.output()
 			.expect("Runs the test");
@@ -213,7 +214,7 @@ fn validate_block_fails_on_invalid_validation_data() {
 		call_validate_block(parent_head, block, Hash::random()).unwrap_err();
 	} else {
 		let output = Command::new(env::current_exe().unwrap())
-			.args(&["validate_block_fails_on_invalid_validation_data", "--", "--nocapture"])
+			.args(["validate_block_fails_on_invalid_validation_data", "--", "--nocapture"])
 			.env("RUN_TEST", "1")
 			.output()
 			.expect("Runs the test");
@@ -221,36 +222,6 @@ fn validate_block_fails_on_invalid_validation_data() {
 
 		assert!(dbg!(String::from_utf8(output.stderr).unwrap())
 			.contains("Relay parent storage root doesn't match"));
-	}
-}
-
-#[test]
-fn check_inherent_fails_on_validate_block_as_expected() {
-	sp_tracing::try_init_simple();
-
-	if env::var("RUN_TEST").is_ok() {
-		let (client, parent_head) = create_test_client();
-
-		let TestBlockData { block, validation_data } = build_block_with_witness(
-			&client,
-			Vec::new(),
-			parent_head.clone(),
-			RelayStateSproofBuilder { current_slot: 1337.into(), ..Default::default() },
-		);
-
-		call_validate_block(parent_head, block, validation_data.relay_parent_storage_root)
-			.unwrap_err();
-	} else {
-		let output = Command::new(env::current_exe().unwrap())
-			.args(&["check_inherent_fails_on_validate_block_as_expected", "--", "--nocapture"])
-			.env("RUN_TEST", "1")
-			.output()
-			.expect("Runs the test");
-		assert!(output.status.success());
-
-		assert!(
-			dbg!(String::from_utf8(output.stderr).unwrap()).contains("Checking inherents failed")
-		);
 	}
 }
 
@@ -276,7 +247,7 @@ fn check_inherents_are_unsigned_and_before_all_other_extrinsics() {
 		.unwrap_err();
 	} else {
 		let output = Command::new(env::current_exe().unwrap())
-			.args(&[
+			.args([
 				"check_inherents_are_unsigned_and_before_all_other_extrinsics",
 				"--",
 				"--nocapture",

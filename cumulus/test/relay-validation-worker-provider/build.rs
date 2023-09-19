@@ -97,7 +97,7 @@ fn create_project(out_dir: &Path) -> PathBuf {
 	fs::write(
 		project_dir.join("src").join("main.rs"),
 		r#"
-			cumulus_test_relay_validation_worker_provider::polkadot_node_core_pvf_worker::decl_puppet_worker_main!();
+			cumulus_test_relay_validation_worker_provider::polkadot_node_core_pvf::decl_puppet_worker_main!();
 		"#,
 	)
 	.expect("Writes `main.rs`");
@@ -154,7 +154,8 @@ fn build_project(cargo_toml: &Path) {
 		.arg("build")
 		.arg("--release")
 		.arg(format!("--manifest-path={}", cargo_toml.display()))
-		// Unset the `CARGO_TARGET_DIR` to prevent a cargo deadlock (cargo locks a target dir exclusive).
+		// Unset the `CARGO_TARGET_DIR` to prevent a cargo deadlock (cargo locks a target dir
+		// exclusive).
 		.env_remove("CARGO_TARGET_DIR")
 		// Do not call us recursively.
 		.env(SKIP_ENV, "1")

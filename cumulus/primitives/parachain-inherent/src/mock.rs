@@ -93,7 +93,8 @@ pub struct MockXcmConfig {
 
 /// The name of the parachain system in the runtime.
 ///
-/// This name is used by frame to prefix storage items and will be required to read data from the storage.
+/// This name is used by frame to prefix storage items and will be required to read data from the
+/// storage.
 ///
 /// The `Default` implementation sets the name to `ParachainSystem`.
 pub struct ParachainSystemName(pub Vec<u8>);
@@ -160,8 +161,8 @@ impl<R: Send + Sync + GenerateRandomness<u64>> InherentDataProvider
 			self.relay_offset + self.relay_blocks_per_para_block * self.current_para_block;
 
 		// Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
-		let mut sproof_builder = RelayStateSproofBuilder::default();
-		sproof_builder.para_id = self.xcm_config.para_id;
+		let mut sproof_builder =
+			RelayStateSproofBuilder { para_id: self.xcm_config.para_id, ..Default::default() };
 
 		// Process the downward messages and set up the correct head
 		let mut downward_messages = Vec::new();

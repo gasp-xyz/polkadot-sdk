@@ -25,16 +25,16 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use mangata_support::traits::GetMaintenanceStatusTrait;
 use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
-use parachains_common::xcm_config::{DenyReserveTransferToRelayChain, DenyThenTry};
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
 use xcm_builder::{
 	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
-	AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin,
-	FixedWeightBounds, IsConcrete, NativeAsset, ParentAsSuperuser, ParentIsPreset,
-	RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
-	UsingComponents, WithComputedOrigin,
+	AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, CurrencyAdapter,
+	DenyReserveTransferToRelayChain, DenyThenTry, EnsureXcmOrigin, FixedWeightBounds, IsConcrete,
+	NativeAsset, ParentAsSuperuser, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+	SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
+	SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+	WithComputedOrigin, WithUniqueTopic,
 };
 use xcm_executor::XcmExecutor;
 
@@ -44,6 +44,7 @@ parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 	pub const ExecutiveBody: BodyId = BodyId::Executive;
+	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
 /// We allow root and the Relay Chain council to execute privileged collator selection operations.
@@ -119,26 +120,29 @@ match_types! {
 	};
 }
 
-pub type Barrier = DenyThenTry<
-	DenyReserveTransferToRelayChain,
-	(
-		TakeWeightCredit,
-		// Expected responses are OK.
-		AllowKnownQueryResponses<PolkadotXcm>,
-		// Allow XCMs with some computed origins to pass through.
-		WithComputedOrigin<
-			(
-				// If the message is one that immediately attemps to pay for execution, then allow it.
-				AllowTopLevelPaidExecutionFrom<Everything>,
-				// Parent and its pluralities (i.e. governance bodies) get free execution.
-				AllowExplicitUnpaidExecutionFrom<ParentOrParentsPlurality>,
-				// Subscriptions for version tracking are OK.
-				AllowSubscriptionsFrom<ParentOrSiblings>,
-			),
-			UniversalLocation,
-			ConstU32<8>,
-		>,
-	),
+pub type Barrier = TrailingSetTopicAsId<
+	DenyThenTry<
+		DenyReserveTransferToRelayChain,
+		(
+			TakeWeightCredit,
+			// Expected responses are OK.
+			AllowKnownQueryResponses<PolkadotXcm>,
+			// Allow XCMs with some computed origins to pass through.
+			WithComputedOrigin<
+				(
+					// If the message is one that immediately attemps to pay for execution, then
+					// allow it.
+					AllowTopLevelPaidExecutionFrom<Everything>,
+					// Parent and its pluralities (i.e. governance bodies) get free execution.
+					AllowExplicitUnpaidExecutionFrom<ParentOrParentsPlurality>,
+					// Subscriptions for version tracking are OK.
+					AllowSubscriptionsFrom<ParentOrSiblings>,
+				),
+				UniversalLocation,
+				ConstU32<8>,
+			>,
+		),
+	>,
 >;
 
 pub struct XcmConfig;
@@ -166,6 +170,7 @@ impl xcm_executor::Config for XcmConfig {
 	type UniversalAliases = Nothing;
 	type CallDispatcher = RuntimeCall;
 	type SafeCallFilter = Everything;
+	type Aliasers = Nothing;
 }
 
 /// Converts a local signed origin into an XCM multilocation.
@@ -174,12 +179,12 @@ pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, R
 
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
-pub type XcmRouter = (
+pub type XcmRouter = WithUniqueTopic<(
 	// Two routers - use UMP to communicate with the relay chain:
 	cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, ()>,
 	// ..and XCMP to communicate with the sibling chains.
 	XcmpQueue,
-);
+)>;
 
 #[cfg(feature = "runtime-benchmarks")]
 parameter_types! {
@@ -193,7 +198,8 @@ impl pallet_xcm::Config for Runtime {
 	type XcmRouter = XcmRouter;
 	// We support local origins dispatching XCM executions in principle...
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
-	// ... but disallow generic XCM execution. As a result only teleports and reserve transfers are allowed.
+	// ... but disallow generic XCM execution. As a result only teleports and reserve transfers are
+	// allowed.
 	type XcmExecuteFilter = Nothing;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type XcmTeleportFilter = Everything;
@@ -214,6 +220,8 @@ impl pallet_xcm::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type ReachableDest = ReachableDest;
 	type AdminOrigin = EnsureRoot<AccountId>;
+	type MaxRemoteLockConsumers = ConstU32<0>;
+	type RemoteLockConsumerIdentifier = ();
 }
 
 pub struct MockMaintenanceStatusProvider;

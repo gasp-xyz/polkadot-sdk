@@ -20,14 +20,12 @@ polkadot-node-core-runtime-api = { git = "https://github.com/paritytech/polkadot
 
 # substrate deps
 sc-authority-discovery = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-network = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-network-common = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-service = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-tracing = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-utils = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-consensus-babe = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
@@ -37,9 +35,11 @@ cumulus-relay-chain-interface = { path = "../relay-chain-interface" }
 cumulus-relay-chain-rpc-interface = { path = "../relay-chain-rpc-interface" }
 cumulus-primitives-core = { path = "../../primitives/core" }
 
-array-bytes = "6.0"
-lru = "0.9"
+array-bytes = "6.1"
+lru = "0.11.0"
 tracing = "0.1.37"
-async-trait = "0.1.68"
+async-trait = "0.1.73"
 futures = "0.3.28"
-tokio = { version = "1.27.0", features = ["macros"] }
+
+[features]
+network-protocol-staging = ["polkadot-node-network-protocol/network-protocol-staging"]

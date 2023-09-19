@@ -134,15 +134,13 @@ impl frame_system::Config for Runtime {
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
+	type Nonce = Nonce;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	/// The block type.
+	type Block = Block;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
@@ -194,21 +192,19 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type XcmpMessageHandler = ();
 	type ReservedXcmpWeight = ();
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+	type ConsensusHook = cumulus_pallet_parachain_system::consensus_hook::ExpectParentIncluded;
 }
 
 impl parachain_info::Config for Runtime {}
 
 construct_runtime! {
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = generic::Block<Header, sp_runtime::OpaqueExtrinsic>,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Runtime
 	{
-		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
+		System: frame_system::{Pallet, Call, Storage, Config<T>, Event<T>},
 		ParachainSystem: cumulus_pallet_parachain_system::{
-			Pallet, Call, Config, Storage, Inherent, Event<T>, ValidateUnsigned,
+			Pallet, Call, Config<T>, Storage, Inherent, Event<T>, ValidateUnsigned,
 		},
-		ParachainInfo: parachain_info::{Pallet, Storage, Config},
+		ParachainInfo: parachain_info::{Pallet, Storage, Config<T>},
 
 		// DMP handler.
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin},
@@ -236,7 +232,7 @@ impl sp_runtime::traits::SignedExtension for DisallowSigned {
 		info: &DispatchInfoOf<Self::Call>,
 		len: usize,
 	) -> Result<Self::Pre, TransactionValidityError> {
-		Ok(self.validate(who, call, info, len).map(|_| ())?)
+		self.validate(who, call, info, len).map(|_| ())
 	}
 	fn validate(
 		&self,
@@ -251,7 +247,7 @@ impl sp_runtime::traits::SignedExtension for DisallowSigned {
 }
 
 /// Index of a transaction in the chain.
-pub type Index = u32;
+pub type Nonce = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 /// An index to a block.
@@ -271,8 +267,6 @@ pub type SignedExtra = DisallowSigned;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
-/// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
 	Runtime,
@@ -364,19 +358,7 @@ impl_runtime_apis! {
 	}
 }
 
-struct CheckInherents;
-
-impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
-	fn check_inherents(
-		_: &Block,
-		_: &cumulus_pallet_parachain_system::RelayChainStateProof,
-	) -> sp_inherents::CheckInherentsResult {
-		sp_inherents::CheckInherentsResult::new()
-	}
-}
-
 cumulus_pallet_parachain_system::register_validate_block! {
 	Runtime = Runtime,
 	BlockExecutor = Executive,
-	CheckInherents = CheckInherents,
 }

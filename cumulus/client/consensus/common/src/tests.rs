@@ -19,7 +19,7 @@ use crate::*;
 use async_trait::async_trait;
 use codec::Encode;
 use cumulus_client_pov_recovery::RecoveryKind;
-use cumulus_primitives_core::{InboundDownwardMessage, InboundHrmpMessage};
+use cumulus_primitives_core::{relay_chain::BlockId, InboundDownwardMessage, InboundHrmpMessage};
 use cumulus_relay_chain_interface::{
 	CommittedCandidateReceipt, OccupiedCoreAssumption, OverseerHandle, PHeader, ParaId,
 	RelayChainInterface, RelayChainResult, SessionIndex, StorageValue, ValidatorId,
@@ -28,9 +28,11 @@ use cumulus_test_client::{
 	runtime::{Block, Hash, Header},
 	Backend, Client, InitBlockBuilder, TestClientBuilder, TestClientBuilderExt,
 };
+use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
 use futures::{channel::mpsc, executor::block_on, select, FutureExt, Stream, StreamExt};
 use futures_timer::Delay;
-use sc_client_api::{blockchain::Backend as _, Backend as _, UsageProvider};
+use polkadot_primitives::HeadData;
+use sc_client_api::{Backend as _, UsageProvider};
 use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy};
 use sp_consensus::{BlockOrigin, BlockStatus};
 use std::{
@@ -186,7 +188,7 @@ impl RelayChainInterface for Relaychain {
 	}
 
 	async fn wait_for_block(&self, _: PHash) -> RelayChainResult<()> {
-		unimplemented!("Not needed for test")
+		Ok(())
 	}
 
 	async fn new_best_notification_stream(
@@ -207,19 +209,42 @@ impl RelayChainInterface for Relaychain {
 			})
 			.boxed())
 	}
+
+	async fn header(&self, _block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
+		unimplemented!("Not needed for test")
+	}
+}
+
+fn sproof_with_best_parent(client: &Client) -> RelayStateSproofBuilder {
+	let best_hash = client.chain_info().best_hash;
+	sproof_with_parent_by_hash(client, best_hash)
+}
+
+fn sproof_with_parent_by_hash(client: &Client, hash: PHash) -> RelayStateSproofBuilder {
+	let header = client.header(hash).ok().flatten().expect("No header for parent block");
+	sproof_with_parent(HeadData(header.encode()))
+}
+
+fn sproof_with_parent(parent: HeadData) -> RelayStateSproofBuilder {
+	let mut x = RelayStateSproofBuilder::default();
+	x.para_id = cumulus_test_client::runtime::PARACHAIN_ID.into();
+	x.included_para_head = Some(parent);
+
+	x
 }
 
 fn build_block<B: InitBlockBuilder>(
 	builder: &B,
+	sproof: RelayStateSproofBuilder,
 	at: Option<Hash>,
 	timestamp: Option<u64>,
 ) -> Block {
 	let builder = match at {
 		Some(at) => match timestamp {
-			Some(ts) => builder.init_block_builder_with_timestamp(at, None, Default::default(), ts),
-			None => builder.init_block_builder_at(at, None, Default::default()),
+			Some(ts) => builder.init_block_builder_with_timestamp(at, None, sproof, ts),
+			None => builder.init_block_builder_at(at, None, sproof),
 		},
-		None => builder.init_block_builder(None, Default::default()),
+		None => builder.init_block_builder(None, sproof),
 	};
 
 	let mut block = builder.build().unwrap().block;
@@ -260,22 +285,27 @@ fn import_block_sync<I: BlockImport<Block>>(
 	block_on(import_block(importer, block, origin, import_as_best));
 }
 
-fn build_and_import_block_ext<B: InitBlockBuilder, I: BlockImport<Block>>(
-	builder: &B,
+fn build_and_import_block_ext<I: BlockImport<Block>>(
+	client: &Client,
 	origin: BlockOrigin,
 	import_as_best: bool,
 	importer: &mut I,
 	at: Option<Hash>,
 	timestamp: Option<u64>,
 ) -> Block {
-	let block = build_block(builder, at, timestamp);
+	let sproof = match at {
+		None => sproof_with_best_parent(client),
+		Some(at) => sproof_with_parent_by_hash(client, at),
+	};
+
+	let block = build_block(client, sproof, at, timestamp);
 	import_block_sync(importer, block.clone(), origin, import_as_best);
 	block
 }
 
 fn build_and_import_block(mut client: Arc<Client>, import_as_best: bool) -> Block {
 	build_and_import_block_ext(
-		&*client.clone(),
+		&client.clone(),
 		BlockOrigin::Own,
 		import_as_best,
 		&mut client,
@@ -337,7 +367,12 @@ fn follow_new_best_with_dummy_recovery_works() {
 		Some(recovery_chan_tx),
 	);
 
-	let block = build_block(&*client.clone(), None, None);
+	let sproof = {
+		let best = client.chain_info().best_hash;
+		let header = client.header(best).ok().flatten().expect("No header for best");
+		sproof_with_parent(HeadData(header.encode()))
+	};
+	let block = build_block(&*client, sproof, None, None);
 	let block_clone = block.clone();
 	let client_clone = client.clone();
 
@@ -423,7 +458,8 @@ fn follow_finalized_does_not_stop_on_unknown_block() {
 	let block = build_and_import_block(client.clone(), false);
 
 	let unknown_block = {
-		let block_builder = client.init_block_builder_at(block.hash(), None, Default::default());
+		let sproof = sproof_with_parent_by_hash(&client, block.hash());
+		let block_builder = client.init_block_builder_at(block.hash(), None, sproof);
 		block_builder.build().unwrap().block
 	};
 
@@ -472,7 +508,8 @@ fn follow_new_best_sets_best_after_it_is_imported() {
 	let block = build_and_import_block(client.clone(), false);
 
 	let unknown_block = {
-		let block_builder = client.init_block_builder_at(block.hash(), None, Default::default());
+		let sproof = sproof_with_parent_by_hash(&client, block.hash());
+		let block_builder = client.init_block_builder_at(block.hash(), None, sproof);
 		block_builder.build().unwrap().block
 	};
 
@@ -547,7 +584,6 @@ fn do_not_set_best_block_to_older_block() {
 	let client = Arc::new(TestClientBuilder::with_backend(backend).build());
 
 	let blocks = (0..NUM_BLOCKS)
-		.into_iter()
 		.map(|_| build_and_import_block(client.clone(), true))
 		.collect::<Vec<_>>();
 
@@ -559,7 +595,6 @@ fn do_not_set_best_block_to_older_block() {
 	let consensus =
 		run_parachain_consensus(100.into(), client.clone(), relay_chain, Arc::new(|_, _| {}), None);
 
-	let client2 = client.clone();
 	let work = async move {
 		new_best_heads_sender
 			.unbounded_send(blocks[NUM_BLOCKS - 2].header().clone())
@@ -579,7 +614,7 @@ fn do_not_set_best_block_to_older_block() {
 	});
 
 	// Build and import a new best block.
-	build_and_import_block(client2.clone(), true);
+	build_and_import_block(client, true);
 }
 
 #[test]
@@ -597,7 +632,7 @@ fn prune_blocks_on_level_overflow() {
 	);
 
 	let block0 = build_and_import_block_ext(
-		&*client,
+		&client,
 		BlockOrigin::NetworkInitialSync,
 		true,
 		&mut para_import,
@@ -607,10 +642,9 @@ fn prune_blocks_on_level_overflow() {
 	let id0 = block0.header.hash();
 
 	let blocks1 = (0..LEVEL_LIMIT)
-		.into_iter()
 		.map(|i| {
 			build_and_import_block_ext(
-				&*client,
+				&client,
 				if i == 1 { BlockOrigin::NetworkInitialSync } else { BlockOrigin::Own },
 				i == 1,
 				&mut para_import,
@@ -622,10 +656,9 @@ fn prune_blocks_on_level_overflow() {
 	let id10 = blocks1[0].header.hash();
 
 	let blocks2 = (0..2)
-		.into_iter()
 		.map(|i| {
 			build_and_import_block_ext(
-				&*client,
+				&client,
 				BlockOrigin::Own,
 				false,
 				&mut para_import,
@@ -653,7 +686,7 @@ fn prune_blocks_on_level_overflow() {
 	assert_eq!(best, blocks1[1].header.hash());
 
 	let block13 = build_and_import_block_ext(
-		&*client,
+		&client,
 		BlockOrigin::Own,
 		false,
 		&mut para_import,
@@ -672,7 +705,7 @@ fn prune_blocks_on_level_overflow() {
 	assert_eq!(leaves, expected);
 
 	let block14 = build_and_import_block_ext(
-		&*client,
+		&client,
 		BlockOrigin::Own,
 		false,
 		&mut para_import,
@@ -710,7 +743,7 @@ fn restore_limit_monitor() {
 	);
 
 	let block00 = build_and_import_block_ext(
-		&*client,
+		&client,
 		BlockOrigin::NetworkInitialSync,
 		true,
 		&mut para_import,
@@ -720,10 +753,9 @@ fn restore_limit_monitor() {
 	let id00 = block00.header.hash();
 
 	let blocks1 = (0..LEVEL_LIMIT + 1)
-		.into_iter()
 		.map(|i| {
 			build_and_import_block_ext(
-				&*client,
+				&client,
 				if i == 1 { BlockOrigin::NetworkInitialSync } else { BlockOrigin::Own },
 				i == 1,
 				&mut para_import,
@@ -735,10 +767,9 @@ fn restore_limit_monitor() {
 	let id10 = blocks1[0].header.hash();
 
 	let _ = (0..LEVEL_LIMIT)
-		.into_iter()
 		.map(|i| {
 			build_and_import_block_ext(
-				&*client,
+				&client,
 				BlockOrigin::Own,
 				false,
 				&mut para_import,
@@ -772,7 +803,7 @@ fn restore_limit_monitor() {
 	std::mem::drop(monitor);
 
 	let block13 = build_and_import_block_ext(
-		&*client,
+		&client,
 		BlockOrigin::Own,
 		false,
 		&mut para_import,

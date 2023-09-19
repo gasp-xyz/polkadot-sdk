@@ -35,12 +35,9 @@ pub enum Subcommand {
 	#[command(subcommand)]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
-	/// Try some testing command against a specified runtime state.
-	#[cfg(feature = "try-runtime")]
-	TryRuntime(try_runtime_cli::TryRuntimeCmd),
-
-	/// Errors since the binary was not build with `--features try-runtime`.
-	#[cfg(not(feature = "try-runtime"))]
+	/// Try-runtime has migrated to a standalone
+	/// [CLI](<https://github.com/paritytech/try-runtime-cli>). The subcommand exists as a stub and
+	/// deprecation notice. It will be removed entirely some time after Janurary 2024.
 	TryRuntime,
 }
 
@@ -105,7 +102,11 @@ impl RelayChainCli {
 	) -> Self {
 		let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
 		let chain_id = extension.map(|e| e.relay_chain.clone());
-		let base_path = para_config.base_path.as_ref().map(|x| x.path().join("polkadot"));
-		Self { base_path, chain_id, base: clap::Parser::parse_from(relay_chain_args) }
+		let base_path = para_config.base_path.path().join("polkadot");
+		Self {
+			base_path: Some(base_path),
+			chain_id,
+			base: clap::Parser::parse_from(relay_chain_args),
+		}
 	}
 }

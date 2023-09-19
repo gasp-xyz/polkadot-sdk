@@ -16,6 +16,7 @@
 
 use super::*;
 use async_trait::async_trait;
+use cumulus_primitives_core::relay_chain::BlockId;
 use cumulus_relay_chain_inprocess_interface::{check_block_in_chain, BlockCheckStatus};
 use cumulus_relay_chain_interface::{
 	OverseerHandle, PHeader, ParaId, RelayChainError, RelayChainResult,
@@ -129,7 +130,7 @@ impl RelayChainInterface for DummyRelayChainInterface {
 					para_id: 0u32.into(),
 					relay_parent: PHash::random(),
 					collator: CollatorPair::generate().0.public(),
-					persisted_validation_data_hash: PHash::random().into(),
+					persisted_validation_data_hash: PHash::random(),
 					pov_hash: PHash::random(),
 					erasure_root: PHash::random(),
 					signature: sp_core::sr25519::Signature([0u8; 64]).into(),
@@ -237,13 +238,30 @@ impl RelayChainInterface for DummyRelayChainInterface {
 				});
 		Ok(Box::pin(notifications_stream))
 	}
+
+	async fn header(&self, block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
+		let hash = match block_id {
+			BlockId::Hash(hash) => hash,
+			BlockId::Number(num) =>
+				if let Some(hash) = self.relay_client.hash(num)? {
+					hash
+				} else {
+					return Ok(None)
+				},
+		};
+		let header = self.relay_client.header(hash)?;
+
+		Ok(header)
+	}
 }
 
-fn make_validator_and_api(
-) -> (BlockAnnounceValidator<Block, Arc<DummyRelayChainInterface>>, Arc<DummyRelayChainInterface>) {
+fn make_validator_and_api() -> (
+	RequireSecondedInBlockAnnounce<Block, Arc<DummyRelayChainInterface>>,
+	Arc<DummyRelayChainInterface>,
+) {
 	let relay_chain_interface = Arc::new(DummyRelayChainInterface::new());
 	(
-		BlockAnnounceValidator::new(relay_chain_interface.clone(), ParaId::from(56)),
+		RequireSecondedInBlockAnnounce::new(relay_chain_interface.clone(), ParaId::from(56)),
 		relay_chain_interface,
 	)
 }
@@ -293,7 +311,7 @@ async fn make_gossip_message_and_header(
 			para_id: 0u32.into(),
 			relay_parent,
 			collator: CollatorPair::generate().0.public(),
-			persisted_validation_data_hash: PHash::random().into(),
+			persisted_validation_data_hash: PHash::random(),
 			pov_hash: PHash::random(),
 			erasure_root: PHash::random(),
 			signature: sp_core::sr25519::Signature([0u8; 64]).into(),
@@ -484,7 +502,7 @@ async fn check_statement_seconded() {
 				para_id: 0u32.into(),
 				relay_parent: PHash::random(),
 				collator: CollatorPair::generate().0.public(),
-				persisted_validation_data_hash: PHash::random().into(),
+				persisted_validation_data_hash: PHash::random(),
 				pov_hash: PHash::random(),
 				erasure_root: PHash::random(),
 				signature: sp_core::sr25519::Signature([0u8; 64]).into(),

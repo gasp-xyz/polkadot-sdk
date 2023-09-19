@@ -13,9 +13,9 @@ substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", bran
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 hex-literal = { version = "0.4.1", optional = true }
-log = { version = "0.4.17", default-features = false }
-scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
-smallvec = "1.10.0"
+log = { version = "0.4.20", default-features = false }
+scale-info = { version = "2.9.0", default-features = false, features = ["derive"] }
+smallvec = "1.11.0"
 
 # Substrate
 sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
@@ -27,6 +27,7 @@ sp-offchain = { git = "https://github.com/paritytech/substrate", default-feature
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-session = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+sp-storage = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-transaction-pool = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-version = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "master" }
@@ -65,12 +66,11 @@ xcm-executor = { git = "https://github.com/paritytech/polkadot", default-feature
 # Cumulus
 cumulus-pallet-aura-ext = { path = "../../../../pallets/aura-ext", default-features = false }
 cumulus-pallet-dmp-queue = { path = "../../../../pallets/dmp-queue", default-features = false }
-cumulus-pallet-parachain-system = { path = "../../../../pallets/parachain-system", default-features = false }
+cumulus-pallet-parachain-system = { path = "../../../../pallets/parachain-system", default-features = false, features = ["parameterized-consensus-hook",] }
 cumulus-pallet-session-benchmarking = { path = "../../../../pallets/session-benchmarking", default-features = false }
 cumulus-pallet-xcm = { path = "../../../../pallets/xcm", default-features = false }
 cumulus-pallet-xcmp-queue = { path = "../../../../pallets/xcmp-queue", default-features = false }
 cumulus-primitives-core = { path = "../../../../primitives/core", default-features = false }
-cumulus-primitives-timestamp = { path = "../../../../primitives/timestamp", default-features = false }
 cumulus-primitives-utility = { path = "../../../../primitives/utility", default-features = false }
 pallet-collator-selection = { path = "../../../../pallets/collator-selection", default-features = false }
 parachain-info = { path = "../../../pallets/parachain-info", default-features = false }
@@ -88,6 +88,7 @@ std = [
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
+    "frame-try-runtime/std",
 	"kusama-runtime-constants/std",
 	"pallet-aura/std",
 	"pallet-authorship/std",
@@ -129,7 +130,6 @@ std = [
 	"cumulus-pallet-xcm/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
-	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
 	"mangata-support/std",
 	"substrate-wasm-builder",
@@ -145,11 +145,13 @@ runtime-benchmarks = [
 	"pallet-collator-selection/runtime-benchmarks",
 	"pallet-contracts/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
+	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
+	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 ]
 
@@ -177,3 +179,5 @@ try-runtime = [
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
 ]
+
+experimental = [ "pallet-aura/experimental" ]

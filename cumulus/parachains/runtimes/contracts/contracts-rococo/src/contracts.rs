@@ -1,25 +1,30 @@
 use crate::{
 	constants::currency::deposit, Balance, Balances, RandomnessCollectiveFlip, Runtime,
-	RuntimeCall, RuntimeEvent, Timestamp,
+	RuntimeCall, RuntimeEvent, RuntimeHoldReason, Timestamp,
 };
 use frame_support::{
 	parameter_types,
 	traits::{ConstBool, ConstU32, Nothing},
 };
 use pallet_contracts::{
-	weights::SubstrateWeight, Config, DefaultAddressGenerator, Frame, Schedule,
+	migration::{v12, v13, v14, v15},
+	weights::SubstrateWeight,
+	Config, DebugInfo, DefaultAddressGenerator, Frame, Schedule,
 };
+use sp_runtime::Perbill;
+
 pub use parachains_common::AVERAGE_ON_INITIALIZE_RATIO;
 
 // Prints debug output of the `contracts` pallet to stdout if the node is
 // started with `-lruntime::contracts=debug`.
-pub const CONTRACTS_DEBUG_OUTPUT: bool = true;
+pub const CONTRACTS_DEBUG_OUTPUT: DebugInfo = DebugInfo::UnsafeDebug;
 
 parameter_types! {
 	pub const DepositPerItem: Balance = deposit(1, 0);
 	pub const DepositPerByte: Balance = deposit(0, 1);
 	pub const DefaultDepositLimit: Balance = deposit(1024, 1024 * 1024);
 	pub MySchedule: Schedule<Runtime> = Default::default();
+	pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
 }
 
 impl Config for Runtime {
@@ -48,4 +53,15 @@ impl Config for Runtime {
 	type MaxStorageKeyLen = ConstU32<128>;
 	type UnsafeUnstableInterface = ConstBool<true>;
 	type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
+	type MaxDelegateDependencies = ConstU32<32>;
+	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
+	type Migrations = (
+		v12::Migration<Runtime, Balances>,
+		v13::Migration<Runtime>,
+		v14::Migration<Runtime, Balances>,
+		v15::Migration<Runtime>,
+	);
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type Debug = ();
+	type Environment = ();
 }

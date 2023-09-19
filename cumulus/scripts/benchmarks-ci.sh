@@ -9,6 +9,10 @@ repeat=${5:-20}
 benchmarkOutput=./parachains/runtimes/$category/$runtimeName/src/weights
 benchmarkRuntimeName="$runtimeName-dev"
 
+if [ $category = "glutton" ]; then
+    benchmarkRuntimeName="$runtimeName-dev-1300"
+fi
+
 # Load all pallet names in an array.
 pallets=($(
   ${artifactsDir}/polkadot-parachain benchmark pallet --list --chain="${benchmarkRuntimeName}" |\
@@ -27,17 +31,16 @@ fi
 
 for pallet in ${pallets[@]}
 do
-	output_file="${pallet//::/_}"
+	output_dir=""
 	extra_args=""
 	# a little hack for pallet_xcm_benchmarks - we want to force custom implementation for XcmWeightInfo
 	if [[ "$pallet" == "pallet_xcm_benchmarks::generic" ]] || [[ "$pallet" == "pallet_xcm_benchmarks::fungible" ]]; then
-		output_file="xcm/$output_file"
+		output_dir="xcm/"
 		extra_args="--template=./templates/xcm-bench-template.hbs"
 	fi
 	$artifactsDir/polkadot-parachain benchmark pallet \
 		$extra_args \
 		--chain=$benchmarkRuntimeName \
-		--execution=wasm \
 		--wasm-execution=compiled \
 		--pallet=$pallet  \
 		--extrinsic='*' \
@@ -45,5 +48,5 @@ do
 		--repeat=$repeat \
 		--json \
 		--header=./file_header.txt \
-		--output="${benchmarkOutput}/${output_file}.rs" >> $artifactsDir/${pallet}_benchmark.json
+		--output="${benchmarkOutput}/${output_dir}" >> $artifactsDir/${pallet}_benchmark.json
 done

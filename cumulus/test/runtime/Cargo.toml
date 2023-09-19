@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
-scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.9.0", default-features = false, features = ["derive"] }
 
 # Substrate
 frame-executive = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
@@ -16,6 +16,7 @@ frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate"
 pallet-balances = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 pallet-sudo = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+pallet-glutton = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
@@ -32,15 +33,16 @@ sp-version = { git = "https://github.com/paritytech/substrate", default-features
 mangata-support = { git = "https://github.com/mangata-finance/substrate", default-features = false, branch = "develop" }
 
 # Cumulus
-cumulus-pallet-parachain-system = { path = "../../pallets/parachain-system", default-features = false }
+cumulus-pallet-parachain-system = { path = "../../pallets/parachain-system", default-features = false, features = ["parameterized-consensus-hook",] }
 cumulus-primitives-core = { path = "../../primitives/core", default-features = false }
-cumulus-primitives-timestamp = { path = "../../primitives/timestamp", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "master" , optional = true }
 
 [features]
-default = [ "std" ]
+default = [
+	"std",
+]
 std = [
 	"codec/std",
 	"scale-info/std",
@@ -50,8 +52,10 @@ std = [
 	"frame-system/std",
 	"pallet-balances/std",
 	"pallet-sudo/std",
+	"pallet-glutton/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment/std",
+	"pallet-glutton/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-core/std",
@@ -65,7 +69,6 @@ std = [
 	"sp-version/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
-	"cumulus-primitives-timestamp/std",
 	"mangata-support/std",
 	"substrate-wasm-builder",
 ]

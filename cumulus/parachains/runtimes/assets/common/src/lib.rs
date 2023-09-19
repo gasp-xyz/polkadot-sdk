@@ -17,6 +17,7 @@
 
 pub mod foreign_creators;
 pub mod fungible_conversion;
+pub mod local_and_foreign_assets;
 pub mod matching;
 pub mod runtime_api;
 
@@ -54,7 +55,8 @@ pub type MultiLocationConvertedConcreteId<MultiLocationFilter, Balance> =
 		JustTry,
 	>;
 
-/// [`MatchedConvertedConcreteId`] converter dedicated for storing `ForeignAssets` with `AssetId` as `MultiLocation`.
+/// [`MatchedConvertedConcreteId`] converter dedicated for storing `ForeignAssets` with `AssetId` as
+/// `MultiLocation`.
 ///
 /// Excludes by default:
 /// - parent as relay chain
@@ -67,7 +69,8 @@ pub type ForeignAssetsConvertedConcreteId<AdditionalMultiLocationExclusionFilter
 			// Excludes relay/parent chain currency
 			Equals<ParentLocation>,
 			// Here we rely on fact that something like this works:
-			// assert!(MultiLocation::new(1, X1(Parachain(100))).starts_with(&MultiLocation::parent()));
+			// assert!(MultiLocation::new(1,
+			// X1(Parachain(100))).starts_with(&MultiLocation::parent()));
 			// assert!(X1(Parachain(100)).starts_with(&Here));
 			StartsWith<LocalMultiLocationPattern>,
 			// Here we can exclude more stuff or leave it as `()`
@@ -76,12 +79,27 @@ pub type ForeignAssetsConvertedConcreteId<AdditionalMultiLocationExclusionFilter
 		Balance,
 	>;
 
+type AssetIdForPoolAssets = u32;
+/// `MultiLocation` vs `AssetIdForPoolAssets` converter for `PoolAssets`.
+pub type AssetIdForPoolAssetsConvert<PoolAssetsPalletLocation> =
+	AsPrefixedGeneralIndex<PoolAssetsPalletLocation, AssetIdForPoolAssets, JustTry>;
+/// [`MatchedConvertedConcreteId`] converter dedicated for `PoolAssets`
+pub type PoolAssetsConvertedConcreteId<PoolAssetsPalletLocation, Balance> =
+	MatchedConvertedConcreteId<
+		AssetIdForPoolAssets,
+		Balance,
+		StartsWith<PoolAssetsPalletLocation>,
+		AssetIdForPoolAssetsConvert<PoolAssetsPalletLocation>,
+		JustTry,
+	>;
+
 #[cfg(test)]
 mod tests {
 	use super::*;
 	use crate::matching::StartsWithExplicitGlobalConsensus;
+	use sp_runtime::traits::MaybeEquivalence;
 	use xcm::latest::prelude::*;
-	use xcm_executor::traits::{Convert, Error as MatchError, MatchesFungibles};
+	use xcm_executor::traits::{Error as MatchError, MatchesFungibles};
 
 	#[test]
 	fn asset_id_for_trust_backed_assets_convert_works() {
@@ -93,15 +111,15 @@ mod tests {
 			MultiLocation::new(5, X2(PalletInstance(13), GeneralIndex(local_asset_id.into())));
 
 		assert_eq!(
-			AssetIdForTrustBackedAssetsConvert::<TrustBackedAssetsPalletLocation>::reverse_ref(
-				local_asset_id
+			AssetIdForTrustBackedAssetsConvert::<TrustBackedAssetsPalletLocation>::convert_back(
+				&local_asset_id
 			)
 			.unwrap(),
 			expected_reverse_ref
 		);
 		assert_eq!(
-			AssetIdForTrustBackedAssetsConvert::<TrustBackedAssetsPalletLocation>::convert_ref(
-				expected_reverse_ref
+			AssetIdForTrustBackedAssetsConvert::<TrustBackedAssetsPalletLocation>::convert(
+				&expected_reverse_ref
 			)
 			.unwrap(),
 			local_asset_id

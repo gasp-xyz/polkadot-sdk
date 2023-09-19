@@ -19,18 +19,19 @@
 //! A parachain needs to build PoVs that are send to the relay chain to progress. These PoVs are
 //! erasure encoded and one piece of it is stored by each relay chain validator. As the relay chain
 //! decides on which PoV per parachain to include and thus, to progess the parachain it can happen
-//! that the block corresponding to this PoV isn't propagated in the parachain network. This can have
-//! several reasons, either a malicious collator that managed to include its own PoV and doesn't want
-//! to share it with the rest of the network or maybe a collator went down before it could distribute
-//! the block in the network. When something like this happens we can use the PoV recovery algorithm
-//! implemented in this crate to recover a PoV and to propagate it with the rest of the network.
+//! that the block corresponding to this PoV isn't propagated in the parachain network. This can
+//! have several reasons, either a malicious collator that managed to include its own PoV and
+//! doesn't want to share it with the rest of the network or maybe a collator went down before it
+//! could distribute the block in the network. When something like this happens we can use the PoV
+//! recovery algorithm implemented in this crate to recover a PoV and to propagate it with the rest
+//! of the network.
 //!
 //! It works in the following way:
 //!
 //! 1. For every included relay chain block we note the backed candidate of our parachain. If the
-//!    block belonging to the PoV is already known, we do nothing. Otherwise we start
-//!    a timer that waits for a randomized time inside a specified interval before starting to recover
-//!    the PoV.
+//!    block belonging to the PoV is already known, we do nothing. Otherwise we start a timer that
+//!    waits for a randomized time inside a specified interval before starting to
+//! recover    the PoV.
 //!
 //! 2. If between starting and firing the timer the block is imported, we skip the recovery of the
 //!    PoV.
@@ -39,8 +40,8 @@
 //!
 //! 4a. After it is recovered, we restore the block and import it.
 //!
-//! 4b. Since we are trying to recover pending candidates, availability is not guaranteed. If the block
-//! 	PoV is not yet available, we retry.
+//! 4b. Since we are trying to recover pending candidates, availability is not guaranteed. If the
+//! block     PoV is not yet available, we retry.
 //!
 //! If we need to recover multiple PoV blocks (which should hopefully not happen in real life), we
 //! make sure that the blocks are imported in the correct order.
@@ -190,7 +191,7 @@ impl<Block: BlockT> RecoveryQueue<Block> {
 	/// Get the next hash for block recovery.
 	pub async fn next_recovery(&mut self) -> Block::Hash {
 		loop {
-			if let Some(_) = self.signaling_queue.next().await {
+			if self.signaling_queue.next().await.is_some() {
 				if let Some(hash) = self.recovery_queue.pop_front() {
 					return hash
 				} else {
@@ -309,10 +310,10 @@ where
 
 	/// Block is no longer waiting for recovery
 	fn clear_waiting_recovery(&mut self, block_hash: &Block::Hash) {
-		self.candidates.get_mut(block_hash).map(|candidate| {
+		if let Some(candidate) = self.candidates.get_mut(block_hash) {
 			// Prevents triggering an already enqueued recovery request
 			candidate.waiting_recovery = false;
-		});
+		}
 	}
 
 	/// Handle a finalized block with the given `block_number`.

@@ -65,6 +65,8 @@ cargo-check-try-runtime:
   extends:
     - .docker-env
     - .common-refs
+  variables:
+    RUSTFLAGS: "-D warnings"
   # this is an artificial job dependency, for pipeline optimization using GitLab's DAGs
   needs:
     - job: check-runtime-benchmarks
@@ -97,3 +99,13 @@ cargo-check-benches:
       artifacts: false
   script:
     - time cargo check --all --benches
+
+cargo-clippy:
+  stage: test
+  extends:
+    - .docker-env
+    - .common-refs
+  script:
+    - echo $RUSTFLAGS
+    - cargo version && cargo clippy --version
+    - SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --locked --all-targets --workspace
