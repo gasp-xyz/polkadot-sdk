@@ -15,8 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use codec::EncodeLike;
 use frame_support::{
-	assert_noop, assert_ok, assert_storage_noop, dispatch::EncodeLike, traits::fungible::Mutate,
+	assert_noop, assert_ok, assert_storage_noop, traits::fungible::Mutate,
 };
 use frame_system::RawOrigin;
 use sp_runtime::{

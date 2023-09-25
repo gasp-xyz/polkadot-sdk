@@ -215,7 +215,32 @@ where
 		})
 	}
 
-	/// temporaily apply extrinsics and record them on the list
+	/// Push onto the block's list of extrinsics.
+	///
+	/// validate extrinsics but without commiting the change
+	pub fn push(&mut self, xt: <Block as BlockT>::Extrinsic) -> Result<(), Error> {
+		let parent_hash = self.parent_hash;
+		let inherents = &mut self.inherents;
+
+		self.api.execute_in_transaction(|api| {
+			match apply_transaction_wrapper::<Block, A>(
+				api,
+				parent_hash,
+				xt.clone(),
+			) {
+				Ok(Ok(_)) => {
+					inherents.push(xt);
+					TransactionOutcome::Commit(Ok(()))
+				},
+				Ok(Err(tx_validity)) => TransactionOutcome::Rollback(Err(
+					ApplyExtrinsicFailed::Validity(tx_validity).into(),
+				)),
+				Err(e) => TransactionOutcome::Rollback(Err(Error::from(e))),
+			}
+		})
+	}
+
+		/// temporaily apply extrinsics and record them on the list
 	pub fn build_with_seed<
 		F: FnOnce(
 			&'_ Block::Hash,
@@ -331,30 +356,6 @@ where
 		})
 	}
 
-	/// Push onto the block's list of extrinsics.
-	///
-	/// validate extrinsics but without commiting the change
-	pub fn push(&mut self, xt: <Block as BlockT>::Extrinsic) -> Result<(), Error> {
-		let parent_hash = self.parent_hash;
-		let inherents = &mut self.inherents;
-
-		self.api.execute_in_transaction(|api| {
-			match apply_transaction_wrapper::<Block, A>(
-				api,
-				parent_hash,
-				xt.clone(),
-			) {
-				Ok(Ok(_)) => {
-					inherents.push(xt);
-					TransactionOutcome::Commit(Ok(()))
-				},
-				Ok(Err(tx_validity)) => TransactionOutcome::Rollback(Err(
-					ApplyExtrinsicFailed::Validity(tx_validity).into(),
-				)),
-				Err(e) => TransactionOutcome::Rollback(Err(Error::from(e))),
-			}
-		})
-	}
 
 	/// fetch previous block and apply it
 	///
@@ -502,7 +503,7 @@ mod tests {
 	use sp_core::Blake2Hasher;
 	use sp_state_machine::Backend;
 	use substrate_test_runtime_client::{
-		runtime::ExtrinsicBuilder, DefaultTestClientBuilderExt, TestClientBuilderExt,
+		DefaultTestClientBuilderExt, TestClientBuilderExt,
 	};
 
 	#[test]

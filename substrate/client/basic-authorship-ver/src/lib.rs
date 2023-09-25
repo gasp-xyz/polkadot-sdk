@@ -20,7 +20,7 @@
 //! [!!! HERE
 //! !!!](https://storage.googleapis.com/mangata-docs-node/sc_basic_authorship_ver/basic_authorship/index.html)
 
-#![feature(proc_macro_hygiene)]
+// #![feature(proc_macro_hygiene)]
 #[cfg(doc)]
 use aquamarine::aquamarine;
 
@@ -77,7 +77,7 @@ use aquamarine::aquamarine;
 /// **In block `N+1` ther would no room for any transaction to be included because execution of
 /// previous block will exceed block limits.**
 ///```ignore
-/// 
+///
 /// |--------------|    |--------------|    |--------------|
 /// |    Block N   |    |    Block N+1 |    |    Block N+2 |
 /// |--------------|    |--------------|    |--------------|
@@ -91,7 +91,7 @@ use aquamarine::aquamarine;
 /// |              |    | TX5:  0.25X  |    |              |
 /// |              |    | TX6:  0.25X  |    |              |
 /// |--------------|    |--------------|    |--------------|
-///       ⇧⇧⇧⇧                ⇧⇧⇧⇧                ⇧⇧⇧⇧      
+///       ⇧⇧⇧⇧                ⇧⇧⇧⇧                ⇧⇧⇧⇧
 /// |--------------|    |--------------|    |--------------|
 /// |    Tx pool   |    |  Tx pool     |    | Tx pool      |
 /// |--------------|    |--------------|    |--------------|
@@ -138,7 +138,7 @@ use aquamarine::aquamarine;
 /// As a result blocks will be constructed as follows
 ///
 ///```ignore
-/// 
+///
 /// |--------------|    |--------------|    |--------------|
 /// |    Block N   |    |    Block N+1 |    |    Block N+2 |
 /// |--------------|    |--------------|    |--------------|
@@ -152,7 +152,7 @@ use aquamarine::aquamarine;
 /// |              |    |              |    |              |
 /// |              |    |              |    |              |
 /// |--------------|    |--------------|    |--------------|
-///       ⇧⇧⇧⇧                ⇧⇧⇧⇧                ⇧⇧⇧⇧      
+///       ⇧⇧⇧⇧                ⇧⇧⇧⇧                ⇧⇧⇧⇧
 /// |--------------|    |--------------|    |--------------|
 /// |    Tx pool   |    |  Tx pool     |    | Tx pool      |
 /// |--------------|    |--------------|    |--------------|

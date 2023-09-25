@@ -21,15 +21,15 @@ use super::{
 	imbalance::{Imbalance, SignedImbalance},
 	misc::{Balance, ExistenceRequirement, WithdrawReasons},
 };
-use crate::{
-	dispatch::{DispatchError, DispatchResult},
-	traits::Get,
-};
+use crate::{dispatch::DispatchResult, traits::Get};
 
 use codec::{FullCodec, MaxEncodedLen};
 use frame_support::Parameter;
 use scale_info::TypeInfo;
-use sp_runtime::traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize, Member};
+use sp_runtime::{
+	traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize, Member},
+	DispatchError,
+};
 use sp_std::{fmt::Debug, result};
 
 mod reservable;

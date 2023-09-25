@@ -30,7 +30,7 @@ use futures::{
 	select,
 };
 use log::{debug, error, info, trace, warn};
-use sc_block_builder::{validate_transaction, BlockBuilderApi, BlockBuilderProvider};
+use sc_block_builder_ver::{validate_transaction, BlockBuilderApi, BlockBuilderProvider};
 use sc_client_api::backend;
 use sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_INFO};
 use sc_transaction_pool_api::{InPoolTransaction, TransactionPool};
@@ -628,7 +628,7 @@ where
 	/// Apply all inherents to the block.
 	fn apply_inherents(
 		&self,
-		block_builder: &mut sc_block_builder::BlockBuilder<'_, Block, C, B>,
+		block_builder: &mut sc_block_builder_ver::BlockBuilder<'_, Block, C, B>,
 		inherent_data: InherentData,
 	) -> Result<ShufflingSeed, sp_blockchain::Error> {
 		let create_inherents_start = time::Instant::now();
@@ -727,13 +727,10 @@ mod tests {
 
 	use futures::executor::block_on;
 	use parking_lot::Mutex;
-	use sc_client_api::Backend;
 	use sc_transaction_pool::BasicPool;
 	use sc_transaction_pool_api::{ChainEvent, MaintainedTransactionPool, TransactionSource};
-	use sp_api::Core;
 	use sp_blockchain::HeaderBackend;
 	use sp_consensus::{Environment, Proposer};
-	use sp_core::Pair;
 	use sp_inherents::InherentDataProvider;
 	use sp_runtime::{
 		generic::{BlockId, UncheckedExtrinsic},
@@ -743,8 +740,8 @@ mod tests {
 	use substrate_test_runtime_client::{
 		prelude::*,
 		runtime::{
-			substrate_test_pallet::pallet::Call as PalletCall, Block as TestBlock, Extrinsic,
-			ExtrinsicBuilder, RuntimeCall, Transfer,
+			substrate_test_pallet::pallet::Call as PalletCall, Extrinsic,
+			ExtrinsicBuilder, RuntimeCall,
 		},
 		TestClientBuilder, TestClientBuilderExt,
 	};
@@ -1011,7 +1008,7 @@ mod tests {
 		assert_eq!(block.extrinsics().len(), 1);
 		assert!(matches!(
 			block.extrinsics().get(0).expect("enqueue tx extrinsic"),
-			UncheckedExtrinsic { signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num - 1
+			UncheckedExtrinsic { _signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num - 1
 		));
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
@@ -1025,7 +1022,7 @@ mod tests {
 		assert_eq!(block.extrinsics().len(), 1);
 		assert!(matches!(
 			block.extrinsics().get(0).expect("enqueue tx extrinsic"),
-			UncheckedExtrinsic { signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num
+			UncheckedExtrinsic { _signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num
 		));
 
 		let mut proposer_factory = ProposerFactory::with_proof_recording(
@@ -1036,7 +1033,7 @@ mod tests {
 			None,
 		);
 
-		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
+		let _proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
 		// EDIT: for some reason proof size is set to 0 in test-runtime
 		// so below does not apply anymore
@@ -1141,7 +1138,7 @@ mod tests {
 		assert_eq!(block.extrinsics().len(), 1);
 		assert!(matches!(
 			block.extrinsics().get(0).expect("enqueue tx extrinsic"),
-			UncheckedExtrinsic { signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == MAX_SKIPPED_TRANSACTIONS as u64 + 1
+			UncheckedExtrinsic { _signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == MAX_SKIPPED_TRANSACTIONS as u64 + 1
 		));
 	}
 
