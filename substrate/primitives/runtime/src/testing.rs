@@ -262,8 +262,10 @@ pub struct BlockGeneric<HeaderType, Xt> {
 	pub extrinsics: Vec<Xt>,
 }
 
+/// Regular Block
 pub type Block<Xt> = BlockGeneric<Header, Xt>;
 
+/// VER Block
 pub type BlockVer<Xt> = BlockGeneric<HeaderVer, Xt>;
 
 impl<HeaderType: traits::Header, Xt> HeaderProvider for BlockGeneric<HeaderType, Xt> {

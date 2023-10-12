@@ -219,6 +219,25 @@ impl WithdrawReasons {
 	}
 }
 
+/// Simple amalgamation trait to collect together properties for an CurrencyId under one roof.
+/// managata-node expected a numeric currency_id, use this instead AssetId for now
+pub trait CurrencyId:
+	AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + Ord + scale_info::TypeInfo + MaxEncodedLen
+{
+}
+impl<
+		T: AtLeast32BitUnsigned
+			+ FullCodec
+			+ Copy
+			+ Default
+			+ Debug
+			+ Ord
+			+ scale_info::TypeInfo
+			+ MaxEncodedLen,
+	> CurrencyId for T
+{
+}
+
 /// Simple amalgamation trait to collect together properties for an AssetId under one roof.
 pub trait AssetId:
 	FullCodec + Clone + Eq + PartialEq + Debug + scale_info::TypeInfo + MaxEncodedLen

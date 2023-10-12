@@ -279,7 +279,7 @@ impl MultiTokenCurrency<AccountId> for MultiTokenCurrencyAdapter {
 impl MultiTokenLockableCurrency<AccountId> for MultiTokenCurrencyAdapter {
 	type Moment = BlockNumber;
 
-	type MaxLocks = ();
+	type MaxLocks = <Test as pallet_balances::Config>::MaxLocks;
 
 	fn set_lock(
 		_currency_id: Self::CurrencyId,

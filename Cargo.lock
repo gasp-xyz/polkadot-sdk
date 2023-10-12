@@ -3346,6 +3346,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-timestamp",
+ "sp-ver",
  "substrate-prometheus-endpoint",
  "tracing",
 ]

@@ -20,17 +20,12 @@
 use super::{
 	imbalance::{Imbalance, SignedImbalance},
 	misc::{Balance, ExistenceRequirement, WithdrawReasons},
+	CurrencyId,
 };
 use crate::{dispatch::DispatchResult, traits::Get};
 
-use codec::{FullCodec, MaxEncodedLen};
-use frame_support::Parameter;
-use scale_info::TypeInfo;
-use sp_runtime::{
-	traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize, Member},
-	DispatchError,
-};
-use sp_std::{fmt::Debug, result};
+use sp_runtime::{traits::MaybeSerializeDeserialize, DispatchError};
+use sp_std::result;
 
 mod reservable;
 pub use reservable::{NamedReservableCurrency, ReservableCurrency};
@@ -47,25 +42,11 @@ pub trait MultiTokenImbalanceWithZeroTrait<CurrencyId> {
 /// Abstraction over a fungible assets system.
 pub trait MultiTokenCurrency<AccountId> {
 	/// The balance of an account.
-	type Balance: AtLeast32BitUnsigned
-		+ FullCodec
-		+ Copy
-		+ MaybeSerializeDeserialize
-		+ Debug
-		+ Default
-		+ MaxEncodedLen
-		+ TypeInfo;
+	/// Mangata-node expected Balance to be u128, and uses U256 as higher precision type for arithemthics
+	/// we should refactor to some HigherPrecisionType trait in those pallets eventually and remove the Into<_>
+	type Balance: Balance + MaybeSerializeDeserialize + Into<u128> + TryFrom<u128>;
 
-	type CurrencyId: Parameter
-		+ Member
-		+ Copy
-		+ MaybeSerializeDeserialize
-		+ Ord
-		+ Default
-		+ AtLeast32BitUnsigned
-		+ FullCodec
-		+ MaxEncodedLen
-		+ TypeInfo;
+	type CurrencyId: CurrencyId + MaybeSerializeDeserialize;
 
 	/// The opaque token type for an imbalance. This is returned by unbalanced
 	/// operations and must be dealt with. It may be dropped but cannot be

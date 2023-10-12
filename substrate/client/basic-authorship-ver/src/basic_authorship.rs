@@ -30,7 +30,7 @@ use futures::{
 	select,
 };
 use log::{debug, error, info, trace, warn};
-use sc_block_builder_ver::{validate_transaction, BlockBuilderApi, BlockBuilderProvider};
+use sc_block_builder_ver::{validate_transaction, BlockBuilder, BlockBuilderApi, BlockBuilderProvider, BuiltBlock};
 use sc_client_api::backend;
 use sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_INFO};
 use sc_transaction_pool_api::{InPoolTransaction, TransactionPool};
@@ -417,6 +417,77 @@ where
 		let block_timer = time::Instant::now();
 
 		// apply_extrinsics
+		let (built_block, end_reason) = self.apply_extrinsic(block_builder, deadline, block_size_limit, seed).await?;
+		let (block, storage_changes, proof) = built_block.into_inner();
+		// end apply_extrinsics
+
+		let block_took = block_timer.elapsed();
+		debug!(target: LOG_TARGET,"created block {:?}", block);
+		debug!(target: LOG_TARGET,"created block with hash {}", block.header().hash());
+
+		let proof =
+			PR::into_proof(proof).map_err(|e| sp_blockchain::Error::Application(Box::new(e)))?;
+
+		self.print_summary(&block, end_reason, block_took, propose_with_timer.elapsed());
+		Ok(Proposal { block, proof, storage_changes })
+	}
+
+	/// Apply all inherents to the block.
+	fn apply_inherents(
+		&self,
+		block_builder: &mut sc_block_builder_ver::BlockBuilder<'_, Block, C, B>,
+		inherent_data: InherentData,
+	) -> Result<ShufflingSeed, sp_blockchain::Error> {
+		let create_inherents_start = time::Instant::now();
+		let (seed, inherents) = block_builder.create_inherents(inherent_data.clone())?;
+		let create_inherents_end = time::Instant::now();
+
+		self.metrics.report(|metrics| {
+			metrics.create_inherents_time.observe(
+				create_inherents_end
+					.saturating_duration_since(create_inherents_start)
+					.as_secs_f64(),
+			);
+		});
+
+		debug!(target: LOG_TARGET, "found {} inherents", inherents.len());
+		for inherent in inherents {
+			debug!(target: LOG_TARGET, "processing inherent");
+			// TODO now it actually commits changes
+			match block_builder.push(inherent) {
+				Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
+					warn!(
+						target: LOG_TARGET,
+						"⚠️  Dropping non-mandatory inherent from overweight block."
+					)
+				},
+				Err(ApplyExtrinsicFailed(Validity(e))) if e.was_mandatory() => {
+					error!(
+						"❌️ Mandatory inherent extrinsic returned error. Block cannot be produced."
+					);
+					return Err(ApplyExtrinsicFailed(Validity(e)))
+				},
+				Err(e) => {
+					warn!(
+						target: LOG_TARGET,
+						"❗️ Inherent extrinsic returned unexpected error: {}. Dropping.", e
+					);
+				},
+				Ok(_) => {
+					trace!(target:LOG_TARGET, "inherent pushed into the block");
+				},
+			}
+		}
+		Ok(seed)
+	}
+
+	async fn apply_extrinsic(
+		&self,
+		mut block_builder: BlockBuilder<'_, Block, C, B>,
+		deadline: time::Instant,
+		block_size_limit: Option<usize>,
+		seed: ShufflingSeed,
+	) -> Result<(BuiltBlock<Block>, EndProposingReason), sp_blockchain::Error> {
 		// proceed with transactions
 		// We calculate soft deadline used only in case we start skipping transactions.
 		let now = (self.now)();
@@ -492,7 +563,7 @@ where
 		// after previous block is applied it is possible to prevalidate incomming transaction
 		// but eventually changess needs to be rolled back, as those can be executed
 		// only in the following(future) block
-		let (block, storage_changes, proof) = block_builder
+		let built_block = block_builder
 			.build_with_seed(seed, |at, api| {
 				let mut valid_txs = Vec::new();
 
@@ -601,8 +672,7 @@ where
 					}
 				};
 				valid_txs
-			})?
-			.into_inner();
+			})?;
 
 		if matches!(end_reason, EndProposingReason::HitBlockSizeLimit) && !transaction_pushed {
 			warn!(
@@ -612,66 +682,7 @@ where
 		}
 
 		self.transaction_pool.remove_invalid(&unqueue_invalid);
-		// end apply_extrinsics
-
-		let block_took = block_timer.elapsed();
-		debug!(target: LOG_TARGET,"created block {:?}", block);
-		debug!(target: LOG_TARGET,"created block with hash {}", block.header().hash());
-
-		let proof =
-			PR::into_proof(proof).map_err(|e| sp_blockchain::Error::Application(Box::new(e)))?;
-
-		self.print_summary(&block, end_reason, block_took, propose_with_timer.elapsed());
-		Ok(Proposal { block, proof, storage_changes })
-	}
-
-	/// Apply all inherents to the block.
-	fn apply_inherents(
-		&self,
-		block_builder: &mut sc_block_builder_ver::BlockBuilder<'_, Block, C, B>,
-		inherent_data: InherentData,
-	) -> Result<ShufflingSeed, sp_blockchain::Error> {
-		let create_inherents_start = time::Instant::now();
-		let (seed, inherents) = block_builder.create_inherents(inherent_data.clone())?;
-		let create_inherents_end = time::Instant::now();
-
-		self.metrics.report(|metrics| {
-			metrics.create_inherents_time.observe(
-				create_inherents_end
-					.saturating_duration_since(create_inherents_start)
-					.as_secs_f64(),
-			);
-		});
-
-		debug!(target: LOG_TARGET, "found {} inherents", inherents.len());
-		for inherent in inherents {
-			debug!(target: LOG_TARGET, "processing inherent");
-			// TODO now it actually commits changes
-			match block_builder.push(inherent) {
-				Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
-					warn!(
-						target: LOG_TARGET,
-						"⚠️  Dropping non-mandatory inherent from overweight block."
-					)
-				},
-				Err(ApplyExtrinsicFailed(Validity(e))) if e.was_mandatory() => {
-					error!(
-						"❌️ Mandatory inherent extrinsic returned error. Block cannot be produced."
-					);
-					return Err(ApplyExtrinsicFailed(Validity(e)))
-				},
-				Err(e) => {
-					warn!(
-						target: LOG_TARGET,
-						"❗️ Inherent extrinsic returned unexpected error: {}. Dropping.", e
-					);
-				},
-				Ok(_) => {
-					trace!(target:LOG_TARGET, "inherent pushed into the block");
-				},
-			}
-		}
-		Ok(seed)
+		Ok((built_block, end_reason))
 	}
 
 	/// Prints a summary and does telemetry + metrics.
@@ -757,7 +768,7 @@ mod tests {
 	// - two medium xts
 	// This is widely exploited in following tests.
 	const HUGE: u32 = 649000000;
-	const MEDIUM: u32 = 250000000;
+	// const MEDIUM: u32 = 250000000;
 	const TINY: u32 = 1000;
 
 	fn extrinsic(nonce: u64) -> Extrinsic {
@@ -1008,7 +1019,7 @@ mod tests {
 		assert_eq!(block.extrinsics().len(), 1);
 		assert!(matches!(
 			block.extrinsics().get(0).expect("enqueue tx extrinsic"),
-			UncheckedExtrinsic { _signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num - 1
+			UncheckedExtrinsic { signature: _, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num - 1
 		));
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
@@ -1022,7 +1033,7 @@ mod tests {
 		assert_eq!(block.extrinsics().len(), 1);
 		assert!(matches!(
 			block.extrinsics().get(0).expect("enqueue tx extrinsic"),
-			UncheckedExtrinsic { _signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num
+			UncheckedExtrinsic { signature: _, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == extrinsics_num
 		));
 
 		let mut proposer_factory = ProposerFactory::with_proof_recording(
@@ -1138,7 +1149,7 @@ mod tests {
 		assert_eq!(block.extrinsics().len(), 1);
 		assert!(matches!(
 			block.extrinsics().get(0).expect("enqueue tx extrinsic"),
-			UncheckedExtrinsic { _signature, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == MAX_SKIPPED_TRANSACTIONS as u64 + 1
+			UncheckedExtrinsic { signature: _, function: RuntimeCall::SubstrateTest(PalletCall::enqueue { count }) } if *count == MAX_SKIPPED_TRANSACTIONS as u64 + 1
 		));
 	}
 

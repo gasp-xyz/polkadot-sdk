@@ -146,7 +146,7 @@ benchmarks! {
 		let other: T::AccountId = account("other", 0, SEED);
 		let other_lookup = T::Lookup::unlookup(other.clone());
 
-		T::Currency::make_free_balance_be(&other, T::Currency::minimum_balance());
+		T::Tokens::make_free_balance_be(NATIVE_CURRENCY_ID.into(), &other, T::Tokens::minimum_balance(NATIVE_CURRENCY_ID.into()));
 		add_locks::<T>(&other, l as u8);
 		let expected_balance = add_vesting_schedules::<T>(other_lookup.clone(), s)?;
 
@@ -176,7 +176,7 @@ benchmarks! {
 		let other: T::AccountId = account("other", 0, SEED);
 		let other_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(other.clone());
 
-		T::Currency::make_free_balance_be(&other, T::Currency::minimum_balance());
+		T::Tokens::make_free_balance_be(NATIVE_CURRENCY_ID.into(), &other, T::Tokens::minimum_balance(NATIVE_CURRENCY_ID.into()));
 		add_locks::<T>(&other, l as u8);
 		add_vesting_schedules::<T>(other_lookup.clone(), s)?;
 		// At block 21 everything is unlocked.
@@ -205,15 +205,15 @@ benchmarks! {
 
 		let source: T::AccountId = account("source", 0, SEED);
 		let source_lookup = T::Lookup::unlookup(source.clone());
-		T::Tokens::make_free_balance_be(NATIVE_CURRENCY_ID.into(), &source, BalanceOf::<T>::max_value());
+		T::Tokens::make_free_balance_be(NATIVE_CURRENCY_ID.into(), &source, T::Tokens::minimum_balance(NATIVE_CURRENCY_ID.into()));
 
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup = T::Lookup::unlookup(target.clone());
 		// Give target existing locks
-		T::Currency::make_free_balance_be(&target, T::Currency::minimum_balance());
+		T::Tokens::make_free_balance_be(NATIVE_CURRENCY_ID.into(), &target, T::Tokens::minimum_balance(NATIVE_CURRENCY_ID.into()));
 		add_locks::<T>(&target, l as u8);
 		// Add one less than max vesting schedules
-		let orig_balance = T::Currency::free_balance(&target);
+		let orig_balance = T::Tokens::free_balance(NATIVE_CURRENCY_ID.into(), &target);
 		let mut expected_balance = add_vesting_schedules::<T>(target_lookup.clone(), s)?;
 
 		let transfer_amount = T::MinVestedTransfer::get();
@@ -228,7 +228,7 @@ benchmarks! {
 	}: _(RawOrigin::Root, NATIVE_CURRENCY_ID.into(), source_lookup, target_lookup, vesting_schedule)
 	verify {
 		assert_eq!(
-			expected_balance,
+			expected_balance + orig_balance,
 			T::Tokens::free_balance(NATIVE_CURRENCY_ID.into(), &target),
 			"Transfer didn't happen",
 		);
@@ -246,13 +246,13 @@ benchmarks! {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let caller_lookup = T::Lookup::unlookup(caller.clone());
 		// Give target existing locks.
-		T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance());
+		T::Tokens::make_free_balance_be(NATIVE_CURRENCY_ID.into(), &caller, T::Tokens::minimum_balance(NATIVE_CURRENCY_ID.into()));
 		add_locks::<T>(&caller, l as u8);
 		// Add max vesting schedules.
 		let expected_balance = add_vesting_schedules::<T>(caller_lookup, s)?;
 
 		// Schedules are not vesting at block 0.
-		assert_eq!(System::<T>::block_number(), T::BlockNumber::zero());
+		assert_eq!(System::<T>::block_number(), BlockNumberFor::<T>::zero());
 		assert_eq!(
 			Vesting::<T>::vesting_balance(&caller, NATIVE_CURRENCY_ID.into()),
 			Some(expected_balance),
@@ -297,7 +297,7 @@ benchmarks! {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let caller_lookup = T::Lookup::unlookup(caller.clone());
 		// Give target other locks.
-		T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance());
+		T::Tokens::make_free_balance_be(NATIVE_CURRENCY_ID.into(), &caller, T::Tokens::minimum_balance(NATIVE_CURRENCY_ID.into()));
 		add_locks::<T>(&caller, l as u8);
 		// Add max vesting schedules.
 		let total_transferred = add_vesting_schedules::<T>(caller_lookup.clone(), s)?;

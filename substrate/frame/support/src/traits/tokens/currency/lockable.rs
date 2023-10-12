@@ -153,7 +153,7 @@ pub trait VestingSchedule<AccountId> {
 	fn remove_vesting_schedule(who: &AccountId, schedule_index: u32) -> DispatchResult;
 }
 
-pub trait MultiTokenVestingLocks<AccountId, BlockNumber> {
+pub trait MultiTokenVestingLocks<AccountId> {
 	/// The quantity used to denote time; usually just a `BlockNumber`.
 	type Moment;
 
@@ -169,7 +169,7 @@ pub trait MultiTokenVestingLocks<AccountId, BlockNumber> {
 		token_id: <Self::Currency as MultiTokenCurrency<AccountId>>::CurrencyId,
 		unlock_amount: <Self::Currency as MultiTokenCurrency<AccountId>>::Balance,
 	) -> Result<
-		(BlockNumber, <Self::Currency as MultiTokenCurrency<AccountId>>::Balance),
+		(Self::Moment, <Self::Currency as MultiTokenCurrency<AccountId>>::Balance),
 		DispatchError,
 	>;
 
@@ -187,7 +187,7 @@ pub trait MultiTokenVestingLocks<AccountId, BlockNumber> {
 	) -> Result<
 		(
 			<Self::Currency as MultiTokenCurrency<AccountId>>::Balance,
-			BlockNumber,
+			Self::Moment,
 			<Self::Currency as MultiTokenCurrency<AccountId>>::Balance,
 		),
 		DispatchError,
@@ -200,7 +200,7 @@ pub trait MultiTokenVestingLocks<AccountId, BlockNumber> {
 		who: &AccountId,
 		token_id: <Self::Currency as MultiTokenCurrency<AccountId>>::CurrencyId,
 		lock_amount: <Self::Currency as MultiTokenCurrency<AccountId>>::Balance,
-		starting_block_as_balance: Option<BlockNumber>,
+		starting_block: Option<Self::Moment>,
 		ending_block_as_balance: <Self::Currency as MultiTokenCurrency<AccountId>>::Balance,
 	) -> DispatchResult;
 }

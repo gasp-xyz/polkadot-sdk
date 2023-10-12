@@ -76,7 +76,7 @@ use sp_runtime::{
 	},
 	DispatchError, RuntimeDebug,
 };
-use sp_std::{fmt::Debug, marker::PhantomData, prelude::*};
+use sp_std::{fmt::Debug, marker::PhantomData, prelude::*, vec};
 
 pub use pallet::*;
 pub use vesting_info::*;
@@ -417,10 +417,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO
-		// Needs to be benchmarked
 		#[pallet::call_index(4)]
-		#[pallet::weight(400_000_000u64)]
+		#[pallet::weight(T::WeightInfo::unlocking_merge_schedules(MaxLocksOf::<T>::get(), T::MAX_VESTING_SCHEDULES))]
 		pub fn sudo_unlock_all_vesting_tokens(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
@@ -693,7 +691,7 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T: Config> MultiTokenVestingLocks<T::AccountId, BlockNumberFor<T>> for Pallet<T>
+impl<T: Config> MultiTokenVestingLocks<T::AccountId> for Pallet<T>
 where
 	BalanceOf<T>: MaybeSerializeDeserialize + Debug,
 	TokenIdOf<T>: MaybeSerializeDeserialize + Debug,

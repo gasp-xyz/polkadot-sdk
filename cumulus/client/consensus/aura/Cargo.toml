@@ -31,6 +31,7 @@ sp-keystore = { path = "../../../../substrate/primitives/keystore" }
 sp-runtime = { path = "../../../../substrate/primitives/runtime" }
 sp-timestamp = { path = "../../../../substrate/primitives/timestamp" }
 sp-state-machine = { path = "../../../../substrate/primitives/state-machine" }
+sp-ver = { path = "../../../../substrate/primitives/ver" }
 substrate-prometheus-endpoint = { path = "../../../../substrate/utils/prometheus" }
 
 # Cumulus

@@ -30,7 +30,7 @@ pub use imbalance::Imbalance;
 pub mod pay;
 pub use misc::{
 	AssetId, Balance, BalanceStatus, ConversionFromAssetBalance, ConversionToAssetBalance,
-	ConvertRank, DepositConsequence, ExistenceRequirement, Fortitude, GetSalary, Locker, Precision,
-	Preservation, Provenance, Restriction, WithdrawConsequence, WithdrawReasons,
+	ConvertRank, CurrencyId, DepositConsequence, ExistenceRequirement, Fortitude, GetSalary,
+	Locker, Precision, Preservation, Provenance, Restriction, WithdrawConsequence, WithdrawReasons,
 };
 pub use pay::{Pay, PayFromAccount, PaymentStatus};

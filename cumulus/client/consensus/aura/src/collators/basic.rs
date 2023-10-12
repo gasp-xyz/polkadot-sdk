@@ -41,9 +41,9 @@ use sp_application_crypto::AppPublic;
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle;
 use sp_consensus_aura::{AuraApi, SlotDuration};
-use sp_core::crypto::Pair;
-use sp_inherents::CreateInherentDataProviders;
-use sp_keystore::KeystorePtr;
+use sp_core::{crypto::Pair, sr25519, ByteArray, ShufflingSeed};
+use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
+use sp_keystore::{Keystore, KeystorePtr};
 use sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
 use std::{convert::TryFrom, sync::Arc, time::Duration};
 
@@ -182,7 +182,7 @@ where
 				Err(e) => reject_with_error!(e),
 			};
 
-			let (parachain_inherent_data, other_inherent_data) = try_request!(
+			let (parachain_inherent_data, mut other_inherent_data) = try_request!(
 				collator
 					.create_inherent_data(
 						*request.relay_parent(),
@@ -191,6 +191,18 @@ where
 						claim.timestamp(),
 					)
 					.await
+			);
+
+			let keystore = params.keystore.clone();
+			let key = claim.author_pub().as_slice().try_into().unwrap();
+			try_request!(
+				inject_inherents::<Block>(
+					keystore,
+					&key,
+					parent_header.seed(),
+					&mut other_inherent_data
+				)
+				.await
 			);
 
 			let (collation, _, post_hash) = try_request!(
@@ -214,4 +226,25 @@ where
 			request.complete(Some(CollationResult { collation, result_sender }));
 		}
 	}
+}
+
+async fn inject_inherents<'a, B: BlockT>(
+	keystore: KeystorePtr,
+	public: &'a sr25519::Public,
+	prev_seed: &ShufflingSeed,
+	in_data: &'a mut InherentData,
+) -> Result<(), sp_consensus::Error> {
+	let seed = sp_ver::calculate_next_seed::<dyn Keystore>(&(*keystore), public, prev_seed)
+		.ok_or(sp_consensus::Error::StateUnavailable(String::from("signing seed failure")))?;
+
+	sp_ver::RandomSeedInherentDataProvider(seed)
+		.provide_inherent_data(in_data)
+		.map_err(|_| {
+			sp_consensus::Error::StateUnavailable(String::from(
+				"cannot inject RandomSeed inherent data",
+			))
+		})
+		.await?;
+
+	Ok(())
 }
