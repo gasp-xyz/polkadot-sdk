@@ -302,7 +302,8 @@ benchmarks_instance_pallet! {
 			let member = account::<T::AccountId>("member", i, SEED);
 			members.push(member);
 		}
-		let voter = account::<T::AccountId>("voter", 0, SEED);
+		// use foundation account to skip TooEarlyToCloseByNonFoundationAccount check
+		let voter = T::FoundationAccountsProvider::get().pop().unwrap();
 		members.push(voter.clone());
 		Collective::<T, I>::set_members(SystemOrigin::Root.into(), members.clone(), None, T::MaxMembers::get())?;
 
@@ -379,7 +380,8 @@ benchmarks_instance_pallet! {
 			let member = account::<T::AccountId>("member", i, SEED);
 			members.push(member);
 		}
-		let caller: T::AccountId = whitelisted_caller();
+		// use foundation account to skip TooEarlyToCloseByNonFoundationAccount check
+		let caller = T::FoundationAccountsProvider::get().pop().unwrap();
 		members.push(caller.clone());
 		Collective::<T, I>::set_members(SystemOrigin::Root.into(), members.clone(), None, T::MaxMembers::get())?;
 
