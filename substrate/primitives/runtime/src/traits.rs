@@ -38,7 +38,7 @@ pub use sp_arithmetic::traits::{
 	EnsureOp, EnsureOpAssign, EnsureSub, EnsureSubAssign, IntegerSquareRoot, One,
 	SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto, Zero,
 };
-use sp_core::{self, storage::StateVersion, Hasher, RuntimeDebug, TypeId};
+use sp_core::{self, storage::StateVersion, Hasher, RuntimeDebug, ShufflingSeed, TypeId};
 #[doc(hidden)]
 pub use sp_core::{
 	parameter_types, ConstBool, ConstI128, ConstI16, ConstI32, ConstI64, ConstI8, ConstU128,
@@ -1213,6 +1213,26 @@ pub trait Header:
 	fn hash(&self) -> Self::Hash {
 		<Self::Hashing as Hash>::hash_of(self)
 	}
+
+	/// Returns seed used for shuffling
+	fn seed(&self) -> &ShufflingSeed {
+		unimplemented!()
+	}
+
+	/// Returns seed used for shuffling
+	fn set_seed(&mut self, _seed: ShufflingSeed) {
+		unimplemented!()
+	}
+
+	/// Returns seed used for shuffling
+	fn count(&self) -> &Self::Number {
+		unimplemented!()
+	}
+
+	/// Returns seed used for shuffling
+	fn set_count(&mut self, _count: Self::Number) {
+		unimplemented!()
+	}
 }
 
 // Something that provides the Header Type. Only for internal usage and should only be used
@@ -1374,6 +1394,15 @@ pub trait Checkable<Context>: Sized {
 		self,
 		c: &Context,
 	) -> Result<Self::Checked, TransactionValidityError>;
+}
+
+/// Provides information about author
+pub trait IdentifyAccountWithLookup<Lookup> {
+	/// type that identifis account
+	type AccountId;
+
+	/// performs lookup and returns AccountId if available
+	fn get_account_id(&self, lookup: &Lookup) -> Result<Option<Self::AccountId>, LookupError>;
 }
 
 /// A "checkable" piece of information, used by the standard Substrate Executive in order to

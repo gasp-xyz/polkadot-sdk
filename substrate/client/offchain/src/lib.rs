@@ -475,6 +475,12 @@ mod tests {
 		block_builder.push(ext).unwrap();
 
 		let block = block_builder.build().unwrap().block;
+		block_on(client.import(BlockOrigin::Own, block.clone())).unwrap();
+
+		let block_builder = client
+			.new_block_at(block.header.hash(), Default::default(), false)
+			.unwrap();
+		let block = block_builder.build().unwrap().block;
 		block_on(client.import(BlockOrigin::Own, block)).unwrap();
 
 		assert_eq!(value, &offchain_db.get(sp_offchain::STORAGE_PREFIX, &key).unwrap());
@@ -483,6 +489,12 @@ mod tests {
 		let ext = ExtrinsicBuilder::new_offchain_index_clear(key.to_vec()).nonce(1).build();
 		block_builder.push(ext).unwrap();
 
+		let block = block_builder.build().unwrap().block;
+		block_on(client.import(BlockOrigin::Own, block.clone())).unwrap();
+
+		let block_builder = client
+			.new_block_at(block.header.hash(), Default::default(), false)
+			.unwrap();
 		let block = block_builder.build().unwrap().block;
 		block_on(client.import(BlockOrigin::Own, block)).unwrap();
 

@@ -1,0 +1,34 @@
+[package]
+name = "sc-block-builder-ver"
+version = "0.10.0-dev"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage = "https://substrate.io"
+repository.workspace = true
+description = "Substrate block builder"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+aquamarine = "0.1.12"
+log = "0.4.8"
+codec = { package = "parity-scale-codec", version = "3.6.1", features = [
+	"derive",
+] }
+sc-client-api = { path = "../api" }
+sp-api = { path = "../../primitives/api" }
+sp-block-builder = { path = "../../primitives/block-builder" }
+sp-blockchain = { path = "../../primitives/blockchain" }
+sp-core = { path = "../../primitives/core" }
+sp-inherents = { path = "../../primitives/inherents" }
+sp-runtime = { path = "../../primitives/runtime" }
+sp-ver = { path = "../../primitives/ver" }
+ver-api = { path="../../primitives/ver-api" }
+extrinsic-shuffler = { path="../../primitives/shuffler" }
+
+[dev-dependencies]
+sp-state-machine = { path = "../../primitives/state-machine" }
+substrate-test-runtime-client = { path = "../../test-utils/runtime/client" }

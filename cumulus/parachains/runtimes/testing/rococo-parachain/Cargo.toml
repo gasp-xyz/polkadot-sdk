@@ -35,6 +35,8 @@ sp-std = { path = "../../../../../substrate/primitives/std", default-features = 
 sp-transaction-pool = { path = "../../../../../substrate/primitives/transaction-pool", default-features = false}
 sp-version = { path = "../../../../../substrate/primitives/version", default-features = false}
 
+mangata-support = { path = "../../../../../substrate/frame/mangata-support", default-features = false }
+
 # Polkadot
 pallet-xcm = { path = "../../../../../polkadot/xcm/pallet-xcm", default-features = false}
 polkadot-parachain-primitives = { path = "../../../../../polkadot/parachain", default-features = false}
@@ -74,6 +76,7 @@ std = [
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
+	"mangata-support/std",
 	"pallet-assets/std",
 	"pallet-aura/std",
 	"pallet-balances/std",

@@ -47,6 +47,7 @@ pub mod weights;
 pub mod xcm_config;
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+use mangata_support::traits::GetMaintenanceStatusTrait;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -163,6 +164,17 @@ impl frame_system::Config for Runtime {
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
+pub struct MockMaintenanceStatusProvider;
+
+impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
+	fn is_maintenance() -> bool {
+		false
+	}
+
+	fn is_upgradable() -> bool {
+		true
+	}
+}
 
 parameter_types! {
 	// We do anything the parent chain tells us in this runtime.
@@ -177,6 +189,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type DmpMessageHandler = cumulus_pallet_xcm::UnlimitedDmpExecution<Runtime>;
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = ();
+	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type ReservedXcmpWeight = ();
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 	type ConsensusHook = cumulus_pallet_parachain_system::consensus_hook::ExpectParentIncluded;

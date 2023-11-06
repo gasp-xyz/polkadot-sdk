@@ -27,6 +27,8 @@ sp-std = { path = "../../../substrate/primitives/std", default-features = false}
 sp-trie = { path = "../../../substrate/primitives/trie", default-features = false}
 sp-version = { path = "../../../substrate/primitives/version", default-features = false}
 
+mangata-support = { path = "../../../substrate/frame/mangata-support", default-features = false }
+
 # Polkadot
 polkadot-parachain-primitives = { path = "../../../polkadot/parachain", default-features = false, features = [ "wasm-api" ]}
 xcm = { package = "staging-xcm", path = "../../../polkadot/xcm", default-features = false}
@@ -62,6 +64,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"log/std",
+	"mangata-support/std",
 	"polkadot-parachain-primitives/std",
 	"scale-info/std",
 	"sp-core/std",

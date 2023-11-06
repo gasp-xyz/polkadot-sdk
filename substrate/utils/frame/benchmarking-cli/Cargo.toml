@@ -34,6 +34,11 @@ frame-benchmarking = { path = "../../../frame/benchmarking" }
 frame-support = { path = "../../../frame/support" }
 frame-system = { path = "../../../frame/system" }
 sc-block-builder = { path = "../../../client/block-builder" }
+sc-consensus = { path = "../../../client/consensus/common" }
+sc-block-builder-ver = { path = "../../../client/block-builder-ver" }
+sp-consensus-aura = { default-features = false, path = "../../../primitives/consensus/aura" }
+ver-api = { path = "../../../primitives/ver-api" }
+sp-consensus = { path = "../../../primitives/consensus/common" }
 sc-cli = { path = "../../../client/cli", default-features = false}
 sc-client-api = { path = "../../../client/api" }
 sc-client-db = { path = "../../../client/db", default-features = false}
@@ -54,6 +59,7 @@ sp-trie = { path = "../../../primitives/trie" }
 sp-io = { path = "../../../primitives/io" }
 sp-wasm-interface = { path = "../../../primitives/wasm-interface" }
 gethostname = "0.2.3"
+futures = "0.3.21"
 
 [features]
 default = [ "rocksdb" ]

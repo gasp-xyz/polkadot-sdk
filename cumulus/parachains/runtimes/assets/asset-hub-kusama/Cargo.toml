@@ -54,6 +54,8 @@ sp-weights = { path = "../../../../../substrate/primitives/weights", default-fea
 # num-traits feature needed for dex integer sq root:
 primitive-types = { version = "0.12.1", default-features = false, features = ["codec", "scale-info", "num-traits"] }
 
+mangata-support = { path = "../../../../../substrate/frame/mangata-support", default-features = false }
+
 # Polkadot
 kusama-runtime-constants = { path = "../../../../../polkadot/runtime/kusama/constants", default-features = false}
 pallet-xcm = { path = "../../../../../polkadot/xcm/pallet-xcm", default-features = false}
@@ -176,6 +178,7 @@ std = [
 	"frame-try-runtime?/std",
 	"kusama-runtime-constants/std",
 	"log/std",
+	"mangata-support/std",
 	"pallet-asset-conversion-tx-payment/std",
 	"pallet-asset-conversion/std",
 	"pallet-assets/std",

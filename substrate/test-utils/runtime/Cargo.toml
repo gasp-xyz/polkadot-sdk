@@ -44,6 +44,7 @@ trie-db = { version = "0.27.0", default-features = false }
 sc-service = { path = "../../client/service", default-features = false, features = ["test-helpers"], optional = true}
 sp-state-machine = { path = "../../primitives/state-machine", default-features = false}
 sp-externalities = { path = "../../primitives/externalities", default-features = false}
+ver-api = { path = '../../primitives/ver-api', default-features = false }
 
 # 3rd party
 array-bytes = { version = "6.1", optional = true }
@@ -97,6 +98,7 @@ std = [
 	"sp-runtime/std",
 	"sp-session/std",
 	"sp-state-machine/std",
+	"ver-api/std",
 	"sp-std/std",
 	"sp-tracing/std",
 	"sp-transaction-pool/std",

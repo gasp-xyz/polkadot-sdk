@@ -30,6 +30,8 @@ sp-storage = { path = "../../../../../substrate/primitives/storage", default-fea
 sp-transaction-pool = { path = "../../../../../substrate/primitives/transaction-pool", default-features = false}
 sp-version = { path = "../../../../../substrate/primitives/version", default-features = false}
 
+mangata-support = { path = "../../../../../substrate/frame/mangata-support", default-features = false }
+
 # Polkadot
 xcm = { package = "staging-xcm", path = "../../../../../polkadot/xcm", default-features = false}
 xcm-builder = { package = "staging-xcm-builder", path = "../../../../../polkadot/xcm/xcm-builder", default-features = false}
@@ -71,6 +73,7 @@ std = [
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
 	"frame-try-runtime?/std",
+	"mangata-support/std",
 	"pallet-glutton/std",
 	"pallet-sudo/std",
 	"parachain-info/std",
