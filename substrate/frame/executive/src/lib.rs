@@ -132,7 +132,7 @@ use frame_support::{
 use frame_system::pallet_prelude::BlockNumberFor;
 use schnorrkel::vrf::{VRFOutput, VRFProof};
 use sp_runtime::{
-	generic::Digest,
+	generic::{Digest, ExtendedCall},
 	traits::{
 		self, Applyable, BlakeTwo256, CheckEqual, Checkable, Dispatchable, Extrinsic, Hash, Header,
 		IdentifyAccountWithLookup, NumberFor, One, ValidateUnsigned, Zero,
@@ -244,13 +244,12 @@ impl<
 	for Executive<System, Block, Context, UnsignedValidator, AllPalletsWithSystem, COnRuntimeUpgrade>
 where
 	// <System as frame_system::Config>::BlockNumber: AtLeast32BitUnsigned,
-	Block::Extrinsic: IdentifyAccountWithLookup<Context>
-		+ Checkable<Context>
-		+ Codec
-		+ GetDispatchInfo,
+	Block::Extrinsic:
+		IdentifyAccountWithLookup<Context> + Checkable<Context> + Codec + GetDispatchInfo,
 	CheckedOf<Block::Extrinsic, Context>: Applyable + GetDispatchInfo,
 	CallOf<Block::Extrinsic, Context>:
 		Dispatchable<Info = DispatchInfo, PostInfo = PostDispatchInfo>,
+	CallOf<Block::Extrinsic, Context>: ExtendedCall,
 	OriginOf<Block::Extrinsic, Context>: From<Option<System::AccountId>>,
 	UnsignedValidator: ValidateUnsigned<Call = CallOf<Block::Extrinsic, Context>>,
 {
@@ -468,13 +467,12 @@ impl<
 	> Executive<System, Block, Context, UnsignedValidator, AllPalletsWithSystem, COnRuntimeUpgrade>
 where
 	// <System as frame_system::Config>::BlockNumber: AtLeast32BitUnsigned,
-	Block::Extrinsic: IdentifyAccountWithLookup<Context>
-		+ Checkable<Context>
-		+ Codec
-		+ GetDispatchInfo,
+	Block::Extrinsic:
+		IdentifyAccountWithLookup<Context> + Checkable<Context> + Codec + GetDispatchInfo,
 	CheckedOf<Block::Extrinsic, Context>: Applyable + GetDispatchInfo,
 	CallOf<Block::Extrinsic, Context>:
 		Dispatchable<Info = DispatchInfo, PostInfo = PostDispatchInfo>,
+	CallOf<Block::Extrinsic, Context>: ExtendedCall,
 	OriginOf<Block::Extrinsic, Context>: From<Option<System::AccountId>>,
 	UnsignedValidator: ValidateUnsigned<Call = CallOf<Block::Extrinsic, Context>>,
 {
@@ -1809,8 +1807,9 @@ mod tests {
 	}
 
 	#[test]
-	// there will be some cases when tx execution may fail (because of delayed execution), won't panic
-	// #[should_panic(expected = "A call was labelled as mandatory, but resulted in an Error.")]
+	// there will be some cases when tx execution may fail (because of delayed execution), won't
+	// panic #[should_panic(expected = "A call was labelled as mandatory, but resulted in an
+	// Error.")]
 	fn invalid_inherents_fail_block_execution() {
 		let xt1 =
 			TestXt::new(RuntimeCall::Custom(custom::Call::inherent_call {}), sign_extra(1, 0, 0));
@@ -1914,12 +1913,11 @@ mod tests {
 				.insert(AURA, secret_uri, key_pair.public().as_ref())
 				.expect("Inserts unknown key");
 
-			let data: VrfSignData = VrfTranscript::new(b"shuffling_seed", &[(b"prev_seed", &prev_seed)]).into();
+			let data: VrfSignData =
+				VrfTranscript::new(b"shuffling_seed", &[(b"prev_seed", &prev_seed)]).into();
 
-			let signature = keystore
-				.sr25519_vrf_sign(AURA, &key_pair.public(), &data)
-				.unwrap()
-				.unwrap();
+			let signature =
+				keystore.sr25519_vrf_sign(AURA, &key_pair.public(), &data).unwrap().unwrap();
 
 			let pub_key_bytes = AsRef::<[u8; 32]>::as_ref(&key_pair.public())
 				.iter()

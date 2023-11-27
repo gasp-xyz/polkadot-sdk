@@ -20,13 +20,15 @@
 use crate::{
 	generic::CheckedExtrinsic,
 	traits::{
-		self, Checkable, Extrinsic, ExtrinsicMetadata, IdentifyAccount, IdentifyAccountWithLookup,
-		LookupError, MaybeDisplay, Member, SignaturePayload, SignedExtension,
+		self, Checkable, Extrinsic, ExtrinsicMetadata, Hash, IdentifyAccount,
+		IdentifyAccountWithLookup, Keccak256, LookupError, MaybeDisplay, Member, SignaturePayload,
+		SignedExtension,
 	},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
 	OpaqueExtrinsic,
 };
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
+use ethers_core::types::transaction::eip712::Eip712;
 use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
 use sp_io::hashing::blake2_256;
 #[cfg(all(not(feature = "std"), feature = "serde"))]
@@ -134,11 +136,44 @@ impl<Address: TypeInfo, Call: TypeInfo, Signature: TypeInfo, Extra: SignedExtens
 	}
 }
 
+use ethers_contract::{Eip712, EthAbiType};
+#[derive(Debug, Clone, Eip712, EthAbiType)]
+#[eip712(
+	name = "Mangata",
+	version = "1",
+	chain_id = 1285,
+	verifying_contract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+)]
+struct Message {
+	method: String,
+	params: String,
+	tx: String,
+}
+
+use sp_core::hexdisplay::HexDisplay;
+
+impl Message {
+	fn new<RuntimeCall>(f: RuntimeCall, p: Vec<u8>) -> Option<Self>
+	where
+		RuntimeCall: ExtendedCall,
+	{
+		if let Some((method, params)) = f.context() {
+			Some(Message { method, params, tx: HexDisplay::from(&p).to_string() })
+		} else {
+			None
+		}
+	}
+}
+
+pub trait ExtendedCall {
+	fn context(&self) -> Option<(String, String)>;
+}
+
 impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
 	for UncheckedExtrinsic<Address, Call, Signature, Extra>
 where
 	Address: Member + MaybeDisplay,
-	Call: Encode + Member,
+	Call: Encode + Member + ExtendedCall,
 	Signature: Member + traits::Verify,
 	<Signature as traits::Verify>::Signer: IdentifyAccount<AccountId = AccountId>,
 	Extra: SignedExtension<AccountId = AccountId>,
@@ -151,8 +186,24 @@ where
 		Ok(match self.signature {
 			Some((signed, signature, extra)) => {
 				let signed = lookup.lookup(signed)?;
-				let raw_payload = SignedPayload::new(self.function, extra)?;
-				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) {
+
+				// TODO: get rid of double verification
+				let raw_payload = SignedPayload::new(self.function.clone(), extra)?;
+
+				let metamask_signature_validation = if let Some(msg) =
+					Message::new(self.function, raw_payload.encode())
+				{
+					let encoded =
+						msg.encode_eip712().expect("Could not encode EIP712 message for signing");
+					let hash = Keccak256::hash(&encoded);
+					signature.verify(hash.as_ref(), &signed)
+				} else {
+					false
+				};
+
+				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) &&
+					!metamask_signature_validation
+				{
 					return Err(InvalidTransaction::BadProof.into())
 				}
 
@@ -237,6 +288,10 @@ where
 	pub fn deconstruct(self) -> (Call, Extra, Extra::AdditionalSigned) {
 		self.0
 	}
+
+	pub fn inner(&self) -> &(Call, Extra, Extra::AdditionalSigned) {
+		&self.0
+	}
 }
 
 impl<Call, Extra> Encode for SignedPayload<Call, Extra>
@@ -265,6 +320,66 @@ where
 {
 }
 
+// /// A payload that has been signed for an unchecked extrinsics.
+// ///
+// /// Note that the payload that we sign to produce unchecked extrinsic signature
+// /// is going to be different than the `SignaturePayload` - so the thing the extrinsic
+// /// actually contains.
+// pub struct MetamaskSignedPayload<Call, Extra: SignedExtension>(
+// 	(Call, Extra, Extra::AdditionalSigned),
+// );
+//
+// impl<Call, Extra> MetamaskSignedPayload<Call, Extra>
+// where
+// 	Call: Encode,
+// 	Extra: SignedExtension,
+// {
+// 	/// Create new `SignedPayload`.
+// 	///
+// 	/// This function may fail if `additional_signed` of `Extra` is not available.
+// 	pub fn new(call: Call, extra: Extra) -> Result<Self, TransactionValidityError> {
+// 		let additional_signed = extra.additional_signed()?;
+// 		let raw_payload = (call, extra, additional_signed);
+// 		Ok(Self(raw_payload))
+// 	}
+//
+// 	/// Create new `SignedPayload` from raw components.
+// 	pub fn from_raw(call: Call, extra: Extra, additional_signed: Extra::AdditionalSigned) -> Self {
+// 		Self((call, extra, additional_signed))
+// 	}
+//
+// 	/// Deconstruct the payload into it's components.
+// 	pub fn deconstruct(self) -> (Call, Extra, Extra::AdditionalSigned) {
+// 		self.0
+// 	}
+// }
+//
+// impl<Call, Extra> Encode for MetamaskSignedPayload<Call, Extra>
+// where
+// 	Call: Encode + ExtendedCall,
+// 	Extra: SignedExtension,
+// {
+// 	/// Get an encoded version of this payload.
+// 	///
+// 	/// Payloads longer than 256 bytes are going to be `blake2_256`-hashed.
+// 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+// 		self.0.using_encoded(|payload| {
+// 			if payload.len() > 256 {
+// 				f(&blake2_256(payload)[..])
+// 			} else {
+// 				f(payload)
+// 			}
+// 		})
+// 	}
+// }
+//
+// impl<Call, Extra> EncodeLike for MetamaskSignedPayload<Call, Extra>
+// where
+// 	Call: Encode,
+// 	Extra: SignedExtension,
+// {
+// }
+//
 impl<Address, Call, Signature, Extra> Decode for UncheckedExtrinsic<Address, Call, Signature, Extra>
 where
 	Address: Decode,

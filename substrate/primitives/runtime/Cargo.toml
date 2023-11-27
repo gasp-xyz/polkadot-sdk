@@ -14,22 +14,35 @@ readme = "README.md"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive", "max-encoded-len"] }
+codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = [
+	"derive",
+	"max-encoded-len",
+] }
 either = { version = "1.5", default-features = false }
 hash256-std-hasher = { version = "0.15.2", default-features = false }
 impl-trait-for-tuples = "0.2.2"
 log = { version = "0.4.17", default-features = false }
-parity-util-mem = { version = "0.12.0", default-features = false, features = ["primitive-types"] }
+parity-util-mem = { version = "0.12.0", default-features = false, features = [
+	"primitive-types",
+] }
 paste = "1.0"
 rand = { version = "0.8.5", optional = true }
-scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
-serde = { version = "1.0.188", default-features = false, features = ["derive", "alloc"], optional = true }
-sp-application-crypto = { path = "../application-crypto", default-features = false}
-sp-arithmetic = { path = "../arithmetic", default-features = false}
-sp-core = { path = "../core", default-features = false}
-sp-io = { path = "../io", default-features = false}
-sp-std = { path = "../std", default-features = false}
-sp-weights = { path = "../weights", default-features = false}
+scale-info = { version = "2.5.0", default-features = false, features = [
+	"derive",
+] }
+serde = { version = "1.0.188", default-features = false, features = [
+	"derive",
+	"alloc",
+], optional = true }
+sp-application-crypto = { path = "../application-crypto", default-features = false }
+sp-arithmetic = { path = "../arithmetic", default-features = false }
+sp-core = { path = "../core", default-features = false }
+sp-io = { path = "../io", default-features = false }
+sp-std = { path = "../std", default-features = false }
+sp-weights = { path = "../weights", default-features = false }
+# ethers-contract = { features = ["abigen", "providers"], version = "2.0.11"}
+ethers-contract = { version = "2.0.11" }
+ethers-core = { version = "2.0.11" }
 
 [dev-dependencies]
 rand = "0.8.5"
@@ -43,7 +56,7 @@ substrate-test-runtime-client = { path = "../../test-utils/runtime/client" }
 [features]
 runtime-benchmarks = []
 try-runtime = []
-default = [ "std" ]
+default = ["std"]
 std = [
 	"codec/std",
 	"either/use_std",

@@ -165,6 +165,12 @@ impl Contains<RuntimeCall> for BaseFilter {
 	}
 }
 
+impl generic::ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const SS58Prefix: u8 = 2;

@@ -279,7 +279,7 @@ impl<
 			+ Send
 			+ Sync
 			+ Serialize
-			+ for <'a> Deserialize<'a>
+			+ for<'a> Deserialize<'a>
 			+ Clone
 			+ Eq
 			+ Debug

@@ -69,7 +69,7 @@ pub use sp_core::storage::{Storage, StorageChild};
 
 use sp_core::{
 	crypto::{self, ByteArray, FromEntropy},
-	ecdsa, ed25519,
+	ecdsa, ed25519, eth,
 	hash::{H256, H512},
 	sr25519,
 };
@@ -274,6 +274,8 @@ pub enum MultiSignature {
 	Sr25519(sr25519::Signature),
 	/// An ECDSA/SECP256k1 signature.
 	Ecdsa(ecdsa::Signature),
+	/// An ECDSA/SECP256k1 ETH signature.
+	Eth(eth::Signature),
 }
 
 impl From<ed25519::Signature> for MultiSignature {
@@ -337,11 +339,13 @@ pub enum MultiSigner {
 	Sr25519(sr25519::Public),
 	/// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
 	Ecdsa(ecdsa::Public),
+	// /// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
+	// Eth(ecdsa::Public),
 }
 
 impl FromEntropy for MultiSigner {
 	fn from_entropy(input: &mut impl codec::Input) -> Result<Self, codec::Error> {
-		Ok(match input.read_byte()? % 3 {
+		Ok(match input.read_byte()? % 4 {
 			0 => Self::Ed25519(FromEntropy::from_entropy(input)?),
 			1 => Self::Sr25519(FromEntropy::from_entropy(input)?),
 			2.. => Self::Ecdsa(FromEntropy::from_entropy(input)?),
@@ -453,6 +457,15 @@ impl Verify for MultiSignature {
 				Err(()) => false,
 			},
 			(Self::Ecdsa(ref sig), who) => {
+				let m = sp_io::hashing::blake2_256(msg.get());
+				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
+					Ok(pubkey) =>
+						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
+							<dyn AsRef<[u8; 32]>>::as_ref(who),
+					_ => false,
+				}
+			},
+			(Self::Eth(ref sig), who) => {
 				let m = sp_io::hashing::blake2_256(msg.get());
 				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
 					Ok(pubkey) =>
@@ -978,7 +991,10 @@ mod tests {
 
 	use super::*;
 	use codec::{Decode, Encode};
-	use sp_core::crypto::Pair;
+	use sp_core::{
+		crypto::{Pair, UncheckedFrom},
+		Hasher, Public,
+	};
 	use sp_io::TestExternalities;
 	use sp_state_machine::create_proof_check_backend;
 
@@ -1103,6 +1119,134 @@ mod tests {
 			assert_eq!(sp_io::storage::get(b"b").unwrap(), vec![2u8; 33]);
 		});
 	}
+
+	// // sp_core::hashing::keccak_256(data)
+	// // polkadot_runtime common claim
+	//
+	// pub type Signature = MultiSignature;
+	// pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	// type AccountPublic = <Signature as Verify>::Signer;
+	// use hex_literal::hex;
+	//
+	// fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+	// 	TPublic::Pair::from_string(&format!("//{}", seed), None)
+	// 		.expect("static values are valid; qed")
+	// 		.public()
+	// }
+	//
+	// 	mod eth_utils {
+	// 		#[derive(Clone, Copy, PartialEq, Eq, Default)]
+	// 		pub struct EthereumAddress([u8; 20]);
+	//
+	// 		impl sp_std::fmt::Debug for EthereumAddress {
+	// 			fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+	// 				write!(f, "EthereumAddress({:?})", sp_core::bytes::to_hex(&self.0[..], true))
+	// 			}
+	// 		}
+	//
+	// 		pub fn public(secret: &libsecp256k1::SecretKey) -> libsecp256k1::PublicKey {
+	// 			libsecp256k1::PublicKey::from_secret_key(secret)
+	// 		}
+	//
+	// 		pub fn eth(secret: &libsecp256k1::SecretKey) -> EthereumAddress {
+	// 			let mut res = EthereumAddress::default();
+	// 			res.0.copy_from_slice(&keccak_256(&public(secret).serialize()[1..65])[12..]);
+	// 			res
+	// 		}
+	//
+	// 		pub fn keccak_256(data: &[u8]) -> [u8; 32] {
+	// 			sp_core::hashing::keccak_256(data)
+	// 		}
+	//
+	// 		#[derive(Clone)]
+	// 		pub struct EcdsaSignature(pub [u8; 65]);
+	//
+	// 		impl PartialEq for EcdsaSignature {
+	// 			fn eq(&self, other: &Self) -> bool {
+	// 				&self.0[..] == &other.0[..]
+	// 			}
+	// 		}
+	//
+	// 		impl sp_std::fmt::Debug for EcdsaSignature {
+	// 			fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+	// 				write!(f, "EcdsaSignature({:?})", &self.0[..])
+	// 			}
+	// 		}
+	//
+	// 		// pub fn sig<T: Config>(
+	// 		// 	secret: &libsecp256k1::SecretKey,
+	// 		// 	what: &[u8],
+	// 		// 	extra: &[u8],
+	// 		// ) -> EcdsaSignature {
+	// 		// 	let msg = keccak_256(&<super::Pallet<T>>::ethereum_signable_message(
+	// 		// 		&to_ascii_hex(what)[..],
+	// 		// 		extra,
+	// 		// 	));
+	// 		// 	let (sig, recovery_id) =
+	// 		// 		libsecp256k1::sign(&libsecp256k1::Message::parse(&msg), secret);
+	// 		// 	let mut r = [0u8; 65];
+	// 		// 	r[0..64].copy_from_slice(&sig.serialize()[..]);
+	// 		// 	r[64] = recovery_id.serialize();
+	// 		// 	EcdsaSignature(r)
+	// 		// }
+	// 	}
+	//
+	// 	// fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
+	// 	// where
+	// 	// 	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+	// 	// {
+	// 	// 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+	// 	// }
+	//
+	// 	#[test]
+	// 	fn import_ethereum_account() {
+	// 		use eth_utils::*;
+	// 		let data: [u8; 32] =
+	// 			hex!("00795456d004861137bce2ae57de7eb9080374afaca0076d8b6ef4fa178fb8e6");
+	//
+	// 		let secret = libsecp256k1::SecretKey::parse(&data).unwrap();
+	// 		let addr = eth(&secret);
+	//
+	// 		// let pair = ecdsa::Pair::from_seed_slice(&data[..]).expect("deserialize properly");
+	// 		//
+	// 		// let hash = traits::Keccak256::hash(&pair.public().0[..]);
+	// 		println!("public: {:?}", addr);
+	// 		// 0xBd0F320B5343C5D52f18B85dd1a1D0f6844FBB1a
+	// 		// MultiSigner::Ecdsa(pair.public());
+	// 		assert!(false);
+	// 	}
+	//
+	// 	use sp_core::hexdisplay::HexDisplay;
+	// 	#[test]
+	// 	fn import_ethereum_account2() {
+	// 		use eth_utils::*;
+	//
+	// 		let pub1 = ecdsa::Public::unchecked_from(hex!(
+	// 			"111111111111111111111111111111111111111111111111111111111111111111"
+	// 		));
+	// 		let pub2 = sr25519::Public::unchecked_from(hex!(
+	// 			"2222222222222222222222222222222222222222222222222222222222222222"
+	// 		));
+	// 		let pub3 = ed25519::Public::unchecked_from(hex!(
+	// 			"3333333333333333333333333333333333333333333333333333333333333333"
+	// 		));
+	//
+	// 		println!("ecdsa   : {}", HexDisplay::from(&pub1.encode()));
+	// 		println!("sr25519 : {}", HexDisplay::from(&pub2.encode()));
+	// 		println!("ed25519 : {}", HexDisplay::from(&pub3.encode()));
+	//
+	// 		println!("ecdsa   : {}", MultiSigner::from(pub1));
+	// 		println!("sr25519 : {}", MultiSigner::from(pub2));
+	// 		println!("ed25519 : {}", MultiSigner::from(pub3));
+	//
+	// 		println!("ecdsa   : {}", HexDisplay::from(&MultiSigner::from(pub1).encode()));
+	// 		println!("sr25519 : {}", HexDisplay::from(&MultiSigner::from(pub2).encode()));
+	// 		println!("ed25519 : {}", HexDisplay::from(&MultiSigner::from(pub3).encode()));
+	//
+	// 		assert!(false);
+	// 		// let pub3 = sr25519::Pair::from_seed_slice(&data[..]).expect("deserialize properly");
+	// 		// ed25519::Pair::from_seed_slice(&data[..]).expect("deserialize properly");
+	// 	}
 }
 
 // NOTE: we have to test the sp_core stuff also from a different crate to check that the macro
