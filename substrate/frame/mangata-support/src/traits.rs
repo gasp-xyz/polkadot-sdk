@@ -147,11 +147,43 @@ pub trait XykFunctionsTrait<AccountId, Balance, CurrencyId> {
 }
 
 pub trait ProofOfStakeRewardsApi<AccountId, Balance, CurrencyId> {
+	#[deprecated(note = "Use `enable_native_rewards` instead.")]
 	fn enable(liquidity_token_id: CurrencyId, weight: u8);
 
+	fn enable_native_rewards(liquidity_token_id: CurrencyId, weight: u8) {
+		Self::enable(liquidity_token_id, weight)
+	}
+
+	#[deprecated(note = "Use `disable_native_rewards` instead.")]
 	fn disable(liquidity_token_id: CurrencyId);
 
+	fn disable_native_rewards(liquidity_token_id: CurrencyId, weight: u8) {
+		Self::disable(liquidity_token_id)
+	}
+
+	#[deprecated(note = "Use `native_rewards_enabled` instead.")]
 	fn is_enabled(liquidity_token_id: CurrencyId) -> bool;
+
+	fn native_rewards_enabled(liquidity_token_id: CurrencyId) -> bool {
+		Self::is_enabled(liquidity_token_id)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn enable_3rdparty_rewards(
+		account: AccountId,
+		pool: (CurrencyId, CurrencyId),
+		reward_token_id: CurrencyId,
+		last_block: u32,
+		amount: Balance,
+	);
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn activate_liquidity_for_3rdparty_rewards(
+		account: AccountId,
+		liquidity_token: CurrencyId,
+		amount: Balance,
+		reward_token_id: CurrencyId,
+	);
 
 	fn claim_rewards_all(
 		sender: AccountId,
@@ -177,6 +209,10 @@ pub trait ProofOfStakeRewardsApi<AccountId, Balance, CurrencyId> {
 		user: AccountId,
 		liquidity_asset_id: CurrencyId,
 	) -> Result<Balance, DispatchError>;
+}
+
+fn enable<CurrencyId>(liquidity_token_id: CurrencyId, weight: u8) {
+	todo!()
 }
 
 pub trait PreValidateSwaps<AccountId, Balance, CurrencyId> {
@@ -248,6 +284,11 @@ pub trait Valuate<Balance, CurrencyId> {
 	) -> Result<(CurrencyId, CurrencyId), DispatchError>;
 
 	fn valuate_liquidity_token(
+		liquidity_token_id: CurrencyId,
+		liquidity_token_amount: Balance,
+	) -> Balance;
+
+	fn valuate_non_liquidity_token(
 		liquidity_token_id: CurrencyId,
 		liquidity_token_amount: Balance,
 	) -> Balance;
