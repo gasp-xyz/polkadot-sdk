@@ -68,10 +68,11 @@ pub use sp_core::storage::StateVersion;
 pub use sp_core::storage::{Storage, StorageChild};
 
 use sp_core::{
-	crypto::{self, ByteArray, FromEntropy},
+	crypto::{self, ByteArray, FromEntropy, UncheckedFrom},
 	ecdsa, ed25519, eth,
 	hash::{H256, H512},
-	sr25519,
+	hexdisplay::HexDisplay,
+	sr25519, H160,
 };
 use sp_std::prelude::*;
 
@@ -203,7 +204,7 @@ impl From<Justification> for Justifications {
 	}
 }
 
-use traits::{Lazy, Verify};
+use traits::{Hash, Keccak256, Lazy, Verify};
 
 use crate::traits::IdentifyAccount;
 #[cfg(feature = "serde")]
@@ -337,10 +338,10 @@ pub enum MultiSigner {
 	Ed25519(ed25519::Public),
 	/// An Sr25519 identity.
 	Sr25519(sr25519::Public),
+	// /// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
+	Eth(ecdsa::Public),
 	/// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
 	Ecdsa(ecdsa::Public),
-	// /// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
-	// Eth(ecdsa::Public),
 }
 
 impl FromEntropy for MultiSigner {
@@ -348,7 +349,8 @@ impl FromEntropy for MultiSigner {
 		Ok(match input.read_byte()? % 4 {
 			0 => Self::Ed25519(FromEntropy::from_entropy(input)?),
 			1 => Self::Sr25519(FromEntropy::from_entropy(input)?),
-			2.. => Self::Ecdsa(FromEntropy::from_entropy(input)?),
+			2 => Self::Ecdsa(FromEntropy::from_entropy(input)?),
+			3.. => Self::Eth(FromEntropy::from_entropy(input)?),
 		})
 	}
 }
@@ -367,6 +369,7 @@ impl AsRef<[u8]> for MultiSigner {
 			Self::Ed25519(ref who) => who.as_ref(),
 			Self::Sr25519(ref who) => who.as_ref(),
 			Self::Ecdsa(ref who) => who.as_ref(),
+			Self::Eth(ref who) => who.as_ref(),
 		}
 	}
 }
@@ -378,6 +381,7 @@ impl traits::IdentifyAccount for MultiSigner {
 			Self::Ed25519(who) => <[u8; 32]>::from(who).into(),
 			Self::Sr25519(who) => <[u8; 32]>::from(who).into(),
 			Self::Ecdsa(who) => sp_io::hashing::blake2_256(who.as_ref()).into(),
+			Self::Eth(who) => sp_io::hashing::keccak_256(who.as_ref()).into(),
 		}
 	}
 }
@@ -440,13 +444,18 @@ impl std::fmt::Display for MultiSigner {
 			Self::Ed25519(ref who) => write!(fmt, "ed25519: {}", who),
 			Self::Sr25519(ref who) => write!(fmt, "sr25519: {}", who),
 			Self::Ecdsa(ref who) => write!(fmt, "ecdsa: {}", who),
+			Self::Eth(ref who) => write!(fmt, "eth: {}", who),
 		}
 	}
 }
 
+use codec::alloc::string::{String, ToString};
 impl Verify for MultiSignature {
 	type Signer = MultiSigner;
 	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId32) -> bool {
+		let data: &[u8; 32] = signer.as_ref();
+		log::info!(target: "metamask::verify", "signer : {:?}", HexDisplay::from(data).to_string());
+
 		match (self, signer) {
 			(Self::Ed25519(ref sig), who) => match ed25519::Public::from_slice(who.as_ref()) {
 				Ok(signer) => sig.verify(msg, &signer),
@@ -456,9 +465,29 @@ impl Verify for MultiSignature {
 				Ok(signer) => sig.verify(msg, &signer),
 				Err(()) => false,
 			},
+			// (Self::Ecdsa(ref sig), who) => {
+			// log::info!(target: "metamask::verify", "ECDSA");
+			// let m = sp_io::hashing::blake2_256(msg.get());
+			// match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
+			// 	Ok(pubkey) =>
+			// 		&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
+			// 			<dyn AsRef<[u8; 32]>>::as_ref(who),
+			// 	_ => false,
+			// }
+			// },
 			(Self::Ecdsa(ref sig), who) => {
-				let m = sp_io::hashing::blake2_256(msg.get());
-				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
+				log::info!(target: "metamask::verify", "ECDSA");
+				log::info!(target: "metamask::verify", "length {}", msg.get().len());
+
+				// TODO: maintain backward compatiblitiy
+				let mut input = [0u8; 32];
+				if msg.get().len() != 32 {
+					input = sp_io::hashing::blake2_256(msg.get());
+				} else {
+					input.copy_from_slice(msg.get());
+				}
+				//
+				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &input) {
 					Ok(pubkey) =>
 						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
 							<dyn AsRef<[u8; 32]>>::as_ref(who),
@@ -466,11 +495,15 @@ impl Verify for MultiSignature {
 				}
 			},
 			(Self::Eth(ref sig), who) => {
-				let m = sp_io::hashing::blake2_256(msg.get());
-				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
+				log::info!(target: "metamask::verify", "ETH");
+				let mut input = [0u8; 32];
+				input.copy_from_slice(msg.get());
+				// let m = sp_io::hashing::blake2_256(msg.get());
+				//
+				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &input) {
 					Ok(pubkey) =>
-						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
-							<dyn AsRef<[u8; 32]>>::as_ref(who),
+					//TODO: check first 12 bytes if they are zeros!
+						AccountId32::unchecked_from(Keccak256::hash(&pubkey[..])) == *who,
 					_ => false,
 				}
 			},

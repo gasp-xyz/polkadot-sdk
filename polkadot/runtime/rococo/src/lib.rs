@@ -123,7 +123,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 
 use sp_runtime::generic::ExtendedCall;
 impl ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(String, String)> {
+	fn context(&self) -> Option<(Vec<u8>, Vec<u8>)> {
 		None
 	}
 }

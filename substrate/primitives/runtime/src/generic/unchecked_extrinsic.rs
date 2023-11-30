@@ -28,7 +28,7 @@ use crate::{
 	OpaqueExtrinsic,
 };
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
-use ethers_core::types::transaction::eip712::Eip712;
+// use ethers_core::types::transaction::eip712::Eip712;
 use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
 use sp_io::hashing::blake2_256;
 #[cfg(all(not(feature = "std"), feature = "serde"))]
@@ -136,37 +136,49 @@ impl<Address: TypeInfo, Call: TypeInfo, Signature: TypeInfo, Extra: SignedExtens
 	}
 }
 
-use ethers_contract::{Eip712, EthAbiType};
-#[derive(Debug, Clone, Eip712, EthAbiType)]
-#[eip712(
-	name = "Mangata",
-	version = "1",
-	chain_id = 1285,
-	verifying_contract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
-)]
-struct Message {
-	method: String,
-	params: String,
-	tx: String,
-}
+// use ethers_contract::{Eip712, EthAbiType};
+// #[derive(Debug, Clone, Eip712, EthAbiType)]
+// #[eip712(
+// 	name = "Mangata",
+// 	version = "1",
+// 	chain_id = 1285,
+// 	verifying_contract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+// )]
+// struct Message {
+// 	method: String,
+// 	params: String,
+// 	tx: String,
+// }
 
 use sp_core::hexdisplay::HexDisplay;
+//
+// impl Message {
+// 	fn new<RuntimeCall>(f: RuntimeCall, p: Vec<u8>) -> Option<Self>
+// 	where
+// 		RuntimeCall: ExtendedCall,
+// 	{
+// 		if let Some((method, params)) = f.context() {
+// 			Some(Message { method, params, tx: HexDisplay::from(&p).to_string() })
+// 		} else {
+// 		None
+// 		}
+// 	}
+// }
 
-impl Message {
-	fn new<RuntimeCall>(f: RuntimeCall, p: Vec<u8>) -> Option<Self>
-	where
-		RuntimeCall: ExtendedCall,
-	{
-		if let Some((method, params)) = f.context() {
-			Some(Message { method, params, tx: HexDisplay::from(&p).to_string() })
-		} else {
-			None
-		}
+use alloy_primitives::address;
+use alloy_sol_types::{sol, SolStruct};
+sol! {
+	struct Message {
+		 string method;
+		 string params;
+		 string tx;
 	}
 }
 
+use codec::alloc::string::{String, ToString};
+
 pub trait ExtendedCall {
-	fn context(&self) -> Option<(String, String)>;
+	fn context(&self) -> Option<(Vec<u8>, Vec<u8>)>;
 }
 
 impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
@@ -183,23 +195,47 @@ where
 	type Checked = CheckedExtrinsic<AccountId, Call, Extra>;
 
 	fn check(self, lookup: &Lookup) -> Result<Self::Checked, TransactionValidityError> {
+		sp_io::init_tracing();
+
 		Ok(match self.signature {
 			Some((signed, signature, extra)) => {
 				let signed = lookup.lookup(signed)?;
 
 				// TODO: get rid of double verification
-				let raw_payload = SignedPayload::new(self.function.clone(), extra)?;
+				let raw_payload = SignedPayload::new(self.function.clone(), extra.clone())?;
 
-				let metamask_signature_validation = if let Some(msg) =
-					Message::new(self.function, raw_payload.encode())
-				{
-					let encoded =
-						msg.encode_eip712().expect("Could not encode EIP712 message for signing");
-					let hash = Keccak256::hash(&encoded);
-					signature.verify(hash.as_ref(), &signed)
-				} else {
-					false
-				};
+				let mut metamask_signature_validation = false;
+
+				if let Some((method, params)) = self.function.context() {
+					if let (Ok(method), Ok(params)) =
+						(String::from_utf8(method), String::from_utf8(params))
+					{
+						let msg = Message {
+							method,
+							params,
+							tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
+						};
+						log::info!(target: "metamask", "Message::method : {:?}", msg.method);
+						log::info!(target: "metamask", "Message::params : {:?}", msg.params);
+						log::info!(target: "metamask", "Message::tx     : {:?}", msg.tx);
+						log::info!(target: "metamask", "Message::call   : {:?}", HexDisplay::from(&self.function.encode()).to_string());
+						log::info!(target: "metamask", "Message::extra   : {:?}", HexDisplay::from(&extra.encode()).to_string());
+
+						let my_domain = alloy_sol_types::eip712_domain!(
+							name: "Mangata",
+							version: "1",
+							chain_id: 1285,
+							verifying_contract: address!("CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"),
+						);
+						let signing_hash = msg.eip712_signing_hash(&my_domain);
+						log::info!(target: "metamask", "typed_data_hash: {}", signing_hash);
+						if signature.verify(signing_hash.as_ref(), &signed) {
+							log::info!(target: "metamask", "validated: {}", signing_hash);
+							metamask_signature_validation = true;
+						}
+						log::info!(target: "metamask", "NOT validated: ");
+					}
+				}
 
 				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) &&
 					!metamask_signature_validation
@@ -530,11 +566,18 @@ mod tests {
 		testing::TestSignature as TestSig,
 		traits::{DispatchInfoOf, IdentityLookup, SignedExtension},
 	};
+	use sp_core::{crypto::UncheckedFrom, keccak_256};
 	use sp_io::hashing::blake2_256;
 
 	type TestContext = IdentityLookup<u64>;
 	type TestAccountId = u64;
 	type TestCall = Vec<u8>;
+
+	impl ExtendedCall for TestCall {
+		fn context(&self) -> Option<(Vec<u8>, Vec<u8>)> {
+			None
+		}
+	}
 
 	const TEST_ACCOUNT: TestAccountId = 0;
 
@@ -674,5 +717,43 @@ mod tests {
 			Ex::decode(&mut &encoded[..]),
 			Err(Error::from("Not enough data to fill buffer"))
 		);
+	}
+
+	#[test]
+	fn test_verify_metamask_signature() {
+		use crate::{traits::Verify, AccountId32, MultiSignature};
+		use hex_literal::hex;
+
+		let msg = Message {
+			method: "Hello!".to_string(),
+			params: "Hello!".to_string(),
+			tx: "Hello!".to_string(),
+		};
+
+		let my_domain = alloy_sol_types::eip712_domain!(
+			name: "Mangata",
+			version: "1",
+			chain_id: 1285,
+			verifying_contract: address!("CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"),
+		);
+
+		let signing_hash = msg.eip712_signing_hash(&my_domain);
+
+		let signature = sp_core::eth::Signature::unchecked_from(
+			hex!("acfafc5d6c4eb47af8306570c7b8d8665f0faf505e4e743882886832864ddbac66d9b804d5e756b75849955842476df3e5d4d3c1a8d76f08333e194e6c869b3f1c")
+		);
+		let signature = MultiSignature::Eth(signature);
+		let hashed_pubkey =
+			keccak_256(&hex!("03da5adecaff608b10bdacb5a3a08e4f414f7e38fa78c756cda8e8802cd6e0df1c"));
+		// println!("{}", HexDisplay::from(&hashed_pubkey).to_string());
+		// assert!(false);
+
+		// let signer = AccountId32::new();
+		assert!(signature.verify(signing_hash.as_ref(), &AccountId32::new(hashed_pubkey)));
+
+		// log::info!(target: "metamask", "typed_data_hash: {}", signing_hash);
+		// 	log::info!(target: "metamask", "validated: {}", signing_hash);
+		// 	metamask_signature_validation = true;
+		// }
 	}
 }

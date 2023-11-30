@@ -165,8 +165,9 @@ impl Contains<RuntimeCall> for BaseFilter {
 	}
 }
 
-impl generic::ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(String, String)> {
+use sp_runtime::generic::ExtendedCall;
+impl ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(Vec<u8>, Vec<u8>)> {
 		None
 	}
 }
