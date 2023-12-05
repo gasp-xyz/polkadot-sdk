@@ -121,12 +121,14 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	state_version: 1,
 };
 
+use parity_scale_codec::alloc::string::String;
 use sp_runtime::generic::ExtendedCall;
 impl ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(Vec<u8>, Vec<u8>)> {
+	fn context(&self) -> Option<(String, String)> {
 		None
 	}
 }
+
 
 /// The BABE epoch configuration at genesis.
 pub const BABE_GENESIS_EPOCH_CONFIG: babe_primitives::BabeEpochConfiguration =

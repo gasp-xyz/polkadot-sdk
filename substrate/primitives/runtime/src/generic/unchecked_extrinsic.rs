@@ -178,7 +178,7 @@ sol! {
 use codec::alloc::string::{String, ToString};
 
 pub trait ExtendedCall {
-	fn context(&self) -> Option<(Vec<u8>, Vec<u8>)>;
+	fn context(&self) -> Option<(String, String)>;
 }
 
 impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
@@ -207,9 +207,9 @@ where
 				let mut metamask_signature_validation = false;
 
 				if let Some((method, params)) = self.function.context() {
-					if let (Ok(method), Ok(params)) =
-						(String::from_utf8(method), String::from_utf8(params))
-					{
+					// if let (Ok(method), Ok(params)) =
+					// 	(String::from_utf8(method), String::from_utf8(params))
+					// {
 						let msg = Message {
 							method,
 							params,
@@ -234,7 +234,7 @@ where
 							metamask_signature_validation = true;
 						}
 						log::info!(target: "metamask", "NOT validated: ");
-					}
+					// }
 				}
 
 				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) &&
