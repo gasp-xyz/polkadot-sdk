@@ -207,38 +207,34 @@ where
 				let mut metamask_signature_validation = false;
 
 				if let Some((method, params)) = self.function.context() {
-					// if let (Ok(method), Ok(params)) =
-					// 	(String::from_utf8(method), String::from_utf8(params))
-					// {
-						let msg = Message {
-							method,
-							params,
-							tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
-						};
-						log::info!(target: "metamask", "Message::method : {:?}", msg.method);
-						log::info!(target: "metamask", "Message::params : {:?}", msg.params);
-						log::info!(target: "metamask", "Message::tx     : {:?}", msg.tx);
-						log::info!(target: "metamask", "Message::call   : {:?}", HexDisplay::from(&self.function.encode()).to_string());
-						log::info!(target: "metamask", "Message::extra   : {:?}", HexDisplay::from(&extra.encode()).to_string());
+					let msg = Message {
+						method,
+						params,
+						tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
+					};
+					log::debug!(target: "metamask", "Message::method : {:?}", msg.method);
+					log::debug!(target: "metamask", "Message::params : {:?}", msg.params);
+					log::debug!(target: "metamask", "Message::tx     : {:?}", msg.tx);
+					log::debug!(target: "metamask", "Message::call   : {:?}", HexDisplay::from(&self.function.encode()).to_string());
+					log::debug!(target: "metamask", "Message::extra   : {:?}", HexDisplay::from(&extra.encode()).to_string());
 
-						let my_domain = alloy_sol_types::eip712_domain!(
-							name: "Mangata",
-							version: "1",
-							chain_id: 1285,
-							verifying_contract: address!("CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"),
-						);
-						let signing_hash = msg.eip712_signing_hash(&my_domain);
-						log::info!(target: "metamask", "typed_data_hash: {}", signing_hash);
-						if signature.verify(signing_hash.as_ref(), &signed) {
-							log::info!(target: "metamask", "validated: {}", signing_hash);
-							metamask_signature_validation = true;
-						}
-						log::info!(target: "metamask", "NOT validated: ");
-					// }
+					let my_domain = alloy_sol_types::eip712_domain!(
+						name: "Mangata",
+						version: "1",
+						chain_id: 1285,
+						verifying_contract: address!("CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"),
+					);
+					let signing_hash = msg.eip712_signing_hash(&my_domain);
+					log::debug!(target: "metamask", "typed_data_hash: {}", signing_hash);
+					if signature.verify(signing_hash.as_ref(), &signed) {
+						log::info!(target: "metamask", "validated: {}", signing_hash);
+						metamask_signature_validation = true;
+					}
+					log::debug!(target: "metamask", "NOT validated: ");
 				}
 
-				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) &&
-					!metamask_signature_validation
+				if !metamask_signature_validation &&
+					!raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
 				{
 					return Err(InvalidTransaction::BadProof.into())
 				}

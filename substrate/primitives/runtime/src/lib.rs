@@ -338,10 +338,10 @@ pub enum MultiSigner {
 	Ed25519(ed25519::Public),
 	/// An Sr25519 identity.
 	Sr25519(sr25519::Public),
-	// /// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
-	Eth(ecdsa::Public),
 	/// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
 	Ecdsa(ecdsa::Public),
+	// /// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
+	Eth(ecdsa::Public),
 }
 
 impl FromEntropy for MultiSigner {
@@ -465,45 +465,42 @@ impl Verify for MultiSignature {
 				Ok(signer) => sig.verify(msg, &signer),
 				Err(()) => false,
 			},
-			// (Self::Ecdsa(ref sig), who) => {
-			// log::info!(target: "metamask::verify", "ECDSA");
-			// let m = sp_io::hashing::blake2_256(msg.get());
-			// match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
-			// 	Ok(pubkey) =>
-			// 		&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
-			// 			<dyn AsRef<[u8; 32]>>::as_ref(who),
-			// 	_ => false,
-			// }
-			// },
 			(Self::Ecdsa(ref sig), who) => {
 				log::info!(target: "metamask::verify", "ECDSA");
-				log::info!(target: "metamask::verify", "length {}", msg.get().len());
-
-				// TODO: maintain backward compatiblitiy
-				let mut input = [0u8; 32];
-				if msg.get().len() != 32 {
-					input = sp_io::hashing::blake2_256(msg.get());
-				} else {
-					input.copy_from_slice(msg.get());
-				}
-				//
-				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &input) {
+				let m = sp_io::hashing::blake2_256(msg.get());
+				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
 					Ok(pubkey) =>
 						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
 							<dyn AsRef<[u8; 32]>>::as_ref(who),
 					_ => false,
 				}
 			},
+
 			(Self::Eth(ref sig), who) => {
 				log::info!(target: "metamask::verify", "ETH");
+				log::info!(target: "metamask::verify", "length {}", msg.get().len());
+
+				// TODO: maintain backward compatiblitiy
 				let mut input = [0u8; 32];
-				input.copy_from_slice(msg.get());
-				// let m = sp_io::hashing::blake2_256(msg.get());
-				//
-				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &input) {
-					Ok(pubkey) =>
-					//TODO: check first 12 bytes if they are zeros!
-						AccountId32::unchecked_from(Keccak256::hash(&pubkey[..])) == *who,
+				if msg.get().len() != 32 {
+					// with metamask signature verification we expect user to provide signature that
+					// is eip712 compatible hash of signed data V4
+					return false
+				} else {
+					input.copy_from_slice(msg.get());
+				}
+
+				match sp_io::crypto::secp256k1_ecdsa_recover(sig.as_ref(), &input) {
+					Ok(pubkey) => {
+						log::info!(target: "metamask::verify", "pubkey recovered {}", sp_core::hexdisplay::HexDisplay::from(&pubkey));
+						let mut ethereum_address = [0u8; 20];
+						ethereum_address
+							.copy_from_slice(&sp_io::hashing::keccak_256(pubkey.as_ref())[12..32]);
+						log::info!(target: "metamask::verify", "ethereum address {}", sp_core::hexdisplay::HexDisplay::from(&ethereum_address));
+
+						&sp_io::hashing::blake2_256(&ethereum_address) ==
+							<dyn AsRef<[u8; 32]>>::as_ref(who)
+					},
 					_ => false,
 				}
 			},
