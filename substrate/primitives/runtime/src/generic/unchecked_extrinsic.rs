@@ -564,13 +564,14 @@ mod tests {
 	};
 	use sp_core::{crypto::UncheckedFrom, keccak_256};
 	use sp_io::hashing::blake2_256;
+	use codec::alloc::string::String;
 
 	type TestContext = IdentityLookup<u64>;
 	type TestAccountId = u64;
 	type TestCall = Vec<u8>;
 
 	impl ExtendedCall for TestCall {
-		fn context(&self) -> Option<(Vec<u8>, Vec<u8>)> {
+		fn context(&self) -> Option<(String, String)> {
 			None
 		}
 	}
