@@ -302,6 +302,7 @@ where
 	CheckedOf<Block::Extrinsic, Context>: Applyable + GetDispatchInfo,
 	CallOf<Block::Extrinsic, Context>:
 		Dispatchable<Info = DispatchInfo, PostInfo = PostDispatchInfo>,
+	CallOf<Block::Extrinsic, Context>: ExtendedCall,
 	OriginOf<Block::Extrinsic, Context>: From<Option<System::AccountId>>,
 	UnsignedValidator: ValidateUnsigned<Call = CallOf<Block::Extrinsic, Context>>,
 {

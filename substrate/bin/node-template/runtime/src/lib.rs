@@ -341,6 +341,16 @@ mod benches {
 	);
 }
 
+
+use codec::alloc::string::String;
+use sp_runtime::generic::ExtendedCall;
+impl ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
+
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {

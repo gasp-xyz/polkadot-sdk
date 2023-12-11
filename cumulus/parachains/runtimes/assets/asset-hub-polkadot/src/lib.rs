@@ -824,6 +824,15 @@ pub type Executive = frame_executive::Executive<
 	Migrations,
 >;
 
+use codec::alloc::string::String;
+use sp_runtime::generic::ExtendedCall;
+impl ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
+
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
 extern crate frame_benchmarking;

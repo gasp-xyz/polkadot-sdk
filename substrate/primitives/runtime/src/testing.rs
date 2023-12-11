@@ -340,6 +340,14 @@ pub struct TestXt<Call, Extra> {
 	pub call: Call,
 }
 
+use codec::alloc::string::String;
+use crate::generic::ExtendedCall;
+impl<Call, Extra> ExtendedCall for TestXt<Call, Extra> {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
 impl<Call, Extra> TestXt<Call, Extra> {
 	/// Create a new `TextXt`.
 	pub fn new(call: Call, signature: Option<(u64, Extra)>) -> Self {
