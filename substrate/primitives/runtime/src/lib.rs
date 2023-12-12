@@ -69,7 +69,7 @@ pub use sp_core::storage::{Storage, StorageChild};
 
 use sp_core::{
 	crypto::{self, ByteArray, FromEntropy, UncheckedFrom},
-	ecdsa, ed25519, eth,
+	ecdsa, ed25519,
 	hash::{H256, H512},
 	hexdisplay::HexDisplay,
 	sr25519, H160,
@@ -276,7 +276,7 @@ pub enum MultiSignature {
 	/// An ECDSA/SECP256k1 signature.
 	Ecdsa(ecdsa::Signature),
 	/// An ECDSA/SECP256k1 ETH signature.
-	Eth(eth::Signature),
+	Eth(ecdsa::Signature),
 }
 
 impl From<ed25519::Signature> for MultiSignature {

@@ -62,7 +62,6 @@ pub mod bls;
 pub mod defer;
 pub mod ecdsa;
 pub mod ed25519;
-pub mod eth;
 pub mod hash;
 #[cfg(feature = "std")]
 mod hasher;
