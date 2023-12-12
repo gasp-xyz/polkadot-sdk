@@ -57,13 +57,6 @@ where
 	}
 }
 
-impl MultiAddress<crate::AccountId32, ()> {
-	/// Create an address from a 20 byte representation.
-	pub fn as_bytes(&self) -> &[u8] {
-		todo!()
-	}
-}
-
 impl<AccountId, AccountIndex> From<AccountId> for MultiAddress<AccountId, AccountIndex> {
 	fn from(a: AccountId) -> Self {
 		Self::Id(a)
