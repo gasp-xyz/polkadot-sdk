@@ -306,7 +306,6 @@ pub trait Valuate<Balance, CurrencyId> {
 		second_asset_id: CurrencyId,
 	) -> Result<(Balance, Balance), DispatchError>;
 
-	fn is_liquidity_token(liquidity_asset_id: CurrencyId) -> bool;
 }
 
 pub trait PoolCreateApi<AccountId, Balance, CurrencyId> {
@@ -327,4 +326,26 @@ pub trait LiquidityMiningApi<Balance> {
 
 pub trait AssetRegistryApi<CurrencyId> {
 	fn enable_pool_creation(assets: (CurrencyId, CurrencyId)) -> bool;
+}
+
+pub trait SequencerStakingProviderTrait<AccountId, Balance> {
+	fn is_active_sequencer(sequencer: AccountId) -> bool;
+
+	fn slash_sequencer(sequencer: AccountId) -> DispatchResult;
+
+	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>;
+}
+
+impl<AccountId, Balance> SequencerStakingProviderTrait<AccountId, Balance> for (){
+	fn is_active_sequencer(sequencer: AccountId) -> bool{
+		false
+	}
+
+	fn slash_sequencer(sequencer: AccountId) -> DispatchResult{
+		Ok(())
+	}
+
+	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>{
+		None
+	}
 }
