@@ -349,3 +349,11 @@ impl<AccountId, Balance> SequencerStakingProviderTrait<AccountId, Balance> for (
 		None
 	}
 }
+
+pub trait RolldownProviderTrait<AccountId> {
+	fn new_sequencer_active(sequencer: AccountId);
+}
+
+impl<AccountId> RolldownProviderTrait<AccountId> for (){
+	fn new_sequencer_active(sequencer: AccountId){}
+}
