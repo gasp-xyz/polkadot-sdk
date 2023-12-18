@@ -306,6 +306,7 @@ pub trait Valuate<Balance, CurrencyId> {
 		second_asset_id: CurrencyId,
 	) -> Result<(Balance, Balance), DispatchError>;
 
+	fn is_liquidity_token(liquidity_asset_id: CurrencyId) -> bool;
 }
 
 pub trait PoolCreateApi<AccountId, Balance, CurrencyId> {
