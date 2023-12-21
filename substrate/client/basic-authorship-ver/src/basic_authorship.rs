@@ -566,6 +566,7 @@ where
 		let built_block = block_builder
 			.build_with_seed(seed, |at, api| {
 				let mut valid_txs = Vec::new();
+				let mut used_weights: ver_api::ConsumedWeight = Default::default();
 
 				end_reason = loop {
 					let pending_tx = if let Some(pending_tx) = pending_iterator.next() {
@@ -626,8 +627,17 @@ where
 					match validate_transaction::<Block, C>(*at, &api, pending_tx_data.clone()) {
 						Ok(()) => {
 							transaction_pushed = true;
-							valid_txs.push((who, pending_tx_data));
-							debug!(target: LOG_TARGET, "[{:?}] Pushed to the block.", pending_tx_hash);
+							if let Ok(Ok(weight)) = api.account_extrinsic_dispatch_weight(*at, used_weights, pending_tx_data.clone()) {
+								used_weights = weight;
+								valid_txs.push((who, pending_tx_data));
+								debug!(target: LOG_TARGET, "[{:?}] Pushed to the block.", pending_tx_hash);
+							}else{
+								debug!(
+									target: LOG_TARGET,
+									"Reached block weight limit, proceeding with proposing."
+								);
+								break EndProposingReason::HitBlockWeightLimit;
+							}
 						},
 						Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
 							pending_iterator.report_invalid(&pending_tx);

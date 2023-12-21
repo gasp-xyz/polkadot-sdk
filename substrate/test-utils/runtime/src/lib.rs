@@ -522,6 +522,10 @@ impl_runtime_apis! {
 
 		fn start_prevalidation() {
 		}
+
+		fn account_extrinsic_dispatch_weight(consumed: ver_api::ConsumedWeight, tx: <Block as BlockT>::Extrinsic) -> Result<ver_api::ConsumedWeight, ()> {
+			Ok(Default::default())
+		}
 	}
 
 	impl sp_api::Metadata<Block> for Runtime {
