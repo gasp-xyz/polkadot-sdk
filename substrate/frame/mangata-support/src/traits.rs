@@ -328,3 +328,33 @@ pub trait LiquidityMiningApi<Balance> {
 pub trait AssetRegistryApi<CurrencyId> {
 	fn enable_pool_creation(assets: (CurrencyId, CurrencyId)) -> bool;
 }
+
+pub trait SequencerStakingProviderTrait<AccountId, Balance> {
+	fn is_active_sequencer(sequencer: AccountId) -> bool;
+
+	fn slash_sequencer(sequencer: AccountId) -> DispatchResult;
+
+	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>;
+}
+
+impl<AccountId, Balance> SequencerStakingProviderTrait<AccountId, Balance> for (){
+	fn is_active_sequencer(sequencer: AccountId) -> bool{
+		false
+	}
+
+	fn slash_sequencer(sequencer: AccountId) -> DispatchResult{
+		Ok(())
+	}
+
+	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>{
+		None
+	}
+}
+
+pub trait RolldownProviderTrait<AccountId> {
+	fn new_sequencer_active(sequencer: AccountId);
+}
+
+impl<AccountId> RolldownProviderTrait<AccountId> for (){
+	fn new_sequencer_active(sequencer: AccountId){}
+}
