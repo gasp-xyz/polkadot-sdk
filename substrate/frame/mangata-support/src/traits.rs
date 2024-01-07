@@ -3,6 +3,7 @@ use frame_support::pallet_prelude::*;
 use mangata_types::multipurpose_liquidity::{ActivateKind, BondKind};
 use sp_runtime::Permill;
 use sp_std::vec::Vec;
+use mangata_types::assets::L1Asset;
 
 pub trait GetMaintenanceStatusTrait {
 	fn is_maintenance() -> bool;
@@ -357,4 +358,10 @@ pub trait RolldownProviderTrait<AccountId> {
 
 impl<AccountId> RolldownProviderTrait<AccountId> for (){
 	fn new_sequencer_active(sequencer: AccountId){}
+}
+
+pub trait AssetRegistryProviderTrait<AssetId>{
+	fn get_l1_asset_id(l1_asset: L1Asset) -> Option<AssetId>;
+
+	fn create_l1_asset(l1_asset: L1Asset) -> Result<AssetId, DispatchError>;
 }

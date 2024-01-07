@@ -60,3 +60,19 @@ pub struct XykMetadata {
 	/// If the asset can't be used in the xyk operations.
 	pub operations_disabled: bool,
 }
+
+#[derive(
+	Clone,
+	PartialOrd,
+	Ord,
+	PartialEq,
+	Eq,
+	Debug,
+	Encode,
+	Decode,
+	TypeInfo,
+	MaxEncodedLen
+)]
+pub enum L1Asset {
+	Ethereum([u8;20])
+}
