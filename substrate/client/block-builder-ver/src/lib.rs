@@ -41,8 +41,8 @@ use sp_runtime::{
 
 use sc_client_api::backend;
 pub use sp_block_builder::BlockBuilder as BlockBuilderApi;
-use ver_api::VerApi;
 use sp_ver::extract_inherent_data;
+use ver_api::VerApi;
 
 /// Used as parameter to [`BlockBuilderProvider`] to express if proof recording should be enabled.
 ///
@@ -223,11 +223,7 @@ where
 		let inherents = &mut self.inherents;
 
 		self.api.execute_in_transaction(|api| {
-			match apply_transaction_wrapper::<Block, A>(
-				api,
-				parent_hash,
-				xt.clone(),
-			) {
+			match apply_transaction_wrapper::<Block, A>(api, parent_hash, xt.clone()) {
 				Ok(Ok(_)) => {
 					inherents.push(xt);
 					TransactionOutcome::Commit(Ok(()))
@@ -240,7 +236,7 @@ where
 		})
 	}
 
-		/// temporaily apply extrinsics and record them on the list
+	/// temporaily apply extrinsics and record them on the list
 	pub fn build_with_seed<
 		F: FnOnce(
 			&'_ Block::Hash,
@@ -260,9 +256,7 @@ where
 			vec![]
 		} else if self.api.can_enqueue_txs(parent_hash).unwrap() {
 			self.api.execute_in_transaction(|api| {
-				let next_header = api
-					.finalize_block(parent_hash)
-					.unwrap();
+				let next_header = api.finalize_block(parent_hash).unwrap();
 
 				api.start_prevalidation(parent_hash).unwrap();
 
@@ -279,11 +273,7 @@ where
 					log::debug!(target:"block_builder", "storage migration scheduled - ignoring any txs");
 					TransactionOutcome::Rollback(vec![])
 				} else {
-					api.initialize_block(
-						parent_hash,
-						&header,
-					)
-					.unwrap();
+					api.initialize_block(parent_hash, &header).unwrap();
 					let txs = call(&self.parent_hash, &api);
 					TransactionOutcome::Rollback(txs)
 				}
@@ -303,23 +293,27 @@ where
 			.api
 			.create_enqueue_txs_inherent(
 				parent_hash,
-				valid_txs.into_iter().map(|(_, tx)| tx).collect(),
+				valid_txs.clone().into_iter().map(|(_, tx)| tx).collect(),
 			)
 			.unwrap();
 
-		apply_transaction_wrapper::<Block, A>(
-			&self.api,
-			parent_hash,
-			store_txs_inherent.clone(),
-		)
-		.unwrap()
-		.unwrap()
-		.unwrap();
+		apply_transaction_wrapper::<Block, A>(&self.api, parent_hash, store_txs_inherent.clone())
+			.unwrap()
+			.unwrap()
+			.unwrap();
+
+		for (_, valid_tx) in valid_txs {
+			self.api
+				.account_extrinsic_dispatch_weight(
+					parent_hash,
+					Default::default(),
+					valid_tx.clone(),
+				)
+				.unwrap();
+		}
 
 		// TODO get rid of collect
-		let mut next_header = self
-			.api
-			.finalize_block(parent_hash)?;
+		let mut next_header = self.api.finalize_block(parent_hash)?;
 
 		let proof = self.api.extract_proof();
 
@@ -355,7 +349,6 @@ where
 			proof,
 		})
 	}
-
 
 	/// fetch previous block and apply it
 	///
@@ -482,11 +475,7 @@ where
 	Api::Api: BlockBuilderApi<Block>,
 {
 	api.execute_in_transaction(|api| {
-		match apply_transaction_wrapper::<Block, Api>(
-			api,
-			at,
-			xt.clone(),
-		) {
+		match apply_transaction_wrapper::<Block, Api>(api, at, xt.clone()) {
 			Ok(Ok(_)) => TransactionOutcome::Commit(Ok(())),
 			Ok(Err(tx_validity)) => TransactionOutcome::Rollback(Err(
 				ApplyExtrinsicFailed::Validity(tx_validity).into(),
@@ -502,9 +491,7 @@ mod tests {
 	use sp_blockchain::HeaderBackend;
 	use sp_core::Blake2Hasher;
 	use sp_state_machine::Backend;
-	use substrate_test_runtime_client::{
-		DefaultTestClientBuilderExt, TestClientBuilderExt,
-	};
+	use substrate_test_runtime_client::{DefaultTestClientBuilderExt, TestClientBuilderExt};
 
 	#[test]
 	fn block_building_storage_proof_does_not_include_runtime_by_default() {
