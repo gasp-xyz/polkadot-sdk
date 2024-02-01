@@ -194,7 +194,7 @@ where
 					let my_domain = alloy_sol_types::eip712_domain!(
 						name: "Mangata",
 						version: "1",
-						chain_id: 1285,
+						chain_id: 5,
 						verifying_contract: address!("CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"),
 					);
 					let signing_hash = msg.eip712_signing_hash(&my_domain);
