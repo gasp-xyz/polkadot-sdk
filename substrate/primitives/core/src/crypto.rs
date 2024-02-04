@@ -1499,17 +1499,4 @@ mod tests {
 			"invalid ss58 address.",
 		);
 	}
-
-	#[test]
-	fn mat() {
-		use std::str::FromStr;
-		let account = AccountId32::from_str(
-			"0x1111111111111111111111111111111111111111111111111111111111111111",
-		)
-		.unwrap();
-
-		println!("{}", account.to_ss58check());
-
-		assert!(false);
-	}
 }
