@@ -19,11 +19,13 @@ derive_more = { version = "0.99.2", optional = true }
 futures = { version = "0.3.19", optional = true }
 log = { version = "0.4.8", optional = true }
 serde = { version = "1.0.136", features = ["derive"], optional = true}
+frame-support = { path = "../../frame/support", default-features = false }
 sp-api = { version = "4.0.0-dev", default-features = false, path = "../../primitives/api"}
 sp-std = { version = "8.0.0", default-features = false, path = "../../primitives/std"}
 sp-core = { version = "21.0.0", default-features = false, path = "../../primitives/core"}
 sp-blockchain = { version = "4.0.0-dev", optional = true, path = "../../primitives/blockchain"}
 sp-ver = { version = "4.0.0-dev", default-features = false, path = "../../primitives/ver"}
+sp-weights = { default-features = false, path = "../../primitives/weights"}
 sp-runtime = { version = "24.0.0", default-features = false, path = "../../primitives/runtime"}
 
 [features]
@@ -32,6 +34,7 @@ std = [
 	"codec/std",
 	"derive_more",
 	"futures",
+	"frame-support/std",
 	"log",
 	"serde",
 	"sp-api/std",
@@ -40,4 +43,5 @@ std = [
 	"sp-blockchain",
 	"sp-runtime/std",
 	"sp-ver/std",
+	"sp-weights/std",
 ]

@@ -20175,6 +20175,7 @@ name = "ver-api"
 version = "4.0.0-dev"
 dependencies = [
  "derive_more",
+ "frame-support",
  "futures",
  "log",
  "parity-scale-codec",
@@ -20185,6 +20186,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-ver",
+ "sp-weights",
 ]
 
 [[package]]
