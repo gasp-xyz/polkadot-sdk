@@ -546,6 +546,14 @@ mod benches {
 	);
 }
 
+use codec::alloc::string::String;
+use sp_runtime::generic::ExtendedCall;
+impl ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
 impl_runtime_apis! {
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> sp_consensus_aura::SlotDuration {

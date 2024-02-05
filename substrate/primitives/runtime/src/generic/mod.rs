@@ -35,5 +35,5 @@ pub use self::{
 	era::{Era, Phase},
 	header::Header,
 	header_ver::Header as HeaderVer,
-	unchecked_extrinsic::{SignedPayload, UncheckedExtrinsic},
+	unchecked_extrinsic::{ExtendedCall, SignedPayload, UncheckedExtrinsic},
 };

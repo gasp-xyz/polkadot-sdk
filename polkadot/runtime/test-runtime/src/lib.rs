@@ -750,6 +750,15 @@ pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 pub type Hash = <Block as BlockT>::Hash;
 pub type Extrinsic = <Block as BlockT>::Extrinsic;
 
+use parity_scale_codec::alloc::string::String;
+use sp_runtime::generic::ExtendedCall;
+impl ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
+
 sp_api::impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {
