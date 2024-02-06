@@ -3,6 +3,9 @@
 use codec::{Codec, Decode, Encode};
 use sp_runtime::{traits::Block as BlockT, AccountId32};
 use sp_std::vec::Vec;
+use sp_weights::Weight;
+
+pub type ConsumedWeight = frame_support::dispatch::PerDispatchClass<Weight>;
 
 /// Information about extrinsic fetched from runtime API
 #[derive(Encode, Decode, PartialEq)]
@@ -41,6 +44,9 @@ sp_api::decl_runtime_apis! {
 
 		// creates inherent that injects new txs into storage queue
 		fn start_prevalidation();
+
+		// creates inherent that injects new txs into storage queue
+		fn account_extrinsic_dispatch_weight(consumed: ConsumedWeight, tx: <Block as BlockT>::Extrinsic) -> Result<ConsumedWeight, ()>;
 	}
 
 	pub trait VerNonceApi<Account> where

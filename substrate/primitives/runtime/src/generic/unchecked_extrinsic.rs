@@ -20,13 +20,15 @@
 use crate::{
 	generic::CheckedExtrinsic,
 	traits::{
-		self, Checkable, Extrinsic, ExtrinsicMetadata, IdentifyAccount, IdentifyAccountWithLookup,
-		LookupError, MaybeDisplay, Member, SignaturePayload, SignedExtension,
+		self, Checkable, Extrinsic, ExtrinsicMetadata, Hash, IdentifyAccount,
+		IdentifyAccountWithLookup, Keccak256, LookupError, MaybeDisplay, Member, SignaturePayload,
+		SignedExtension,
 	},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
 	OpaqueExtrinsic,
 };
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
+// use ethers_core::types::transaction::eip712::Eip712;
 use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
 use sp_io::hashing::blake2_256;
 #[cfg(all(not(feature = "std"), feature = "serde"))]
@@ -134,11 +136,29 @@ impl<Address: TypeInfo, Call: TypeInfo, Signature: TypeInfo, Extra: SignedExtens
 	}
 }
 
+/// Metamask EIP712 compatible struct
+use sp_core::hexdisplay::HexDisplay;
+use alloy_primitives::address;
+use alloy_sol_types::{sol, SolStruct};
+sol! {
+	struct Message {
+		 string method;
+		 string params;
+		 string tx;
+	}
+}
+
+use codec::alloc::string::{String, ToString};
+
+pub trait ExtendedCall {
+	fn context(&self) -> Option<(String, String)>;
+}
+
 impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
 	for UncheckedExtrinsic<Address, Call, Signature, Extra>
 where
 	Address: Member + MaybeDisplay,
-	Call: Encode + Member,
+	Call: Encode + Member + ExtendedCall,
 	Signature: Member + traits::Verify,
 	<Signature as traits::Verify>::Signer: IdentifyAccount<AccountId = AccountId>,
 	Extra: SignedExtension<AccountId = AccountId>,
@@ -148,11 +168,47 @@ where
 	type Checked = CheckedExtrinsic<AccountId, Call, Extra>;
 
 	fn check(self, lookup: &Lookup) -> Result<Self::Checked, TransactionValidityError> {
+		sp_io::init_tracing();
+
 		Ok(match self.signature {
 			Some((signed, signature, extra)) => {
 				let signed = lookup.lookup(signed)?;
-				let raw_payload = SignedPayload::new(self.function, extra)?;
-				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) {
+
+				// TODO: get rid of double verification
+				let raw_payload = SignedPayload::new(self.function.clone(), extra.clone())?;
+
+				let mut metamask_signature_validation = false;
+
+				if let Some((method, params)) = self.function.context() {
+					let msg = Message {
+						method,
+						params,
+						tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
+					};
+					log::debug!(target: "metamask", "Message::method : {:?}", msg.method);
+					log::debug!(target: "metamask", "Message::params : {:?}", msg.params);
+					log::debug!(target: "metamask", "Message::tx     : {:?}", msg.tx);
+					log::debug!(target: "metamask", "Message::call   : {:?}", HexDisplay::from(&self.function.encode()).to_string());
+					log::debug!(target: "metamask", "Message::extra   : {:?}", HexDisplay::from(&extra.encode()).to_string());
+
+					let my_domain = alloy_sol_types::eip712_domain!(
+						name: "Mangata",
+						version: "1",
+						chain_id: 5,
+						verifying_contract: address!("CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"),
+					);
+					let signing_hash = msg.eip712_signing_hash(&my_domain);
+					log::debug!(target: "metamask", "typed_data_hash: {}", signing_hash);
+					if signature.verify(signing_hash.as_ref(), &signed) {
+						log::debug!(target: "metamask", "validated: {}", signing_hash);
+						metamask_signature_validation = true;
+					}
+					log::debug!(target: "metamask", "NOT validated: ");
+				}
+
+				if !metamask_signature_validation &&
+					!raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
+				{
 					return Err(InvalidTransaction::BadProof.into())
 				}
 
@@ -236,6 +292,10 @@ where
 	/// Deconstruct the payload into it's components.
 	pub fn deconstruct(self) -> (Call, Extra, Extra::AdditionalSigned) {
 		self.0
+	}
+
+	pub fn inner(&self) -> &(Call, Extra, Extra::AdditionalSigned) {
+		&self.0
 	}
 }
 
@@ -415,11 +475,19 @@ mod tests {
 		testing::TestSignature as TestSig,
 		traits::{DispatchInfoOf, IdentityLookup, SignedExtension},
 	};
+	use sp_core::{crypto::UncheckedFrom, keccak_256};
 	use sp_io::hashing::blake2_256;
+	use codec::alloc::string::String;
 
 	type TestContext = IdentityLookup<u64>;
 	type TestAccountId = u64;
 	type TestCall = Vec<u8>;
+
+	impl ExtendedCall for TestCall {
+		fn context(&self) -> Option<(String, String)> {
+			None
+		}
+	}
 
 	const TEST_ACCOUNT: TestAccountId = 0;
 

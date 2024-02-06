@@ -165,6 +165,14 @@ impl Contains<RuntimeCall> for BaseFilter {
 	}
 }
 
+use parity_scale_codec::alloc::string::String;
+use sp_runtime::generic::ExtendedCall;
+impl ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const SS58Prefix: u8 = 2;

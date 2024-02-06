@@ -306,6 +306,14 @@ construct_runtime!(
 	}
 );
 
+use sp_runtime::generic::ExtendedCall;
+use codec::alloc::string::String;
+impl ExtendedCall for RuntimeCall {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
+}
+
 /// We assume that ~10% of the block weight is consumed by `on_initialize` handlers.
 /// This is used to limit the maximal weight of a single extrinsic.
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
@@ -521,6 +529,10 @@ impl_runtime_apis! {
 		}
 
 		fn start_prevalidation() {
+		}
+
+		fn account_extrinsic_dispatch_weight(consumed: ver_api::ConsumedWeight, tx: <Block as BlockT>::Extrinsic) -> Result<ver_api::ConsumedWeight, ()> {
+			Ok(Default::default())
 		}
 	}
 

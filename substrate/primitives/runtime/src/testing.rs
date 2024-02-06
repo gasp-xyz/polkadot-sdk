@@ -279,7 +279,7 @@ impl<
 			+ Send
 			+ Sync
 			+ Serialize
-			+ for <'a> Deserialize<'a>
+			+ for<'a> Deserialize<'a>
 			+ Clone
 			+ Eq
 			+ Debug
@@ -338,6 +338,14 @@ pub struct TestXt<Call, Extra> {
 	pub signature: Option<TxSingaturePayload<Extra>>,
 	/// Call of the extrinsic.
 	pub call: Call,
+}
+
+use codec::alloc::string::String;
+use crate::generic::ExtendedCall;
+impl<Call, Extra> ExtendedCall for TestXt<Call, Extra> {
+	fn context(&self) -> Option<(String, String)> {
+		None
+	}
 }
 
 impl<Call, Extra> TestXt<Call, Extra> {
