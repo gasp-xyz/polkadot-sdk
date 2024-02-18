@@ -129,6 +129,53 @@ impl ExtrinsicCmd {
 
 		Ok(())
 	}
+
+	pub fn run_ver<Block, BA, C>(
+		&self,
+		client: Arc<C>,
+		inherent_data: (sp_inherents::InherentData, sp_inherents::InherentData),
+		digest_items: Vec<DigestItem>,
+		ext_factory: &ExtrinsicFactory,
+	) -> Result<()>
+	where
+		Block: BlockT<Extrinsic = OpaqueExtrinsic>,
+		BA: ClientBackend<Block>,
+		C: BlockBuilderProviderVer<BA, Block, C>
+			+ ProvideRuntimeApi<Block>
+			+ sp_blockchain::HeaderBackend<Block>,
+		C::Api: ApiExt<Block> + BlockBuilderApiVer<Block> + VerApi<Block>,
+	{
+		// Short circuit if --list was specified.
+		if self.params.list {
+			let list: Vec<String> = ext_factory.0.iter().map(|b| b.name()).collect();
+			info!(
+				"Listing available extrinsics ({}):\npallet, extrinsic\n{}",
+				list.len(),
+				list.join("\n")
+			);
+			return Ok(())
+		}
+
+		let pallet = self.params.pallet.clone().unwrap_or_default();
+		let extrinsic = self.params.extrinsic.clone().unwrap_or_default();
+		let ext_builder = match ext_factory.try_get(&pallet, &extrinsic) {
+			Some(ext_builder) => ext_builder,
+			None =>
+				return Err("Unknown pallet or extrinsic. Use --list for a complete list.".into()),
+		};
+
+		let mut bench = BenchmarkVer::new(client, self.params.bench.clone(), inherent_data);
+		let count = bench.prepare_benchmark(ext_builder)?;
+		let stats = bench.bench_extrinsic(ext_builder, count)?;
+		info!(
+			"Executing a {}::{} extrinsic takes[ns]:\n{:?}",
+			ext_builder.pallet(),
+			ext_builder.extrinsic(),
+			stats
+		);
+
+		Ok(())
+	}
 }
 
 // Boilerplate
