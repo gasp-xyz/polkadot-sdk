@@ -20,6 +20,12 @@ use sc_cli::{CliConfiguration, ImportParams, Result, SharedParams};
 use sc_client_api::Backend as ClientBackend;
 use sp_api::{ApiExt, ProvideRuntimeApi};
 use sp_runtime::{traits::Block as BlockT, DigestItem, OpaqueExtrinsic};
+use sc_block_builder_ver::{
+	validate_transaction, BlockBuilderApi as BlockBuilderApiVer,
+	BlockBuilderProvider as BlockBuilderProviderVer,
+};
+use ver_api::VerApi;
+use crate::extrinsic::bench::BenchmarkVer;
 
 use clap::{Args, Parser};
 use log::info;

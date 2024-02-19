@@ -544,6 +544,20 @@ where
 		}
 	}
 
+	/// Returns if the runtime was upgraded since the last time the runtime_upgraded function was called.
+	/// DOES NOT UPDATE
+	/// ONLY VIEWS
+	pub fn runtime_upgraded_peek() -> bool {
+		let last = frame_system::LastRuntimeUpgrade::<System>::get();
+		let current = <System::Version as frame_support::traits::Get<_>>::get();
+
+		if last.map(|v| v.was_upgraded(&current)).unwrap_or(true) {
+			true
+		} else {
+			false
+		}
+	}
+
 	fn ver_checks(block: &Block, public_key: Vec<u8>) {
 		// Check that `parent_hash` is correct.
 		sp_tracing::enter_span!(sp_tracing::Level::TRACE, "ver checks");
