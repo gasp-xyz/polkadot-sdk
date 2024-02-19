@@ -26,11 +26,12 @@ use sc_block_builder_ver::{
 };
 use ver_api::VerApi;
 use crate::extrinsic::bench::BenchmarkVer;
+use sc_consensus::BlockImport;
 
 use clap::{Args, Parser};
 use log::info;
 use serde::Serialize;
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Debug, sync::Arc, sync::Mutex};
 
 use super::{
 	bench::{Benchmark, BenchmarkParams},
@@ -138,7 +139,7 @@ impl ExtrinsicCmd {
 
 	pub fn run_ver<Block, BA, C>(
 		&self,
-		client: Arc<C>,
+		client: Arc<Mutex<C>>,
 		inherent_data: (sp_inherents::InherentData, sp_inherents::InherentData),
 		digest_items: Vec<DigestItem>,
 		ext_factory: &ExtrinsicFactory,
@@ -148,7 +149,8 @@ impl ExtrinsicCmd {
 		BA: ClientBackend<Block>,
 		C: BlockBuilderProviderVer<BA, Block, C>
 			+ ProvideRuntimeApi<Block>
-			+ sp_blockchain::HeaderBackend<Block>,
+			+ sp_blockchain::HeaderBackend<Block>
+			+ BlockImport<Block>,
 		C::Api: ApiExt<Block> + BlockBuilderApiVer<Block> + VerApi<Block>,
 	{
 		// Short circuit if --list was specified.
