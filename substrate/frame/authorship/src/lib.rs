@@ -90,6 +90,10 @@ impl<T: Config> Pallet<T> {
 			a
 		})
 	}
+
+	pub fn author_peek() -> Option<T::AccountId> {
+		<Author<T>>::get()
+	}
 }
 
 #[cfg(test)]
