@@ -552,11 +552,7 @@ where
 		let last = frame_system::LastRuntimeUpgrade::<System>::get();
 		let current = <System::Version as frame_support::traits::Get<_>>::get();
 
-		if last.map(|v| v.was_upgraded(&current)).unwrap_or(true) {
-			true
-		} else {
-			false
-		}
+		if last.map(|v| v.was_upgraded(&current)).unwrap_or(true)
 	}
 
 	fn ver_checks(block: &Block, public_key: Vec<u8>) {
