@@ -40,7 +40,7 @@ use sp_runtime::{
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
 	Digest, DigestItem, OpaqueExtrinsic,
 };
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
 use ver_api::VerApi;
 
 use clap::Args;
@@ -82,7 +82,7 @@ pub(crate) struct Benchmark<Block, BA, C> {
 }
 
 pub(crate) struct BenchmarkVer<Block, BA, C> {
-	client: Rc<RefCell<C>>,
+	client: Arc<Mutex<C>>,
 	params: BenchmarkParams,
 	inherent_data: (sp_inherents::InherentData, sp_inherents::InherentData),
 	_p: PhantomData<(Block, BA)>,
@@ -234,7 +234,7 @@ where
 {
 	/// Create a new [`Self`] from the arguments.
 	pub fn new(
-		client: Rc<RefCell<C>>,
+		client: Arc<Mutex<C>>,
 		params: BenchmarkParams,
 		inherent_data: (sp_inherents::InherentData, sp_inherents::InherentData),
 	) -> Self {
@@ -294,9 +294,9 @@ where
 			StateAction::ApplyChanges(sc_consensus::StorageChanges::Changes(block.storage_changes));
 		params.fork_choice = Some(ForkChoiceStrategy::LongestChain);
 
-		futures::executor::block_on(self.client.borrow_mut().import_block(params))
+		futures::executor::block_on(self.client.lock().unwrap().import_block(params))
 			.expect("importing a block doesn't fail");
-		info!("best number: {} ", self.client.borrow().info().best_number);
+		info!("best number: {} ", self.client.lock().unwrap().info().best_number);
 	}
 
 	/// Builds a block that enqueues maximum possible amount of extrinsics
@@ -310,7 +310,7 @@ where
 			.map(|nonce| ext_builder.build(nonce).expect("remark txs creation should not fail"))
 			.collect::<Vec<_>>();
 
-		let client = self.client.borrow();
+		let client = self.client.lock().unwrap();
 		let mut builder = client.new_block(digest)?;
 
 		info!("creating inherents");
@@ -372,7 +372,7 @@ where
 			.collect::<Vec<_>>();
 
 		let digest = self.create_digest(3_u64);
-		let client = self.client.borrow();
+		let client = self.client.lock().unwrap();
 		let mut builder = client.new_block(digest)?;
 		let (seed, inherents) = builder.create_inherents(self.inherent_data.1.clone()).unwrap();
 		info!("pushing inherents");
@@ -404,8 +404,7 @@ where
 
 		info!("Running {} warmups...", self.params.warmup);
 		for _ in 0..self.params.warmup {
-			self.client
-				.borrow()
+			self.client.lock().unwrap()
 				.runtime_api()
 				.execute_block(parent, block.clone())
 				.map_err(|e| Error::Client(RuntimeApiError(e)))?;
@@ -416,7 +415,7 @@ where
 		// Execute a block multiple times and record each execution time.
 		for _ in 0..self.params.repeat {
 			let block = block.clone();
-			let client = self.client.borrow();
+			let client = self.client.lock().unwrap();
 			let runtime_api = client.runtime_api();
 			let start = Instant::now();
 
