@@ -29,7 +29,7 @@ use sc_consensus::BlockImport;
 use sc_service::Configuration;
 use sp_api::{ApiExt, ProvideRuntimeApi};
 use sp_runtime::{traits::Block as BlockT, DigestItem, OpaqueExtrinsic};
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
 use ver_api::VerApi;
 
 use clap::{Args, Parser};
@@ -145,7 +145,7 @@ impl OverheadCmd {
 	pub fn run_ver<Block, BA, C>(
 		&self,
 		cfg: Configuration,
-		client: Rc<RefCell<C>>,
+		client: Arc<Mutex<C>>,
 		inherent_data: (sp_inherents::InherentData, sp_inherents::InherentData),
 		ext_builder: &dyn ExtrinsicBuilder,
 	) -> Result<()>
