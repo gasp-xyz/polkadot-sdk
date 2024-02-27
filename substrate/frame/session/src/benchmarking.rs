@@ -21,10 +21,8 @@ use sp_std::{prelude::*, vec};
 
 use frame_benchmarking::{benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
-use pallet_session::*;
+use crate::*;
 use codec::Decode;
-pub struct Pallet<T: Config>(pallet_session::Pallet<T>);
-pub trait Config: pallet_session::Config {}
 
 benchmarks! {
 	set_keys {
@@ -39,6 +37,6 @@ benchmarks! {
 		frame_system::Pallet::<T>::inc_providers(&caller);
 		let keys = T::Keys::decode(&mut sp_runtime::traits::TrailingZeroInput::zeroes()).unwrap();
 		let proof: Vec<u8> = vec![0,1,2,3];
-		let _t = pallet_session::Pallet::<T>::set_keys(RawOrigin::Signed(caller.clone()).into(), keys, proof);
+		let _t = Pallet::<T>::set_keys(RawOrigin::Signed(caller.clone()).into(), keys, proof);
 	}: _(RawOrigin::Signed(caller))
 }
