@@ -114,6 +114,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod weights;
+mod benchmarking;
 
 use codec::{Decode, MaxEncodedLen};
 use frame_support::{

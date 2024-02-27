@@ -9322,6 +9322,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
+ "log",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -10707,6 +10708,7 @@ dependencies = [
 name = "pallet-session"
 version = "4.0.0-dev"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
