@@ -329,7 +329,7 @@ where
 		// Put as many extrinsics into the block as possible and count them.
 		info!("Building block, this takes some time...");
 		let block = builder.build_with_seed(seed, |at, api| {
-			let mut valid_txs: Vec<(Option<sp_runtime::AccountId32>, Block::Extrinsic)> =
+			let mut valid_txs: Vec<(Option<sp_runtime::AccountId20>, Block::Extrinsic)> =
 				Default::default();
 			for remark in remarks {
 				match validate_transaction::<Block, C>(*at, &api, remark.clone()) {

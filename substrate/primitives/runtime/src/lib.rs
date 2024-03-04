@@ -105,7 +105,7 @@ pub use sp_application_crypto::{BoundToRuntimeAppPublic, RuntimeAppPublic};
 /// Re-export this since it's part of the API of this crate.
 pub use sp_core::{
 	bounded::{BoundedBTreeMap, BoundedBTreeSet, BoundedSlice, BoundedVec, WeakBoundedVec},
-	crypto::{key_types, AccountId32, CryptoType, CryptoTypeId, KeyTypeId},
+	crypto::{key_types, AccountId32, AccountId20, CryptoType, CryptoTypeId, KeyTypeId},
 	TypeId,
 };
 /// Re-export bounded_vec and bounded_btree_map macros only when std is enabled.
@@ -500,6 +500,153 @@ impl Verify for MultiSignature {
 
 						&sp_io::hashing::blake2_256(&ethereum_address) ==
 							<dyn AsRef<[u8; 32]>>::as_ref(who)
+					},
+					_ => false,
+				}
+			},
+		}
+	}
+}
+
+/// Signature verify that can work with any known signature types.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Eq, PartialEq, Clone, Encode, Decode, MaxEncodedLen, RuntimeDebug, TypeInfo)]
+pub enum MultiSignatureAcc20 {
+	/// An ECDSA/SECP256k1 signature.
+	Ecdsa(ecdsa::Signature),
+	/// An ECDSA/SECP256k1 ETH signature.
+	Eth(ecdsa::Signature),
+}
+
+// ecdsa::Public here is 33 bytes
+/// Public key for any known crypto algorithm.
+#[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum MultiSignerAcc20 {
+	/// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
+	Ecdsa(ecdsa::Public),
+	// /// An SECP256k1/ECDSA identity (actually, the Blake2 hash of the compressed pub key).
+	Eth(ecdsa::Public),
+}
+
+impl FromEntropy for MultiSignerAcc20 {
+	fn from_entropy(input: &mut impl codec::Input) -> Result<Self, codec::Error> {
+		Ok(match input.read_byte()? % 4 {
+			0 => Self::Ecdsa(FromEntropy::from_entropy(input)?),
+			1.. => Self::Eth(FromEntropy::from_entropy(input)?),
+		})
+	}
+}
+
+impl AsRef<[u8]> for MultiSignerAcc20 {
+	fn as_ref(&self) -> &[u8] {
+		match *self {
+			Self::Ecdsa(ref who) => who.as_ref(),
+			Self::Eth(ref who) => who.as_ref(),
+		}
+	}
+}
+
+impl traits::IdentifyAccount for MultiSignerAcc20 {
+	type AccountId = AccountId20;
+	fn into_account(self) -> AccountId20 {
+		match self {
+			Self::Ecdsa(who) => {
+				let pubkey = who.to_full().expect("A full public key can also be built from a compressed public key");
+				let mut ethereum_address = [0u8; 20];
+				ethereum_address
+					.copy_from_slice(&sp_io::hashing::keccak_256(pubkey.as_ref())[12..]);
+				ethereum_address.into()
+			},
+			Self::Eth(who) => {
+				let pubkey = who.to_full().expect("A full public key can also be built from a compressed public key");
+				let mut ethereum_address = [0u8; 20];
+				ethereum_address
+					.copy_from_slice(&sp_io::hashing::keccak_256(pubkey.as_ref())[12..]);
+				ethereum_address.into()
+			},
+		}
+	}
+}
+
+// The following two impls essentially set Ecdsa
+// as the default variant (for generating from seed etc)
+impl From<ecdsa::Public> for MultiSignerAcc20 {
+	fn from(x: ecdsa::Public) -> Self {
+		Self::Ecdsa(x)
+	}
+}
+
+impl TryFrom<MultiSignerAcc20> for ecdsa::Public {
+	type Error = ();
+	fn try_from(m: MultiSignerAcc20) -> Result<Self, Self::Error> {
+		if let MultiSignerAcc20::Ecdsa(x) = m {
+			Ok(x)
+		} else {
+			Err(())
+		}
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::fmt::Display for MultiSignerAcc20 {
+	fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+		match *self {
+			Self::Ecdsa(ref who) => write!(fmt, "ecdsa: {}", who),
+			Self::Eth(ref who) => write!(fmt, "eth: {}", who),
+		}
+	}
+}
+
+impl Verify for MultiSignatureAcc20 {
+	type Signer = MultiSignerAcc20;
+	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId20) -> bool {
+		let data: &[u8; 20] = signer.as_ref();
+		log::info!(target: "metamask::verify", "signer : {:?}", HexDisplay::from(data).to_string());
+
+		match (self, signer) {
+			(Self::Ecdsa(ref sig), who) => {
+				log::info!(target: "metamask::verify", "ECDSA");
+				let m = sp_io::hashing::blake2_256(msg.get());
+				match sp_io::crypto::secp256k1_ecdsa_recover(sig.as_ref(), &m) {
+					Ok(pubkey) => {
+						log::info!(target: "metamask::verify", "pubkey recovered {}", sp_core::hexdisplay::HexDisplay::from(&pubkey));
+						let mut ethereum_address = [0u8; 20];
+						ethereum_address
+							.copy_from_slice(&sp_io::hashing::keccak_256(pubkey.as_ref())[12..32]);
+						log::info!(target: "metamask::verify", "ethereum address {}", sp_core::hexdisplay::HexDisplay::from(&ethereum_address));
+
+						&ethereum_address ==
+							<dyn AsRef<[u8; 20]>>::as_ref(who)
+					},
+					_ => false,
+				}
+			},
+
+			(Self::Eth(ref sig), who) => {
+				log::info!(target: "metamask::verify", "ETH");
+				log::info!(target: "metamask::verify", "length {}", msg.get().len());
+
+				// TODO: maintain backward compatiblitiy
+				let mut input = [0u8; 32];
+				if msg.get().len() != 32 {
+					// with metamask signature verification we expect user to provide signature that
+					// is eip712 compatible hash of signed data V4
+					return false
+				} else {
+					input.copy_from_slice(msg.get());
+				}
+
+				match sp_io::crypto::secp256k1_ecdsa_recover(sig.as_ref(), &input) {
+					Ok(pubkey) => {
+						log::info!(target: "metamask::verify", "pubkey recovered {}", sp_core::hexdisplay::HexDisplay::from(&pubkey));
+						let mut ethereum_address = [0u8; 20];
+						ethereum_address
+							.copy_from_slice(&sp_io::hashing::keccak_256(pubkey.as_ref())[12..32]);
+						log::info!(target: "metamask::verify", "ethereum address {}", sp_core::hexdisplay::HexDisplay::from(&ethereum_address));
+
+						&ethereum_address ==
+							<dyn AsRef<[u8; 20]>>::as_ref(who)
 					},
 					_ => false,
 				}
