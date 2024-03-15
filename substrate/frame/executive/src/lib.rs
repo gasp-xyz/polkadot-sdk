@@ -314,6 +314,7 @@ where
 	/// - `signature_check`
 	///
 	/// Should only be used for testing ONLY.
+	/// Might break not tested. Though should work
 	pub fn try_execute_block(
 		block: Block,
 		state_root_check: bool,
@@ -542,6 +543,16 @@ where
 		} else {
 			false
 		}
+	}
+
+	/// Returns if the runtime was upgraded since the last time the runtime_upgraded function was called.
+	/// DOES NOT UPDATE
+	/// ONLY VIEWS
+	pub fn runtime_upgraded_peek() -> bool {
+		let last = frame_system::LastRuntimeUpgrade::<System>::get();
+		let current = <System::Version as frame_support::traits::Get<_>>::get();
+
+		last.map(|v| v.was_upgraded(&current)).unwrap_or(true)
 	}
 
 	fn ver_checks(block: &Block, public_key: Vec<u8>) {
