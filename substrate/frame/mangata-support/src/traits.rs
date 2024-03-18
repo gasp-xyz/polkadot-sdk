@@ -331,33 +331,39 @@ pub trait AssetRegistryApi<CurrencyId> {
 }
 
 pub trait SequencerStakingProviderTrait<AccountId, Balance> {
-	fn is_active_sequencer(sequencer: AccountId) -> bool;
+	fn is_active_sequencer(sequencer: &AccountId) -> bool;
 
-	fn slash_sequencer(sequencer: AccountId) -> DispatchResult;
+	fn is_selected_sequencer(sequencer: &AccountId) -> bool;
 
-	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>;
+	fn slash_sequencer(sequencer: &AccountId) -> DispatchResult;
+
 }
 
 impl<AccountId, Balance> SequencerStakingProviderTrait<AccountId, Balance> for (){
-	fn is_active_sequencer(sequencer: AccountId) -> bool{
+	fn is_active_sequencer(sequencer: &AccountId) -> bool{
 		false
 	}
 
-	fn slash_sequencer(sequencer: AccountId) -> DispatchResult{
+	fn is_selected_sequencer(sequencer: &AccountId) -> bool{
+		false
+	}
+
+	fn slash_sequencer(sequencer: &AccountId) -> DispatchResult{
 		Ok(())
 	}
 
-	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>{
-		None
-	}
 }
 
 pub trait RolldownProviderTrait<AccountId> {
-	fn new_sequencer_active(sequencer: AccountId);
+	fn new_sequencer_active(sequencer: &AccountId);
+	fn sequencer_unstaking(sequencer: &AccountId)->DispatchResult;
+	fn handle_sequencer_deactivations(deactivated_sequencers: Vec<AccountId>);
 }
 
 impl<AccountId> RolldownProviderTrait<AccountId> for (){
-	fn new_sequencer_active(sequencer: AccountId){}
+	fn new_sequencer_active(sequencer: &AccountId){}
+	fn sequencer_unstaking(sequencer: &AccountId)->DispatchResult{ Ok(()) }
+	fn handle_sequencer_deactivations(deactivated_sequencers: Vec<AccountId>){}
 }
 
 pub trait AssetRegistryProviderTrait<AssetId>{
