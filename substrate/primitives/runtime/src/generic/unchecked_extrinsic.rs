@@ -21,7 +21,7 @@ use crate::{
 	generic::CheckedExtrinsic,
 	traits::{
 		self, Checkable, Extrinsic, ExtrinsicMetadata, Hash, IdentifyAccount,
-		IdentifyAccountWithLookup, Keccak256, LookupError, MaybeDisplay, Member, SignaturePayload,
+		IdentifyAccountWithLookup, LookupError, MaybeDisplay, Member, SignaturePayload,
 		SignedExtension,
 	},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
@@ -34,6 +34,7 @@ use sp_io::hashing::blake2_256;
 #[cfg(all(not(feature = "std"), feature = "serde"))]
 use sp_std::alloc::format;
 use sp_std::{fmt, prelude::*};
+use sha3::{Digest, Keccak256};
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
@@ -206,8 +207,9 @@ where
 					log::debug!(target: "metamask", "NOT validated: ");
 				}
 
+				// We send the prehashed payload to verify here so that it works with metamask impl
 				if !metamask_signature_validation &&
-					!raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
+					!raw_payload.using_encoded(|payload| signature.verify(Keccak256::digest(payload).as_slice(), &signed))
 				{
 					return Err(InvalidTransaction::BadProof.into())
 				}

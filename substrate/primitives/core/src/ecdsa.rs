@@ -73,23 +73,6 @@ type Seed = [u8; 32];
 )]
 pub struct Public(pub [u8; 33]);
 
-/// The ECDSA compressed public key.
-#[cfg_attr(feature = "full_crypto", derive(Hash))]
-#[derive(
-	Clone,
-	Copy,
-	Encode,
-	Decode,
-	PassByInner,
-	MaxEncodedLen,
-	TypeInfo,
-	Eq,
-	PartialEq,
-	PartialOrd,
-	Ord,
-)]
-pub struct FullPublic64(pub [u8; 64]);
-
 impl crate::crypto::FromEntropy for Public {
 	fn from_entropy(input: &mut impl codec::Input) -> Result<Self, codec::Error> {
 		let mut result = Self([0u8; 33]);
@@ -122,18 +105,6 @@ impl Public {
 			secp256k1::PublicKey::from_slice(full)
 		};
 		pubkey.map(|k| Self(k.serialize())).map_err(|_| ())
-	}
-
-	pub fn to_full(&self) -> Result<FullPublic64, ()> {
-		let compressed = self.as_ref();
-		if compressed.len() == 33 {
-			let pubkey = secp256k1::PublicKey::from_slice(&compressed).map_err(|_| ())?;
-			let mut res = [0u8; 64];
-			res.copy_from_slice(&pubkey.serialize_uncompressed()[1..]);
-			Ok(FullPublic64::unchecked_from(res))
-		} else {
-			return Err(())
-		}
 	}
 }
 
@@ -221,53 +192,6 @@ impl<'de> Deserialize<'de> for Public {
 	{
 		Public::from_ss58check(&String::deserialize(deserializer)?)
 			.map_err(|e| de::Error::custom(format!("{:?}", e)))
-	}
-}
-
-impl ByteArray for FullPublic64 {
-	const LEN: usize = 64;
-}
-
-impl AsRef<[u8]> for FullPublic64 {
-	fn as_ref(&self) -> &[u8] {
-		&self.0[..]
-	}
-}
-
-impl AsMut<[u8]> for FullPublic64 {
-	fn as_mut(&mut self) -> &mut [u8] {
-		&mut self.0[..]
-	}
-}
-
-impl TryFrom<&[u8]> for FullPublic64 {
-	type Error = ();
-
-	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		if data.len() != Self::LEN {
-			return Err(())
-		}
-		let mut r = [0u8; Self::LEN];
-		r.copy_from_slice(data);
-		Ok(Self::unchecked_from(r))
-	}
-}
-
-impl UncheckedFrom<[u8; 64]> for FullPublic64 {
-	fn unchecked_from(x: [u8; 64]) -> Self {
-		FullPublic64(x)
-	}
-}
-
-impl sp_std::fmt::Debug for FullPublic64 {
-	#[cfg(feature = "std")]
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		write!(f, "{}", crate::hexdisplay::HexDisplay::from(&self.0))
-	}
-
-	#[cfg(not(feature = "std"))]
-	fn fmt(&self, _: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		Ok(())
 	}
 }
 

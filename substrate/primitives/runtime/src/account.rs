@@ -20,7 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160};
@@ -56,6 +56,30 @@ impl std::fmt::Display for AccountId20 {
 impl core::fmt::Debug for AccountId20 {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		write!(f, "{:?}", H160(self.0))
+	}
+}
+
+impl AsRef<[u8]> for AccountId20 {
+	fn as_ref(&self) -> &[u8] {
+		&self.0[..]
+	}
+}
+
+impl AsMut<[u8]> for AccountId20 {
+	fn as_mut(&mut self) -> &mut [u8] {
+		&mut self.0[..]
+	}
+}
+
+impl AsRef<[u8; 20]> for AccountId20 {
+	fn as_ref(&self) -> &[u8; 20] {
+		&self.0
+	}
+}
+
+impl AsMut<[u8; 20]> for AccountId20 {
+	fn as_mut(&mut self) -> &mut [u8; 20] {
+		&mut self.0
 	}
 }
 
@@ -116,11 +140,13 @@ impl From<ecdsa::Signature> for EthereumSignature {
 	}
 }
 
-impl sp_runtime::traits::Verify for EthereumSignature {
+impl crate::traits::Verify for EthereumSignature {
 	type Signer = EthereumSigner;
-	fn verify<L: sp_runtime::traits::Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId20) -> bool {
+	fn verify<L: crate::traits::Lazy<[u8]>>(&self, mut prehashed_msg: L, signer: &AccountId20) -> bool {
 		let mut m = [0u8; 32];
-		m.copy_from_slice(Keccak256::digest(msg.get()).as_slice());
+		// The following has been edited from origin impl to accept prehashed msg
+		// to maintain compatibility with metamask
+		m.copy_from_slice(prehashed_msg.get());
 		match sp_io::crypto::secp256k1_ecdsa_recover(self.0.as_ref(), &m) {
 			Ok(pubkey) => {
 				AccountId20(H160::from_slice(&Keccak256::digest(pubkey).as_slice()[12..32]).0)
@@ -149,7 +175,7 @@ impl sp_runtime::traits::Verify for EthereumSignature {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct EthereumSigner([u8; 20]);
 
-impl sp_runtime::traits::IdentifyAccount for EthereumSigner {
+impl crate::traits::IdentifyAccount for EthereumSigner {
 	type AccountId = AccountId20;
 	fn into_account(self) -> AccountId20 {
 		AccountId20(self.0)
@@ -197,7 +223,7 @@ impl std::fmt::Display for EthereumSigner {
 mod tests {
 	use super::*;
 	use sp_core::{ecdsa, Pair, H256};
-	use sp_runtime::traits::IdentifyAccount;
+	use crate::traits::IdentifyAccount;
 
 	#[test]
 	fn test_account_derivation_1() {
