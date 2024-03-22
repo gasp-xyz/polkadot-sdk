@@ -37,6 +37,8 @@ pub enum Keyring {
 	Ferdie,
 	One,
 	Two,
+	Alith,
+	Baltathar,
 }
 
 impl Keyring {
@@ -116,6 +118,8 @@ impl From<Keyring> for &'static str {
 			Keyring::Ferdie => "Ferdie",
 			Keyring::One => "One",
 			Keyring::Two => "Two",
+			Keyring::Alith => "Alith",
+			Keyring::Baltathar => "Baltathar",
 		}
 	}
 }
@@ -148,6 +152,8 @@ impl std::str::FromStr for Keyring {
 			"ferdie" => Ok(Keyring::Ferdie),
 			"one" => Ok(Keyring::One),
 			"two" => Ok(Keyring::Two),
+			"Alith" => Ok(Keyring::Alith),
+			"Baltathar" => Ok(Keyring::Baltathar),
 			_ => Err(ParseKeyringError),
 		}
 	}

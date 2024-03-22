@@ -24,6 +24,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160};
+use crate::traits::IdentifyAccount;
 
 pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -92,6 +93,13 @@ impl From<[u8; 20]> for AccountId20 {
 impl From<AccountId20> for [u8; 20] {
 	fn from(value: AccountId20) -> Self {
 		value.0
+	}
+}
+
+
+impl From<ecdsa::Public> for AccountId20 {
+	fn from(x: ecdsa::Public) -> Self {
+		EthereumSigner::from(x).into_account()
 	}
 }
 
