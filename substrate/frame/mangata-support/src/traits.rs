@@ -335,7 +335,7 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance> {
 
 	fn is_selected_sequencer(sequencer: &AccountId) -> bool;
 
-	fn slash_sequencer(sequencer: &AccountId) -> DispatchResult;
+	fn slash_sequencer(to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult;
 
 }
 
@@ -348,7 +348,7 @@ impl<AccountId, Balance> SequencerStakingProviderTrait<AccountId, Balance> for (
 		false
 	}
 
-	fn slash_sequencer(sequencer: &AccountId) -> DispatchResult{
+	fn slash_sequencer(to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult{
 		Ok(())
 	}
 
