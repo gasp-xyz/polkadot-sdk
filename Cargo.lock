@@ -721,9 +721,9 @@ dependencies = [
 
 [[package]]
 name = "array-bytes"
-version = "6.1.0"
+version = "6.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9b1c5a481ec30a5abd8dfbd94ab5cf1bb4e9a66be7f1b3b322f2f1170c200fd"
+checksum = "6f840fb7195bcfc5e17ea40c26e5ce6d5b9ce5d584466e17703209657e459ae0"
 
 [[package]]
 name = "arrayref"
@@ -5019,7 +5019,7 @@ dependencies = [
  "crunchy",
  "fixed-hash",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.4.0",
  "tiny-keccak",
 ]
 
@@ -5032,7 +5032,7 @@ dependencies = [
  "ethbloom",
  "fixed-hash",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.4.0",
  "primitive-types",
  "uint",
 ]
@@ -6523,6 +6523,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f28220f89297a075ddc7245cd538076ee98b01f2a9c23a53a4f1105d5a322808"
 dependencies = [
  "rlp",
+]
+
+[[package]]
+name = "impl-serde"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -13799,7 +13808,7 @@ dependencies = [
  "impl-codec",
  "impl-num-traits",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.4.0",
  "scale-info",
  "uint",
 ]
@@ -17661,7 +17670,7 @@ dependencies = [
  "hash-db",
  "hash256-std-hasher",
  "hex-literal 0.4.1",
- "impl-serde",
+ "impl-serde 0.4.0",
  "lazy_static",
  "libsecp256k1",
  "log",
@@ -17821,6 +17830,7 @@ dependencies = [
 name = "sp-keyring"
 version = "24.0.0"
 dependencies = [
+ "array-bytes",
  "lazy_static",
  "sp-core",
  "sp-runtime",
@@ -17936,10 +17946,14 @@ version = "24.0.0"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
+ "blake2-rfc",
  "either",
  "hash256-std-hasher",
+ "hex",
  "hex-literal 0.3.4",
+ "impl-serde 0.3.2",
  "impl-trait-for-tuples",
+ "libsecp256k1",
  "log",
  "parity-scale-codec",
  "parity-util-mem",
@@ -17948,6 +17962,7 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
+ "sha3 0.10.8",
  "sp-api",
  "sp-application-crypto",
  "sp-arithmetic",
@@ -18115,7 +18130,7 @@ version = "8.0.0"
 name = "sp-storage"
 version = "13.0.0"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.4.0",
  "parity-scale-codec",
  "ref-cast",
  "serde",
@@ -18228,7 +18243,7 @@ dependencies = [
 name = "sp-version"
 version = "22.0.0"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.4.0",
  "parity-scale-codec",
  "parity-wasm",
  "scale-info",

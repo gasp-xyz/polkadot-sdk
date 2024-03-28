@@ -33,6 +33,12 @@ sp-io = { path = "../io", default-features = false}
 sp-std = { path = "../std", default-features = false}
 sp-weights = { path = "../weights", default-features = false}
 
+
+blake2-rfc = { version = "0.2.18", default-features = false, optional = true }
+impl-serde = { version = "0.3.1", default-features = false }
+libsecp256k1 = { version = "0.7", default-features = false, features = [ "hmac" ]  }
+sha3 = { version = "0.10", default-features = false }
+
 [dev-dependencies]
 rand = "0.8.5"
 serde_json = "1.0.85"
@@ -42,6 +48,7 @@ sp-state-machine = { path = "../state-machine" }
 sp-tracing = { path = "../tracing" }
 substrate-test-runtime-client = { path = "../../test-utils/runtime/client" }
 hex-literal = "0.3.4"
+hex = { version = "0.4.3", default-features = false }
 
 [features]
 runtime-benchmarks = []
@@ -67,6 +74,12 @@ std = [
 	"sp-weights/std",
 	"alloy-sol-types/std",
 	"alloy-primitives/std",
+	"serde/std",
+	"sha3/std",
+	"full_crypto",
+	"hex/std",
+	"impl-serde/std",
+	"libsecp256k1/std",
 ]
 
 # Serde support without relying on std features.
@@ -77,4 +90,9 @@ serde = [
 	"sp-arithmetic/serde",
 	"sp-core/serde",
 	"sp-weights/serde",
+]
+
+
+full_crypto = [
+	"blake2-rfc",
 ]

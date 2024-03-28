@@ -46,6 +46,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sp_std::alloc::{format, string::String};
 #[cfg(feature = "full_crypto")]
 use sp_std::vec::Vec;
+use sha3::{Digest, Keccak256};
 
 /// An identifier used to match public keys against ecdsa keys
 pub const CRYPTO_ID: CryptoTypeId = CryptoTypeId(*b"ecds");
@@ -105,6 +106,11 @@ impl Public {
 			secp256k1::PublicKey::from_slice(full)
 		};
 		pubkey.map(|k| Self(k.serialize())).map_err(|_| ())
+	}
+
+	/// Return a slice filled with raw data.
+	pub fn as_array_ref(&self) -> &[u8; 33] {
+		&self.0
 	}
 }
 
@@ -413,7 +419,7 @@ impl TraitPair for Pair {
 
 	/// Sign a message.
 	fn sign(&self, message: &[u8]) -> Signature {
-		self.sign_prehashed(&blake2_256(message))
+		self.sign_prehashed(&Keccak256::digest(message).into())
 	}
 
 	/// Verify a signature on a message. Returns true if the signature is good.

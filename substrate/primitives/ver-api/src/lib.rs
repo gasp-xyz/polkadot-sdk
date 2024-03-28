@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Codec, Decode, Encode};
-use sp_runtime::{traits::Block as BlockT, AccountId32};
+use sp_runtime::{traits::Block as BlockT, AccountId20};
 use sp_std::vec::Vec;
 use sp_weights::Weight;
 
@@ -11,7 +11,7 @@ pub type ConsumedWeight = frame_support::dispatch::PerDispatchClass<Weight>;
 #[derive(Encode, Decode, PartialEq)]
 pub struct ExtrinsicInfo {
 	/// extrinsic signer
-	pub who: AccountId32,
+	pub who: AccountId20,
 }
 
 sp_api::decl_runtime_apis! {
@@ -19,7 +19,7 @@ sp_api::decl_runtime_apis! {
 	/// nonce
 	pub trait VerApi {
 		/// Provides information about extrinsic signer and nonce
-		fn get_signer(tx: <Block as BlockT>::Extrinsic) -> Option<(AccountId32, u32)>;
+		fn get_signer(tx: <Block as BlockT>::Extrinsic) -> Option<(AccountId20, u32)>;
 
 		/// Checks if storage migration is scheuled
 		fn is_storage_migration_scheduled() -> bool;

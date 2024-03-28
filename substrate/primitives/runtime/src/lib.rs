@@ -92,11 +92,13 @@ mod runtime_string;
 pub mod testing;
 pub mod traits;
 pub mod transaction_validity;
+pub mod account;
 
 pub use crate::runtime_string::*;
 
 // Re-export Multiaddress
 pub use multiaddress::MultiAddress;
+pub use account::AccountId20;
 
 /// Re-export these since they're only "kind of" generic.
 pub use generic::{Digest, DigestItem};

@@ -241,7 +241,7 @@ where
 		F: FnOnce(
 			&'_ Block::Hash,
 			&'_ A::Api,
-		) -> Vec<(Option<sp_runtime::AccountId32>, Block::Extrinsic)>,
+		) -> Vec<(Option<sp_runtime::AccountId20>, Block::Extrinsic)>,
 	>(
 		mut self,
 		seed: ShufflingSeed,
