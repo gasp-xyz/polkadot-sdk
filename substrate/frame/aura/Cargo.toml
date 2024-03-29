@@ -23,6 +23,7 @@ sp-application-crypto = { path = "../../primitives/application-crypto", default-
 sp-consensus-aura = { path = "../../primitives/consensus/aura", default-features = false}
 sp-runtime = { path = "../../primitives/runtime", default-features = false}
 sp-std = { path = "../../primitives/std", default-features = false}
+mangata-support = { path = "../mangata-support", default-features = false}
 
 [dev-dependencies]
 sp-core = { path = "../../primitives/core", default-features = false}
@@ -43,6 +44,7 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"mangata-support/std"
 ]
 try-runtime = [
 	"frame-support/try-runtime",

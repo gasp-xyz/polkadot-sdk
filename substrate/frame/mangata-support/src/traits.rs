@@ -331,37 +331,55 @@ pub trait AssetRegistryApi<CurrencyId> {
 }
 
 pub trait SequencerStakingProviderTrait<AccountId, Balance> {
-	fn is_active_sequencer(sequencer: AccountId) -> bool;
+	fn is_active_sequencer(sequencer: &AccountId) -> bool;
 
-	fn slash_sequencer(sequencer: AccountId) -> DispatchResult;
+	fn is_selected_sequencer(sequencer: &AccountId) -> bool;
 
-	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>;
+	fn slash_sequencer(to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult;
+
 }
 
 impl<AccountId, Balance> SequencerStakingProviderTrait<AccountId, Balance> for (){
-	fn is_active_sequencer(sequencer: AccountId) -> bool{
+	fn is_active_sequencer(sequencer: &AccountId) -> bool{
 		false
 	}
 
-	fn slash_sequencer(sequencer: AccountId) -> DispatchResult{
+	fn is_selected_sequencer(sequencer: &AccountId) -> bool{
+		false
+	}
+
+	fn slash_sequencer(to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult{
 		Ok(())
 	}
 
-	fn process_potential_authors(authors: Vec<(AccountId, Balance)>) -> Option<Vec<(AccountId, Balance)>>{
-		None
-	}
 }
 
 pub trait RolldownProviderTrait<AccountId> {
-	fn new_sequencer_active(sequencer: AccountId);
+	fn new_sequencer_active(sequencer: &AccountId);
+	fn sequencer_unstaking(sequencer: &AccountId)->DispatchResult;
+	fn handle_sequencer_deactivations(deactivated_sequencers: Vec<AccountId>);
 }
 
 impl<AccountId> RolldownProviderTrait<AccountId> for (){
-	fn new_sequencer_active(sequencer: AccountId){}
+	fn new_sequencer_active(sequencer: &AccountId){}
+	fn sequencer_unstaking(sequencer: &AccountId)->DispatchResult{ Ok(()) }
+	fn handle_sequencer_deactivations(deactivated_sequencers: Vec<AccountId>){}
 }
 
 pub trait AssetRegistryProviderTrait<AssetId>{
 	fn get_l1_asset_id(l1_asset: L1Asset) -> Option<AssetId>;
 
 	fn create_l1_asset(l1_asset: L1Asset) -> Result<AssetId, DispatchError>;
+}
+
+pub trait InformSessionDataTrait<AccountId>{
+	fn inform_initialized_authorities(accounts: Vec<AccountId>);
+
+	fn inform_on_new_session(accounts: Vec<AccountId>);
+}
+
+impl<AccountId> InformSessionDataTrait<AccountId> for (){
+	fn inform_initialized_authorities(accounts: Vec<AccountId>){}
+
+	fn inform_on_new_session(accounts: Vec<AccountId>){}
 }

@@ -9296,6 +9296,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "mangata-support",
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
