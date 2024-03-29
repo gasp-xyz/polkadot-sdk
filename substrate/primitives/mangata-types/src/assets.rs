@@ -1,6 +1,9 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// A type describing our custom additional metadata stored in the orml-asset-registry.
 #[derive(
 	Clone,
@@ -73,6 +76,7 @@ pub struct XykMetadata {
 	TypeInfo,
 	MaxEncodedLen
 )]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum L1Asset {
 	Ethereum([u8;20])
 }
