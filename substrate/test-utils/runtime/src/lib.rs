@@ -108,10 +108,10 @@ pub fn wasm_binary_logging_disabled_unwrap() -> &'static [u8] {
 /// Test runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("test"),
-	impl_name: create_runtime_str!("parity-test"),
+	spec_name: create_runtime_str!("rollup-chain"),
+	impl_name: create_runtime_str!("rollup-chain"),
 	authoring_version: 1,
-	spec_version: 2,
+	spec_version: 301,
 	impl_version: 2,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -498,7 +498,7 @@ impl_runtime_apis! {
 	impl ver_api::VerApi<Block> for Runtime {
 		fn get_signer(
 			_tx: <Block as BlockT>::Extrinsic,
-		) -> Option<(sp_runtime::AccountId32, u32)> {
+		) -> Option<(sp_runtime::AccountId20, u32)> {
 			None
 		}
 
