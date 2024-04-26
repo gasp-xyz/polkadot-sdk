@@ -143,8 +143,7 @@ use alloy_primitives::address;
 use alloy_sol_types::{sol, SolStruct};
 sol! {
 	struct Message {
-		 string method;
-		 string params;
+		 string call;
 		 string tx;
 	}
 }
@@ -152,7 +151,7 @@ sol! {
 use codec::alloc::string::{String, ToString};
 
 pub trait ExtendedCall {
-	fn context(&self) -> Option<(String, String)>;
+	fn context(&self) -> Option<String>;
 }
 
 impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
@@ -180,16 +179,14 @@ where
 
 				let mut metamask_signature_validation = false;
 
-				if let Some((method, params)) = self.function.context() {
+				if let Some(call_string) = self.function.context() {
 					let msg = Message {
-						method,
-						params,
+						call: call_string,
 						tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
 					};
-					log::debug!(target: "metamask", "Message::method : {:?}", msg.method);
-					log::debug!(target: "metamask", "Message::params : {:?}", msg.params);
+					log::debug!(target: "metamask", "Message::call : {:?}", msg.call);
 					log::debug!(target: "metamask", "Message::tx     : {:?}", msg.tx);
-					log::debug!(target: "metamask", "Message::call   : {:?}", HexDisplay::from(&self.function.encode()).to_string());
+					log::debug!(target: "metamask", "Message::call_encoded   : {:?}", HexDisplay::from(&self.function.encode()).to_string());
 					log::debug!(target: "metamask", "Message::extra   : {:?}", HexDisplay::from(&extra.encode()).to_string());
 
 					let my_domain = alloy_sol_types::eip712_domain!(
@@ -486,7 +483,7 @@ mod tests {
 	type TestCall = Vec<u8>;
 
 	impl ExtendedCall for TestCall {
-		fn context(&self) -> Option<(String, String)> {
+		fn context(&self) -> Option<String> {
 			None
 		}
 	}

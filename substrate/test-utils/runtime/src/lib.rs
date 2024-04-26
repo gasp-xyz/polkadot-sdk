@@ -309,7 +309,7 @@ construct_runtime!(
 use sp_runtime::generic::ExtendedCall;
 use codec::alloc::string::String;
 impl ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(String, String)> {
+	fn context(&self) -> Option<String> {
 		None
 	}
 }

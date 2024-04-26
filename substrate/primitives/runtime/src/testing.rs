@@ -343,7 +343,7 @@ pub struct TestXt<Call, Extra> {
 use codec::alloc::string::String;
 use crate::generic::ExtendedCall;
 impl<Call, Extra> ExtendedCall for TestXt<Call, Extra> {
-	fn context(&self) -> Option<(String, String)> {
+	fn context(&self) -> Option<String> {
 		None
 	}
 }
