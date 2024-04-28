@@ -606,17 +606,17 @@ fn set_code_checks_works() {
 	}
 
 	let test_data = vec![
-		("test", 1, 2, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
-		("test", 1, 1, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
+		("rollup-chain", 1, 2, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
+		("rollup-chain", 1, 1, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
 		("test2", 1, 1, Err(Error::<Test>::InvalidSpecName)),
 		(
-			"test",
+			"rollup-chain",
 			2,
 			1,
 			Ok(Some(<mock::Test as pallet::Config>::BlockWeights::get().max_block).into()),
 		),
-		("test", 0, 1, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
-		("test", 1, 0, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
+		("rollup-chain", 0, 1, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
+		("rollup-chain", 1, 0, Err(Error::<Test>::SpecVersionNeedsToIncrease)),
 	];
 
 	for (spec_name, spec_version, impl_version, expected) in test_data.into_iter() {

@@ -143,8 +143,7 @@ use alloy_primitives::address;
 use alloy_sol_types::{sol, SolStruct};
 sol! {
 	struct Message {
-		 string method;
-		 string params;
+		 string call;
 		 string tx;
 	}
 }
@@ -154,8 +153,7 @@ pub use alloy_sol_types::Eip712Domain;
 pub use alloy_sol_types::eip712_domain;
 
 pub struct MetamaskSigningCtx{
-	pub method: String,
-	pub params: String,
+	pub call: String,
 	pub eip712: Eip712Domain,
 }
 
@@ -189,10 +187,9 @@ where
 
 				let mut metamask_signature_validation = false;
 
-				if let Some(MetamaskSigningCtx{method, params, eip712}) = self.function.context() {
+				if let Some(MetamaskSigningCtx{call, eip712}) = self.function.context() {
 					let msg = Message {
-						method,
-						params,
+						call,
 						tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
 					};
 					let signing_hash = msg.eip712_signing_hash(&eip712);
