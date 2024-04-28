@@ -121,14 +121,11 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	state_version: 1,
 };
 
-use parity_scale_codec::alloc::string::String;
-use sp_runtime::generic::ExtendedCall;
+use codec::alloc::string::String;
+use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
 impl ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(String, String)> {
-		None
-	}
+		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
 }
-
 
 /// The BABE epoch configuration at genesis.
 pub const BABE_GENESIS_EPOCH_CONFIG: babe_primitives::BabeEpochConfiguration =
