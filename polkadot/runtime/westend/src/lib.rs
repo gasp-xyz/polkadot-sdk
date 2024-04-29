@@ -1496,13 +1496,12 @@ mod benches {
 	);
 }
 
-use parity_scale_codec::alloc::string::String;
-use sp_runtime::generic::ExtendedCall;
+use codec::alloc::string::String;
+use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
 impl ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(String, String)> {
-		None
-	}
+		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
 }
+
 
 sp_api::impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

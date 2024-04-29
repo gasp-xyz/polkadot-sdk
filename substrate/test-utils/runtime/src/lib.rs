@@ -306,12 +306,10 @@ construct_runtime!(
 	}
 );
 
-use sp_runtime::generic::ExtendedCall;
+use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
 use codec::alloc::string::String;
 impl ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(String, String)> {
-		None
-	}
+		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
 }
 
 /// We assume that ~10% of the block weight is consumed by `on_initialize` handlers.

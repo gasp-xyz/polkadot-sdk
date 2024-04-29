@@ -143,16 +143,23 @@ use alloy_primitives::address;
 use alloy_sol_types::{sol, SolStruct};
 sol! {
 	struct Message {
-		 string method;
-		 string params;
+		 string call;
 		 string tx;
 	}
 }
 
 use codec::alloc::string::{String, ToString};
+pub use alloy_sol_types::Eip712Domain;
+pub use alloy_sol_types::eip712_domain;
+
+pub struct MetamaskSigningCtx{
+	pub call: String,
+	pub eip712: Eip712Domain,
+}
+
 
 pub trait ExtendedCall {
-	fn context(&self) -> Option<(String, String)>;
+	fn context(&self) -> Option<MetamaskSigningCtx>;
 }
 
 impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
@@ -180,31 +187,15 @@ where
 
 				let mut metamask_signature_validation = false;
 
-				if let Some((method, params)) = self.function.context() {
+				if let Some(MetamaskSigningCtx{call, eip712}) = self.function.context() {
 					let msg = Message {
-						method,
-						params,
+						call,
 						tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
 					};
-					log::debug!(target: "metamask", "Message::method : {:?}", msg.method);
-					log::debug!(target: "metamask", "Message::params : {:?}", msg.params);
-					log::debug!(target: "metamask", "Message::tx     : {:?}", msg.tx);
-					log::debug!(target: "metamask", "Message::call   : {:?}", HexDisplay::from(&self.function.encode()).to_string());
-					log::debug!(target: "metamask", "Message::extra   : {:?}", HexDisplay::from(&extra.encode()).to_string());
-
-					let my_domain = alloy_sol_types::eip712_domain!(
-						name: "Mangata",
-						version: "1",
-						chain_id: 5,
-						verifying_contract: address!("CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"),
-					);
-					let signing_hash = msg.eip712_signing_hash(&my_domain);
-					log::debug!(target: "metamask", "typed_data_hash: {}", signing_hash);
+					let signing_hash = msg.eip712_signing_hash(&eip712);
 					if signature.verify(signing_hash.as_ref(), &signed) {
-						log::debug!(target: "metamask", "validated: {}", signing_hash);
 						metamask_signature_validation = true;
 					}
-					log::debug!(target: "metamask", "NOT validated: ");
 				}
 
 				// We send the prehashed payload to verify here so that it works with metamask impl
@@ -486,9 +477,7 @@ mod tests {
 	type TestCall = Vec<u8>;
 
 	impl ExtendedCall for TestCall {
-		fn context(&self) -> Option<(String, String)> {
-			None
-		}
+		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
 	}
 
 	const TEST_ACCOUNT: TestAccountId = 0;

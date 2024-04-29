@@ -670,12 +670,11 @@ impl frame_support::traits::OnRuntimeUpgrade for RemoveCollectiveFlip {
 	}
 }
 
+
 use codec::alloc::string::String;
-use sp_runtime::generic::ExtendedCall;
+use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
 impl ExtendedCall for RuntimeCall {
-	fn context(&self) -> Option<(String, String)> {
-		None
-	}
+		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
 }
 
 
