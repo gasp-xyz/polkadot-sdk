@@ -271,7 +271,7 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 
 		#( #[doc = #docs] )*
 		#[derive(
-			#frame_support::RuntimeDebugNoBoundWasmFull,
+			#frame_support::RuntimeDebugNoBound,
 			#frame_support::CloneNoBound,
 			#frame_support::EqNoBound,
 			#frame_support::PartialEqNoBound,
@@ -360,6 +360,13 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 					Self::__Ignore(_, _) => unreachable!("__PhantomItem cannot be used."),
 				}
 			}
+
+			// fn get_call_metadata(&self) -> &'static str {
+			// 	match *self {
+			// 		#( Self::#fn_name { .. } => stringify!(#fn_name), )*
+			// 		Self::__Ignore(_, _) => unreachable!("__PhantomItem cannot be used."),
+			// 	}
+			// }
 
 			fn get_call_names() -> &'static [&'static str] {
 				&[ #( stringify!(#fn_name), )* ]
