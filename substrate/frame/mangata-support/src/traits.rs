@@ -330,25 +330,25 @@ pub trait AssetRegistryApi<CurrencyId> {
 	fn enable_pool_creation(assets: (CurrencyId, CurrencyId)) -> bool;
 }
 
-pub trait SequencerStakingProviderTrait<AccountId, Balance> {
-	fn is_active_sequencer(sequencer: &AccountId) -> bool;
+pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
+	fn is_active_sequencer(chain: ChainId, sequencer: &AccountId) -> bool;
 
-	fn is_selected_sequencer(sequencer: &AccountId) -> bool;
+	fn is_selected_sequencer(chain: ChainId,  sequencer: &AccountId) -> bool;
 
-	fn slash_sequencer(to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult;
+	fn slash_sequencer(chain: ChainId, to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult;
 
 }
 
-impl<AccountId, Balance> SequencerStakingProviderTrait<AccountId, Balance> for (){
-	fn is_active_sequencer(sequencer: &AccountId) -> bool{
+impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId> for (){
+	fn is_active_sequencer(chain: ChainId, sequencer: &AccountId) -> bool{
 		false
 	}
 
-	fn is_selected_sequencer(sequencer: &AccountId) -> bool{
+	fn is_selected_sequencer(chain: ChainId, sequencer: &AccountId) -> bool{
 		false
 	}
 
-	fn slash_sequencer(to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult{
+	fn slash_sequencer(chain: ChainId, to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult{
 		Ok(())
 	}
 
