@@ -340,30 +340,30 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 }
 
 impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId> for (){
-	fn is_active_sequencer(chain: ChainId, sequencer: &AccountId) -> bool{
+	fn is_active_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool{
 		false
 	}
 
-	fn is_selected_sequencer(chain: ChainId, sequencer: &AccountId) -> bool{
+	fn is_selected_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool{
 		false
 	}
 
-	fn slash_sequencer(chain: ChainId, to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult{
+	fn slash_sequencer(_chain: ChainId, _to_be_slashed: &AccountId, _maybe_to_reward: Option<&AccountId>) -> DispatchResult{
 		Ok(())
 	}
 
 }
 
-pub trait RolldownProviderTrait<AccountId> {
-	fn new_sequencer_active(sequencer: &AccountId);
-	fn sequencer_unstaking(sequencer: &AccountId)->DispatchResult;
-	fn handle_sequencer_deactivations(deactivated_sequencers: Vec<AccountId>);
+pub trait RolldownProviderTrait<ChainId, AccountId> {
+	fn new_sequencer_active(chain: ChainId, sequencer: &AccountId);
+	fn sequencer_unstaking(chain: ChainId, sequencer: &AccountId)->DispatchResult;
+	fn handle_sequencer_deactivations(chain: ChainId, deactivated_sequencers: Vec<AccountId>);
 }
 
-impl<AccountId> RolldownProviderTrait<AccountId> for (){
-	fn new_sequencer_active(sequencer: &AccountId){}
-	fn sequencer_unstaking(sequencer: &AccountId)->DispatchResult{ Ok(()) }
-	fn handle_sequencer_deactivations(deactivated_sequencers: Vec<AccountId>){}
+impl<ChainId, AccountId> RolldownProviderTrait<ChainId, AccountId> for (){
+	fn new_sequencer_active(chain: ChainId, sequencer: &AccountId){}
+	fn sequencer_unstaking(chain: ChainId, sequencer: &AccountId)->DispatchResult{ Ok(()) }
+	fn handle_sequencer_deactivations(chain: ChainId, deactivated_sequencers: Vec<AccountId>){}
 }
 
 pub trait AssetRegistryProviderTrait<AssetId>{
