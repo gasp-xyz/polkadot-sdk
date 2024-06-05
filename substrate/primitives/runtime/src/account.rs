@@ -26,6 +26,7 @@ use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160};
 use crate::traits::IdentifyAccount;
 
+#[cfg(feature = "std")]
 pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 //TODO Maybe this should be upstreamed into Frontier (And renamed accordingly) so that it can
@@ -138,7 +139,7 @@ impl std::str::FromStr for AccountId20 {
 }
 
 #[derive(
-	Eq, PartialEq, Clone, Encode, Decode, sp_core::RuntimeDebug, TypeInfo, Serialize, Deserialize,
+	Eq, PartialEq, Clone, Encode, Decode, sp_core::RuntimeDebug, TypeInfo
 )]
 pub struct EthereumSignature(ecdsa::Signature);
 

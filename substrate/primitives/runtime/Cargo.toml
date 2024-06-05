@@ -80,6 +80,7 @@ std = [
 	"hex/std",
 	"impl-serde/std",
 	"libsecp256k1/std",
+	"blake2-rfc/std",
 ]
 
 # Serde support without relying on std features.
