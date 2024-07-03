@@ -371,15 +371,3 @@ pub trait AssetRegistryProviderTrait<AssetId>{
 
 	fn create_l1_asset(l1_asset: L1Asset) -> Result<AssetId, DispatchError>;
 }
-
-pub trait InformSessionDataTrait<AccountId>{
-	fn inform_initialized_authorities(accounts: Vec<AccountId>);
-
-	fn inform_on_new_session(accounts: Vec<AccountId>);
-}
-
-impl<AccountId> InformSessionDataTrait<AccountId> for (){
-	fn inform_initialized_authorities(accounts: Vec<AccountId>){}
-
-	fn inform_on_new_session(accounts: Vec<AccountId>){}
-}
