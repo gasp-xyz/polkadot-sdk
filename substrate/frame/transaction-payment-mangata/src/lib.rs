@@ -405,7 +405,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A transaction fee `actual_fee`, of which `tip` was added to the minimum inclusion fee,
 		/// has been paid by `who`.
-		TransactionFeePaid { who: T::AccountId, actual_fee: BalanceOf<T>, tip: BalanceOf<T> },
+		TransactionFeePaid { who: T::AccountId, token_id: u32, actual_fee: BalanceOf<T>, tip: BalanceOf<T> },
 	}
 
 	#[pallet::hooks]
