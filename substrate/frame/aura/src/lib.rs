@@ -51,7 +51,6 @@ use sp_runtime::{
 	RuntimeAppPublic,
 };
 use sp_std::prelude::*;
-use mangata_support::traits::InformSessionDataTrait;
 
 pub mod migrations;
 mod mock;
@@ -113,8 +112,6 @@ pub mod pallet {
 		/// another pallet which enforces some limitation on the number of blocks authors can create
 		/// using the same slot.
 		type AllowMultipleBlocksPerSlot: Get<bool>;
-
-		type InformSessionData: InformSessionDataTrait<Self::AccountId>;
 
 		/// The slot duration Aura should run with, expressed in milliseconds.
 		/// The effective value of this type should not change while the chain is running.
@@ -322,28 +319,17 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
-		let mut accounts = vec![];
-		let mut authorities = vec![];
-		for (a, k) in validators {
-			accounts.push(a.clone());
-			authorities.push(k.clone());
-		};
+		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 		Self::initialize_authorities(&authorities);
-		T::InformSessionData::inform_initialized_authorities(accounts);
 	}
 
 	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
-		let mut next_accounts = vec![];
-		let mut next_authorities = vec![];
-		for (a, k) in validators {
-			next_accounts.push(a.clone());
-			next_authorities.push(k.clone());
-		};
 		// instant changes
 		if changed {
+			let next_authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 			let last_authorities = Self::authorities();
 			if last_authorities != next_authorities {
 				if next_authorities.len() as u32 > T::MaxAuthorities::get() {
@@ -357,7 +343,6 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 				Self::change_authorities(bounded);
 			}
 		}
-		T::InformSessionData::inform_on_new_session(next_accounts);
 	}
 
 	fn on_disabled(i: u32) {
