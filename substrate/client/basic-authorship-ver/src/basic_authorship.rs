@@ -520,7 +520,8 @@ where
 		// there might be some txs comming in that time - so its better to sleep than
 		// shortening remaining time
 		debug!(target: LOG_TARGET, "sleeping by the end of the slot");
-		first_slot_limit.await;
+		//TODO: figure out better fix
+		// first_slot_limit.await;
 
 		// artificially simulate that block is half filled
 		// also include header & proof cost for the second part to make sure
