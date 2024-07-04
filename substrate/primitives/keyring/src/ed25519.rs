@@ -39,6 +39,7 @@ pub enum Keyring {
 	Two,
 	Alith,
 	Baltathar,
+	Charleth,
 }
 
 impl Keyring {
@@ -110,6 +111,7 @@ impl From<Keyring> for &'static str {
 			Keyring::Two => "Two",
 			Keyring::Alith => "Alith",
 			Keyring::Baltathar => "Baltathar",
+			Keyring::Charleth => "Charleth,
 		}
 	}
 }

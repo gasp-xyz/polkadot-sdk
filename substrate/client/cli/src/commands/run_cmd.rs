@@ -149,44 +149,48 @@ pub struct RunCmd {
 	pub keystore_params: KeystoreParams,
 
 	/// Shortcut for `--name Alice --validator` with session keys for `Alice` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "two"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "two", "baltathar", "charleth"])]
 	pub alith: bool,
 
 	/// Shortcut for `--name Bob --validator` with session keys for `Bob` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "two"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "charleth"])]
+	pub baltathar: bool,
+
+	/// Shortcut for `--name Bob --validator` with session keys for `Bob` added to keystore.
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "charleth"])]
 	pub baltathar: bool,
 
 	/// Shortcut for `--name Alice --validator` with session keys for `Alice` added to keystore.
-	#[arg(long, conflicts_with_all = &["bob", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["bob", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "baltathar", "charleth"])]
 	pub alice: bool,
 
 	/// Shortcut for `--name Bob --validator` with session keys for `Bob` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["alice", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "baltathar", "charleth"])]
 	pub bob: bool,
 
 	/// Shortcut for `--name Charlie --validator` with session keys for `Charlie` added to
 	/// keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "dave", "eve", "ferdie", "one", "two", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "dave", "eve", "ferdie", "one", "two", "alith", "baltathar", "charleth"])]
 	pub charlie: bool,
 
 	/// Shortcut for `--name Dave --validator` with session keys for `Dave` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "eve", "ferdie", "one", "two", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "eve", "ferdie", "one", "two", "alith", "baltathar", "charleth"])]
 	pub dave: bool,
 
 	/// Shortcut for `--name Eve --validator` with session keys for `Eve` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "ferdie", "one", "two", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "ferdie", "one", "two", "alith", "baltathar", "charleth"])]
 	pub eve: bool,
 
 	/// Shortcut for `--name Ferdie --validator` with session keys for `Ferdie` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "one", "two", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "one", "two", "alith", "baltathar", "charleth"])]
 	pub ferdie: bool,
 
 	/// Shortcut for `--name One --validator` with session keys for `One` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "two", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "two", "alith", "baltathar", "charleth"])]
 	pub one: bool,
 
 	/// Shortcut for `--name Two --validator` with session keys for `Two` added to keystore.
-	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "alith", "baltathar"])]
+	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "alith", "baltathar", "charleth"])]
 	pub two: bool,
 
 	/// Enable authoring even when offline.
@@ -212,6 +216,8 @@ impl RunCmd {
 			Some(Alith)
 		} else if self.baltathar {
 			Some(Baltathar)
+		} else if self.charleth {
+			Some(Charleth)
 		} else if self.alice {
 			Some(Alice)
 		} else if self.bob {
