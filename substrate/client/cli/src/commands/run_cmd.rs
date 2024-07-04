@@ -158,7 +158,7 @@ pub struct RunCmd {
 
 	/// Shortcut for `--name Bob --validator` with session keys for `Bob` added to keystore.
 	#[arg(long, conflicts_with_all = &["alice", "bob", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "charleth"])]
-	pub baltathar: bool,
+	pub charleth: bool,
 
 	/// Shortcut for `--name Alice --validator` with session keys for `Alice` added to keystore.
 	#[arg(long, conflicts_with_all = &["bob", "charlie", "dave", "eve", "ferdie", "one", "two", "alith", "baltathar", "charleth"])]
