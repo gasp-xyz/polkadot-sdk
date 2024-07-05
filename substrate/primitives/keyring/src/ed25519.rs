@@ -111,7 +111,7 @@ impl From<Keyring> for &'static str {
 			Keyring::Two => "Two",
 			Keyring::Alith => "Alith",
 			Keyring::Baltathar => "Baltathar",
-			Keyring::Charleth => "Charleth,
+			Keyring::Charleth => "Charleth",
 		}
 	}
 }
