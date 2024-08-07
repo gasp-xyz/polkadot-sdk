@@ -335,6 +335,8 @@ pub trait AssetRegistryApi<CurrencyId> {
 pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 	fn is_active_sequencer(chain: ChainId, sequencer: &AccountId) -> bool;
 
+	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool;
+
 	fn is_selected_sequencer(chain: ChainId, sequencer: &AccountId) -> bool;
 
 	fn slash_sequencer(
@@ -343,7 +345,7 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 		maybe_to_reward: Option<&AccountId>,
 	) -> DispatchResult;
 
-	fn selected_updater(chain: ChainId) -> Option<AccountId>;
+	fn selected_sequencer(chain: ChainId) -> Option<AccountId>;
 }
 
 impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId>
@@ -352,6 +354,10 @@ impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balan
 	fn is_active_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool {
 		false
 	}
+
+	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool{
+    false
+  }
 
 	fn is_selected_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool {
 		false
@@ -365,7 +371,7 @@ impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balan
 		Ok(())
 	}
 
-	fn selected_updater(chain: ChainId) -> Option<AccountId> {
+	fn selected_sequencer(chain: ChainId) -> Option<AccountId> {
 		None
 	}
 }
