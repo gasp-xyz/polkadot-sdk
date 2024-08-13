@@ -1,9 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use frame_support::pallet_prelude::*;
-use mangata_types::multipurpose_liquidity::{ActivateKind, BondKind};
+use mangata_types::{
+	assets::L1Asset,
+	multipurpose_liquidity::{ActivateKind, BondKind},
+};
 use sp_runtime::Permill;
 use sp_std::vec::Vec;
-use mangata_types::assets::L1Asset;
 
 pub trait GetMaintenanceStatusTrait {
 	fn is_maintenance() -> bool;
@@ -333,40 +335,62 @@ pub trait AssetRegistryApi<CurrencyId> {
 pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 	fn is_active_sequencer(chain: ChainId, sequencer: &AccountId) -> bool;
 
-	fn is_selected_sequencer(chain: ChainId,  sequencer: &AccountId) -> bool;
+	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool;
 
-	fn slash_sequencer(chain: ChainId, to_be_slashed: &AccountId, maybe_to_reward: Option<&AccountId>) -> DispatchResult;
+	fn is_selected_sequencer(chain: ChainId, sequencer: &AccountId) -> bool;
 
+	fn slash_sequencer(
+		chain: ChainId,
+		to_be_slashed: &AccountId,
+		maybe_to_reward: Option<&AccountId>,
+	) -> DispatchResult;
+
+	fn selected_sequencer(chain: ChainId) -> Option<AccountId>;
 }
 
-impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId> for (){
-	fn is_active_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool{
+impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId>
+	for ()
+{
+	fn is_active_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool {
 		false
 	}
 
-	fn is_selected_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool{
+	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool{
+    false
+  }
+
+	fn is_selected_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool {
 		false
 	}
 
-	fn slash_sequencer(_chain: ChainId, _to_be_slashed: &AccountId, _maybe_to_reward: Option<&AccountId>) -> DispatchResult{
+	fn slash_sequencer(
+		_chain: ChainId,
+		_to_be_slashed: &AccountId,
+		_maybe_to_reward: Option<&AccountId>,
+	) -> DispatchResult {
 		Ok(())
 	}
 
+	fn selected_sequencer(chain: ChainId) -> Option<AccountId> {
+		None
+	}
 }
 
 pub trait RolldownProviderTrait<ChainId, AccountId> {
 	fn new_sequencer_active(chain: ChainId, sequencer: &AccountId);
-	fn sequencer_unstaking(chain: ChainId, sequencer: &AccountId)->DispatchResult;
+	fn sequencer_unstaking(chain: ChainId, sequencer: &AccountId) -> DispatchResult;
 	fn handle_sequencer_deactivations(chain: ChainId, deactivated_sequencers: Vec<AccountId>);
 }
 
-impl<ChainId, AccountId> RolldownProviderTrait<ChainId, AccountId> for (){
-	fn new_sequencer_active(chain: ChainId, sequencer: &AccountId){}
-	fn sequencer_unstaking(chain: ChainId, sequencer: &AccountId)->DispatchResult{ Ok(()) }
-	fn handle_sequencer_deactivations(chain: ChainId, deactivated_sequencers: Vec<AccountId>){}
+impl<ChainId, AccountId> RolldownProviderTrait<ChainId, AccountId> for () {
+	fn new_sequencer_active(chain: ChainId, sequencer: &AccountId) {}
+	fn sequencer_unstaking(chain: ChainId, sequencer: &AccountId) -> DispatchResult {
+		Ok(())
+	}
+	fn handle_sequencer_deactivations(chain: ChainId, deactivated_sequencers: Vec<AccountId>) {}
 }
 
-pub trait AssetRegistryProviderTrait<AssetId>{
+pub trait AssetRegistryProviderTrait<AssetId> {
 	fn get_l1_asset_id(l1_asset: L1Asset) -> Option<AssetId>;
 
 	fn create_l1_asset(l1_asset: L1Asset) -> Result<AssetId, DispatchError>;
