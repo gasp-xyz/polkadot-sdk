@@ -7,6 +7,11 @@ use mangata_types::{
 use sp_runtime::Permill;
 use sp_std::vec::Vec;
 
+pub trait SetMaintenanceModeOn {
+	fn trigger_maintanance_mode();
+}
+
+
 pub trait GetMaintenanceStatusTrait {
 	fn is_maintenance() -> bool;
 
