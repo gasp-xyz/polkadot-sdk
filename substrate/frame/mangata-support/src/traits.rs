@@ -275,9 +275,10 @@ pub trait ComputeIssuance {
 }
 
 pub trait GetIssuance<Balance> {
-	fn get_all_issuance(n: u32) -> Option<(Balance, Balance)>;
+	fn get_all_issuance(n: u32) -> Option<(Balance, Balance, Balance)>;
 	fn get_liquidity_mining_issuance(n: u32) -> Option<Balance>;
 	fn get_staking_issuance(n: u32) -> Option<Balance>;
+	fn get_sequencer_issuance(n: u32) -> Option<Balance>;
 }
 
 pub trait Valuate<Balance, CurrencyId> {
