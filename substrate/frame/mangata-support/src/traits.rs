@@ -351,6 +351,8 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 	) -> DispatchResult;
 
 	fn selected_sequencer(chain: ChainId) -> Option<AccountId>;
+
+	fn note_update_author(sequencer: &AccountId);
 }
 
 impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId>
@@ -378,6 +380,9 @@ impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balan
 
 	fn selected_sequencer(chain: ChainId) -> Option<AccountId> {
 		None
+	}
+
+	fn note_update_author(sequencer: &AccountId) {
 	}
 }
 
