@@ -11,7 +11,6 @@ pub trait SetMaintenanceModeOn {
 	fn trigger_maintanance_mode();
 }
 
-
 pub trait GetMaintenanceStatusTrait {
 	fn is_maintenance() -> bool;
 
@@ -351,8 +350,11 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 	) -> DispatchResult;
 
 	fn selected_sequencer(chain: ChainId) -> Option<AccountId>;
+}
 
+pub trait SequencerStakingRewardsTrait<AccountId, RewardIndex> {
 	fn note_update_author(sequencer: &AccountId);
+	fn pay_sequencers(round: RewardIndex);
 }
 
 impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId>
@@ -362,9 +364,9 @@ impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balan
 		false
 	}
 
-	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool{
-    false
-  }
+	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool {
+		false
+	}
 
 	fn is_selected_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool {
 		false
@@ -381,9 +383,12 @@ impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balan
 	fn selected_sequencer(chain: ChainId) -> Option<AccountId> {
 		None
 	}
+}
 
-	fn note_update_author(sequencer: &AccountId) {
-	}
+impl<AccountId, RoundIndex> SequencerStakingRewardsTrait<AccountId, RoundIndex> for () {
+	fn note_update_author(sequencer: &AccountId) {}
+
+	fn pay_sequencers(round: RoundIndex) {}
 }
 
 pub trait RolldownProviderTrait<ChainId, AccountId> {
