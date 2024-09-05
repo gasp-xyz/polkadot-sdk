@@ -354,7 +354,7 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 }
 
 pub trait SequencerStakingRewardsTrait<AccountId, RoundIndex> {
-	fn note_update_author(round: RoundIndex, author: &AccountId);
+	fn note_update_author(author: &AccountId);
 	fn pay_sequencers(round: RoundIndex);
 }
 
