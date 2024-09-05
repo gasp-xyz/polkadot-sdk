@@ -353,9 +353,9 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 	fn selected_sequencer(chain: ChainId) -> Option<AccountId>;
 }
 
-pub trait SequencerStakingRewardsTrait<AccountId, RewardIndex> {
-	fn note_update_author(sequencer: &AccountId);
-	fn pay_sequencers(round: RewardIndex);
+pub trait SequencerStakingRewardsTrait<AccountId, RoundIndex> {
+	fn note_update_author(round: RoundIndex, author: &AccountId);
+	fn pay_sequencers(round: RoundIndex);
 }
 
 impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId>
