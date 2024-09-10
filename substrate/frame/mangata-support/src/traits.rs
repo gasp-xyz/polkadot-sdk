@@ -11,7 +11,6 @@ pub trait SetMaintenanceModeOn {
 	fn trigger_maintanance_mode();
 }
 
-
 pub trait GetMaintenanceStatusTrait {
 	fn is_maintenance() -> bool;
 
@@ -276,9 +275,10 @@ pub trait ComputeIssuance {
 }
 
 pub trait GetIssuance<Balance> {
-	fn get_all_issuance(n: u32) -> Option<(Balance, Balance)>;
+	fn get_all_issuance(n: u32) -> Option<(Balance, Balance, Balance)>;
 	fn get_liquidity_mining_issuance(n: u32) -> Option<Balance>;
 	fn get_staking_issuance(n: u32) -> Option<Balance>;
+	fn get_sequencer_issuance(n: u32) -> Option<Balance>;
 }
 
 pub trait Valuate<Balance, CurrencyId> {
@@ -353,6 +353,11 @@ pub trait SequencerStakingProviderTrait<AccountId, Balance, ChainId> {
 	fn selected_sequencer(chain: ChainId) -> Option<AccountId>;
 }
 
+pub trait SequencerStakingRewardsTrait<AccountId, RoundIndex> {
+	fn note_update_author(author: &AccountId);
+	fn pay_sequencers(round: RoundIndex);
+}
+
 impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balance, ChainId>
 	for ()
 {
@@ -360,9 +365,9 @@ impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balan
 		false
 	}
 
-	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool{
-    false
-  }
+	fn is_active_sequencer_alias(chain: ChainId, sequencer: &AccountId, alias: &AccountId) -> bool {
+		false
+	}
 
 	fn is_selected_sequencer(_chain: ChainId, _sequencer: &AccountId) -> bool {
 		false
@@ -379,6 +384,12 @@ impl<AccountId, Balance, ChainId> SequencerStakingProviderTrait<AccountId, Balan
 	fn selected_sequencer(chain: ChainId) -> Option<AccountId> {
 		None
 	}
+}
+
+impl<AccountId, RoundIndex> SequencerStakingRewardsTrait<AccountId, RoundIndex> for () {
+	fn note_update_author(sequencer: &AccountId) {}
+
+	fn pay_sequencers(round: RoundIndex) {}
 }
 
 pub trait RolldownProviderTrait<ChainId, AccountId> {
