@@ -951,8 +951,9 @@ fn batch_works_with_council_origin() {
 		assert_ok!(Council::vote(RuntimeOrigin::signed(3), hash, 0, true));
 
 		System::set_block_number(4);
+		// only member can close
 		assert_ok!(Council::close(
-			RuntimeOrigin::signed(4),
+			RuntimeOrigin::signed(3),
 			hash,
 			0,
 			proposal_weight,
@@ -988,8 +989,9 @@ fn force_batch_works_with_council_origin() {
 		assert_ok!(Council::vote(RuntimeOrigin::signed(3), hash, 0, true));
 
 		System::set_block_number(4);
+		// only member can close
 		assert_ok!(Council::close(
-			RuntimeOrigin::signed(4),
+			RuntimeOrigin::signed(3),
 			hash,
 			0,
 			proposal_weight,

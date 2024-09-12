@@ -17,8 +17,6 @@ sp-io = { path = "../../../substrate/primitives/io", default-features = false}
 sp-runtime = { path = "../../../substrate/primitives/runtime", default-features = false}
 sp-std = { path = "../../../substrate/primitives/std", default-features = false}
 
-mangata-support = { path = "../../../substrate/frame/mangata-support", default-features = false }
-
 # Polkadot
 polkadot-runtime-common = { path = "../../../polkadot/runtime/common", default-features = false}
 xcm = { package = "staging-xcm", path = "../../../polkadot/xcm", default-features = false}
@@ -40,7 +38,7 @@ pallet-balances = { path = "../../../substrate/frame/balances" }
 xcm-builder = { package = "staging-xcm-builder", path = "../../../polkadot/xcm/xcm-builder" }
 
 # Cumulus
-cumulus-pallet-parachain-system = { path = "../parachain-system" }
+cumulus-pallet-parachain-system = { path = "../parachain-system", features = ["parameterized-consensus-hook"] }
 
 [features]
 default = [ "std" ]
@@ -58,7 +56,6 @@ std = [
 	"sp-std/std",
 	"xcm-executor/std",
 	"xcm/std",
-	"mangata-support/std"
 ]
 
 runtime-benchmarks = [

@@ -91,8 +91,8 @@ pub use hooks::{
 pub mod schedule;
 mod storage;
 pub use storage::{
-	Incrementable, Instance, PartialStorageInfoTrait, StorageInfo, StorageInfoTrait,
-	StorageInstance, TrackedStorageKey, WhitelistedStorageKeys,
+	Consideration, Footprint, Incrementable, Instance, LinearStoragePrice, PartialStorageInfoTrait,
+	StorageInfo, StorageInfoTrait, StorageInstance, TrackedStorageKey, WhitelistedStorageKeys,
 };
 
 mod dispatch;
@@ -108,13 +108,12 @@ mod voting;
 pub use voting::{ClassCountOf, PollStatus, Polling, VoteTally};
 
 mod preimages;
-pub use preimages::{Bounded, BoundedInline, FetchResult, Hash, QueryPreimage, StorePreimage};
+pub use preimages::{Bounded, BoundedInline, FetchResult, QueryPreimage, StorePreimage};
 
 mod messages;
 pub use messages::{
-	EnqueueMessage, EnqueueWithOrigin, ExecuteOverweightError, Footprint, HandleMessage,
-	NoopServiceQueues, ProcessMessage, ProcessMessageError, QueuePausedQuery, ServiceQueues,
-	TransformOrigin,
+	EnqueueMessage, EnqueueWithOrigin, ExecuteOverweightError, HandleMessage, NoopServiceQueues,
+	ProcessMessage, ProcessMessageError, QueuePausedQuery, ServiceQueues, TransformOrigin,
 };
 
 mod safe_mode;

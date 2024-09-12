@@ -35,26 +35,26 @@ async fn running_the_node_works_and_can_be_interrupted() {
 			let base_path = tempdir().expect("could not create a temp dir");
 			let mut cmd = common::KillChildOnDrop(
 				Command::new(cargo_bin("substrate-node"))
-					.stdout(process::Stdio::piped())
-					.stderr(process::Stdio::piped())
-					.args(&["--dev", "-d"])
-					.arg(base_path.path())
-					.arg("--db=paritydb")
-					.arg("--no-hardware-benchmarks")
-					.spawn()
-					.unwrap(),
+				.stdout(process::Stdio::piped())
+				.stderr(process::Stdio::piped())
+				.args(&["--dev", "-d"])
+				.arg(base_path.path())
+				.arg("--db=paritydb")
+				.arg("--no-hardware-benchmarks")
+				.spawn()
+				.unwrap(),
 			);
-
+			
 			let stderr = cmd.stderr.take().unwrap();
-
+			
 			let ws_url = common::extract_info_from_output(stderr).0.ws_url;
-
+			
 			common::wait_n_finalized_blocks(3, &ws_url).await;
-
+			
 			cmd.assert_still_running();
-
+			
 			cmd.stop_with_signal(signal);
-
+			
 			// Check if the database was closed gracefully. If it was not,
 			// there may exist a ref cycle that prevents the Client from being dropped properly.
 			//
@@ -62,7 +62,7 @@ async fn running_the_node_works_and_can_be_interrupted() {
 			let stats_file = base_path.path().join("chains/dev/paritydb/full/stats.txt");
 			assert!(std::path::Path::exists(&stats_file));
 		}
-
+		
 		run_command_and_kill(SIGINT).await;
 		run_command_and_kill(SIGTERM).await;
 	})

@@ -40,8 +40,8 @@ const MAX_BLOCK_WEIGHT: Weight = Weight::from_parts(1024, u64::MAX);
 
 parameter_types! {
 	pub Version: RuntimeVersion = RuntimeVersion {
-		spec_name: sp_version::create_runtime_str!("rollup-chain"),
-		impl_name: sp_version::create_runtime_str!("rollup-chain"),
+		spec_name: sp_version::create_runtime_str!("test"),
+		impl_name: sp_version::create_runtime_str!("system-test"),
 		authoring_version: 1,
 		spec_version: 1,
 		impl_version: 1,

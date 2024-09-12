@@ -36,6 +36,7 @@ use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_config, create_default_config},
 	pallet_prelude::Weight,
 	parameter_types,
 	traits::{AsEnsureOriginWithArg, ConstBool, ConstU32, ConstU64, ConstU8, Everything},
@@ -49,7 +50,6 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureRoot, EnsureSigned,
 };
-use mangata_support::traits::GetMaintenanceStatusTrait;
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -457,24 +457,11 @@ parameter_types! {
 	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
-pub struct MockMaintenanceStatusProvider;
-
-impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-	fn is_maintenance() -> bool {
-		false
-	}
-
-	fn is_upgradable() -> bool {
-		true
-	}
-}
-
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type OnSystemEvent = ();
 	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type DmpMessageHandler = DmpQueue;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type OutboundXcmpMessageSource = XcmpQueue;
 	type XcmpMessageHandler = XcmpQueue;
@@ -494,7 +481,6 @@ impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ChannelInfo = ParachainSystem;
 	type VersionWrapper = PolkadotXcm;
@@ -507,7 +493,6 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 }
@@ -633,13 +618,6 @@ mod benches {
 		[cumulus_pallet_xcmp_queue, XcmpQueue]
 	);
 }
-
-use codec::alloc::string::String;
-use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
-impl ExtendedCall for RuntimeCall {
-		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
-}
-
 
 impl_runtime_apis! {
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
@@ -853,6 +831,16 @@ impl_runtime_apis! {
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
+		}
+	}
+
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
 		}
 	}
 }

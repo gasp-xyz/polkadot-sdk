@@ -30,11 +30,11 @@ use crate::{
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 // use ethers_core::types::transaction::eip712::Eip712;
 use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
+use sha3::{Digest, Keccak256};
 use sp_io::hashing::blake2_256;
 #[cfg(all(not(feature = "std"), feature = "serde"))]
 use sp_std::alloc::format;
 use sp_std::{fmt, prelude::*};
-use sha3::{Digest, Keccak256};
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
@@ -137,10 +137,10 @@ impl<Address: TypeInfo, Call: TypeInfo, Signature: TypeInfo, Extra: SignedExtens
 	}
 }
 
-/// Metamask EIP712 compatible struct
-use sp_core::hexdisplay::HexDisplay;
 use alloy_primitives::address;
 use alloy_sol_types::{sol, SolStruct};
+/// Metamask EIP712 compatible struct
+use sp_core::hexdisplay::HexDisplay;
 sol! {
 	struct Message {
 		 string call;
@@ -148,15 +148,14 @@ sol! {
 	}
 }
 
-use codec::alloc::string::{String, ToString};
-pub use alloy_sol_types::Eip712Domain;
 pub use alloy_sol_types::eip712_domain;
+pub use alloy_sol_types::Eip712Domain;
+use codec::alloc::string::{String, ToString};
 
-pub struct MetamaskSigningCtx{
+pub struct MetamaskSigningCtx {
 	pub call: String,
 	pub eip712: Eip712Domain,
 }
-
 
 pub trait ExtendedCall {
 	fn context(&self) -> Option<MetamaskSigningCtx>;
@@ -187,22 +186,25 @@ where
 
 				let mut metamask_signature_validation = false;
 
-				if let Some(MetamaskSigningCtx{call, eip712}) = self.function.context() {
+				if let Some(MetamaskSigningCtx { call, eip712 }) = self.function.context() {
 					let msg = Message {
 						call,
 						tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
 					};
-					let signing_hash = msg.eip712_signing_hash(&eip712);
-					if signature.verify(signing_hash.as_ref(), &signed) {
+					let mut signing_data = [0u8; 2 + 32 + 32];
+					signing_data[0] = 0x19;
+					signing_data[1] = 0x01;
+					signing_data[2..34].copy_from_slice(&eip712.hash_struct()[..]);
+					signing_data[34..66].copy_from_slice(&msg.eip712_hash_struct()[..]);
+					if signature.verify(signing_data.as_ref(), &signed) {
 						metamask_signature_validation = true;
 					}
 				}
 
-				// We send the prehashed payload to verify here so that it works with metamask impl
-				if !metamask_signature_validation &&
-					!raw_payload.using_encoded(|payload| signature.verify(Keccak256::digest(payload).as_slice(), &signed))
+				if !metamask_signature_validation
+					&& !raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
 				{
-					return Err(InvalidTransaction::BadProof.into())
+					return Err(InvalidTransaction::BadProof.into());
 				}
 
 				let (function, extra, _) = raw_payload.deconstruct();
@@ -337,7 +339,7 @@ where
 		let is_signed = version & 0b1000_0000 != 0;
 		let version = version & 0b0111_1111;
 		if version != EXTRINSIC_FORMAT_VERSION {
-			return Err("Invalid transaction version".into())
+			return Err("Invalid transaction version".into());
 		}
 
 		let signature = is_signed.then(|| Decode::decode(input)).transpose()?;
@@ -349,7 +351,7 @@ where
 			let length = before_length.saturating_sub(after_length);
 
 			if length != expected_length.0 as usize {
-				return Err("Invalid length prefix".into())
+				return Err("Invalid length prefix".into());
 			}
 		}
 
@@ -468,16 +470,18 @@ mod tests {
 		testing::TestSignature as TestSig,
 		traits::{DispatchInfoOf, IdentityLookup, SignedExtension},
 	};
+	use codec::alloc::string::String;
 	use sp_core::{crypto::UncheckedFrom, keccak_256};
 	use sp_io::hashing::blake2_256;
-	use codec::alloc::string::String;
 
 	type TestContext = IdentityLookup<u64>;
 	type TestAccountId = u64;
 	type TestCall = Vec<u8>;
 
 	impl ExtendedCall for TestCall {
-		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
+		fn context(&self) -> Option<MetamaskSigningCtx> {
+			None
+		}
 	}
 
 	const TEST_ACCOUNT: TestAccountId = 0;

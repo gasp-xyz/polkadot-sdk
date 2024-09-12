@@ -892,7 +892,7 @@ mod tests {
 	};
 	use sp_keystore::{testing::MemoryKeystore, Keystore};
 	use sp_runtime::{
-		generic::{DigestItem, Era},
+		generic::{DigestItem, Era, ExtendedCall, MetamaskSigningCtx},
 		testing::{BlockVer as Block, Digest, HeaderVer as Header},
 		traits::{BlakeTwo256, Block as BlockT, Header as HeaderT, IdentityLookup},
 		transaction_validity::{
@@ -1182,6 +1182,10 @@ mod tests {
 	) -> RuntimeCall {
 		RuntimeCall::System(frame_system::Call::enqueue_txs { txs })
 	}
+
+	impl ExtendedCall for RuntimeCall {
+		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
+	}	
 
 	#[test]
 	fn balance_transfer_dispatch_works() {

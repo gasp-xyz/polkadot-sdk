@@ -23,7 +23,6 @@ use frame_support::{
 	weights::Weight,
 };
 use frame_system::EnsureRoot;
-use mangata_support::traits::GetMaintenanceStatusTrait;
 use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
 use polkadot_parachain_primitives::primitives::Sibling;
 use xcm::latest::prelude::*;
@@ -224,18 +223,6 @@ impl pallet_xcm::Config for Runtime {
 	type RemoteLockConsumerIdentifier = ();
 }
 
-pub struct MockMaintenanceStatusProvider;
-
-impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-	fn is_maintenance() -> bool {
-		false
-	}
-
-	fn is_upgradable() -> bool {
-		true
-	}
-}
-
 impl cumulus_pallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
@@ -245,7 +232,6 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ChannelInfo = ParachainSystem;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type VersionWrapper = PolkadotXcm;
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 	type ControllerOrigin = EitherOfDiverse<
@@ -259,7 +245,6 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 }

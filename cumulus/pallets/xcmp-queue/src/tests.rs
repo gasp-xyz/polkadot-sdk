@@ -14,11 +14,9 @@
 // limitations under the License.
 
 use super::*;
-use cumulus_primitives_core::XcmpMessageHandler;
-use frame_support::{assert_noop, assert_ok, traits::OnIdle};
-use mock::{
-	new_test_ext, MockMaintenanceStatusProvider, RuntimeCall, RuntimeOrigin, Test, XcmpQueue,
-};
+use cumulus_primitives_core::{ParaId, XcmpMessageHandler};
+use frame_support::{assert_noop, assert_ok};
+use mock::{new_test_ext, ParachainSystem, RuntimeCall, RuntimeOrigin, Test, XcmpQueue};
 use sp_runtime::traits::BadOrigin;
 
 #[test]
@@ -108,17 +106,6 @@ fn service_overweight_unknown() {
 }
 
 #[test]
-fn service_overweight_does_not_work_in_maintenance_mode() {
-	new_test_ext().execute_with(|| {
-		MockMaintenanceStatusProvider::set_maintenance_status(true, false);
-		assert_noop!(
-			XcmpQueue::service_overweight(RuntimeOrigin::root(), 0, Weight::from_parts(1000, 0)),
-			Error::<Test>::XcmMsgProcessingBlockedByMaintenanceMode,
-		);
-	});
-}
-
-#[test]
 fn service_overweight_bad_xcm_format() {
 	new_test_ext().execute_with(|| {
 		let bad_xcm = vec![255];
@@ -153,75 +140,6 @@ fn suspend_xcm_execution_works() {
 
 		// This shouldn't have executed the incoming XCM
 		XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
-
-		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(2000), 1u32);
-		assert_eq!(queued_xcm, xcm);
-	});
-}
-
-#[test]
-fn service_xcmp_queue_does_not_work_in_maintenance_mode() {
-	new_test_ext().execute_with(|| {
-		MockMaintenanceStatusProvider::set_maintenance_status(true, false);
-
-		let xcm =
-			VersionedXcm::from(Xcm::<RuntimeCall>(vec![Instruction::<RuntimeCall>::ClearOrigin]))
-				.encode();
-		let mut message_format = XcmpMessageFormat::ConcatenatedVersionedXcm.encode();
-		message_format.extend(xcm.clone());
-		let messages = vec![(ParaId::from(999), 1u32.into(), message_format.as_slice())];
-
-		// This should have executed the incoming XCM, because it came from a system parachain
-		let weight_used = XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
-		assert_eq!(weight_used, Weight::zero());
-
-		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(999), 1u32);
-		assert_eq!(queued_xcm, xcm);
-
-		let messages = vec![(ParaId::from(2000), 1u32.into(), message_format.as_slice())];
-
-		// This shouldn't have executed the incoming XCM
-		let weight_used = XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
-		assert_eq!(weight_used, Weight::zero());
-
-		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(2000), 1u32);
-		assert_eq!(queued_xcm, xcm);
-	});
-}
-
-#[test]
-fn on_idle_should_not_service_queue_in_maintenance_mode() {
-	new_test_ext().execute_with(|| {
-		MockMaintenanceStatusProvider::set_maintenance_status(true, false);
-
-		let xcm =
-			VersionedXcm::from(Xcm::<RuntimeCall>(vec![Instruction::<RuntimeCall>::ClearOrigin]))
-				.encode();
-		let mut message_format = XcmpMessageFormat::ConcatenatedVersionedXcm.encode();
-		message_format.extend(xcm.clone());
-		let messages = vec![(ParaId::from(999), 1u32.into(), message_format.as_slice())];
-
-		// This should have executed the incoming XCM, because it came from a system parachain
-		let weight_used = XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
-		assert_eq!(weight_used, Weight::zero());
-
-		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(999), 1u32);
-		assert_eq!(queued_xcm, xcm);
-
-		let messages = vec![(ParaId::from(2000), 1u32.into(), message_format.as_slice())];
-
-		// This shouldn't have executed the incoming XCM
-		let weight_used = XcmpQueue::handle_xcmp_messages(messages.into_iter(), Weight::MAX);
-		assert_eq!(weight_used, Weight::zero());
-
-		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(2000), 1u32);
-		assert_eq!(queued_xcm, xcm);
-
-		let weight_used = XcmpQueue::on_idle(1, Weight::from_parts(6000, 0));
-		assert_eq!(weight_used, Weight::zero());
-
-		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(999), 1u32);
-		assert_eq!(queued_xcm, xcm);
 
 		let queued_xcm = InboundXcmpMessages::<Test>::get(ParaId::from(2000), 1u32);
 		assert_eq!(queued_xcm, xcm);
@@ -422,4 +340,33 @@ fn xcmp_queue_consumes_dest_and_msg_on_ok_validate() {
 			)
 		);
 	});
+}
+
+#[test]
+fn xcmp_queue_send_xcm_works() {
+	new_test_ext().execute_with(|| {
+		let sibling_para_id = ParaId::from(12345);
+		let dest = (Parent, X1(Parachain(sibling_para_id.into()))).into();
+		let msg = Xcm(vec![ClearOrigin]);
+
+		// try to send without opened HRMP channel to the sibling_para_id
+		assert_eq!(
+			send_xcm::<XcmpQueue>(dest, msg.clone()),
+			Err(SendError::Transport("NoChannel")),
+		);
+
+		// open HRMP channel to the sibling_para_id
+		ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(sibling_para_id);
+
+		// check empty outbound queue
+		assert!(XcmpQueue::take_outbound_messages(usize::MAX).is_empty());
+
+		// now send works
+		assert_ok!(send_xcm::<XcmpQueue>(dest, msg));
+
+		// check outbound queue contains message/page for sibling_para_id
+		assert!(XcmpQueue::take_outbound_messages(usize::MAX)
+			.iter()
+			.any(|(para_id, _)| para_id == &sibling_para_id));
+	})
 }

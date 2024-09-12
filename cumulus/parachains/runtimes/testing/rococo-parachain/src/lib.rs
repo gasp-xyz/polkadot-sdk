@@ -23,7 +23,6 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use mangata_support::traits::GetMaintenanceStatusTrait;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -41,6 +40,7 @@ use sp_version::RuntimeVersion;
 pub use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_config, create_default_config},
 	match_types, parameter_types,
 	traits::{
 		AsEnsureOriginWithArg, ConstBool, ConstU32, ConstU64, ConstU8, EitherOfDiverse, Everything,
@@ -266,18 +266,6 @@ impl pallet_sudo::Config for Runtime {
 	type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
-pub struct MockMaintenanceStatusProvider;
-
-impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-	fn is_maintenance() -> bool {
-		false
-	}
-
-	fn is_upgradable() -> bool {
-		true
-	}
-}
-
 parameter_types! {
 	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
@@ -286,7 +274,6 @@ parameter_types! {
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type OnSystemEvent = ();
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type OutboundXcmpMessageSource = XcmpQueue;
 	type DmpMessageHandler = DmpQueue;
@@ -519,7 +506,6 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ChannelInfo = ParachainSystem;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type VersionWrapper = ();
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 	type ControllerOrigin = EnsureRoot<AccountId>;
@@ -530,7 +516,6 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ExecuteOverweightOrigin = frame_system::EnsureRoot<AccountId>;
 }
@@ -669,14 +654,6 @@ impl frame_support::traits::OnRuntimeUpgrade for RemoveCollectiveFlip {
 		<Runtime as frame_system::Config>::DbWeight::get().writes(1)
 	}
 }
-
-
-use codec::alloc::string::String;
-use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
-impl ExtendedCall for RuntimeCall {
-		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
-}
-
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -818,6 +795,16 @@ impl_runtime_apis! {
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
 		fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
 			ParachainSystem::collect_collation_info(header)
+		}
+	}
+
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
 		}
 	}
 }

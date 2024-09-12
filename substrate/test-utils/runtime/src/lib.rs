@@ -26,11 +26,10 @@ pub mod genesismap;
 pub mod substrate_test_pallet;
 
 use codec::{Decode, Encode};
-#[cfg(not(feature = "disable-genesis-builder"))]
-use frame_support::genesis_builder_helper::{build_config, create_default_config};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_config, create_default_config},
 	parameter_types,
 	traits::{ConstU32, ConstU64},
 	weights::{
@@ -108,10 +107,10 @@ pub fn wasm_binary_logging_disabled_unwrap() -> &'static [u8] {
 /// Test runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("rollup-chain"),
-	impl_name: create_runtime_str!("rollup-chain"),
+	spec_name: create_runtime_str!("test"),
+	impl_name: create_runtime_str!("parity-test"),
 	authoring_version: 1,
-	spec_version: 301,
+	spec_version: 2,
 	impl_version: 2,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -769,7 +768,6 @@ impl_runtime_apis! {
 		}
 	}
 
-	#[cfg(not(feature = "disable-genesis-builder"))]
 	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
 		fn create_default_config() -> Vec<u8> {
 			create_default_config::<RuntimeGenesisConfig>()
@@ -1261,7 +1259,6 @@ mod tests {
 		})
 	}
 
-	#[cfg(not(feature = "disable-genesis-builder"))]
 	mod genesis_builder_tests {
 		use super::*;
 		use crate::genesismap::GenesisStorageBuilder;

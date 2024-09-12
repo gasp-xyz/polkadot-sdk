@@ -44,7 +44,6 @@ use frame_support::{
 	weights::Weight,
 };
 use frame_system::{ensure_none, ensure_root, pallet_prelude::HeaderFor};
-use mangata_support::traits::GetMaintenanceStatusTrait;
 use polkadot_parachain_primitives::primitives::RelayChainBlockNumber;
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -237,8 +236,6 @@ pub mod pallet {
 		/// is activated.
 		#[cfg(feature = "parameterized-consensus-hook")]
 		type ConsensusHook: ConsensusHook;
-
-		type MaintenanceStatusProvider: GetMaintenanceStatusTrait;
 	}
 
 	#[pallet::hooks]
@@ -278,10 +275,6 @@ pub mod pallet {
 					return
 				},
 			};
-
-			if T::MaintenanceStatusProvider::is_maintenance() {
-				return
-			}
 
 			// After this point, the `RelevantMessagingState` in storage reflects the
 			// unincluded segment.
@@ -567,20 +560,19 @@ pub mod pallet {
 				Some(_signal) if upgrade_signal_in_segment.is_some() => {
 					// Do nothing, processing logic was executed by unincluded ancestor.
 				},
-				Some(relay_chain::UpgradeGoAhead::GoAhead) =>
-					if T::MaintenanceStatusProvider::is_upgradable() {
-						assert!(
-							<PendingValidationCode<T>>::exists(),
-							"No new validation function found in storage, GoAhead signal is not expected",
-						);
-						let validation_code = <PendingValidationCode<T>>::take();
+				Some(relay_chain::UpgradeGoAhead::GoAhead) => {
+					assert!(
+						<PendingValidationCode<T>>::exists(),
+						"No new validation function found in storage, GoAhead signal is not expected",
+					);
+					let validation_code = <PendingValidationCode<T>>::take();
 
-						Self::put_parachain_code(&validation_code);
-						<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
-						Self::deposit_event(Event::ValidationFunctionApplied {
-							relay_chain_block_num: vfp.relay_parent_number,
-						});
-					},
+					Self::put_parachain_code(&validation_code);
+					<T::OnSystemEvent as OnSystemEvent>::on_validation_code_applied();
+					Self::deposit_event(Event::ValidationFunctionApplied {
+						relay_chain_block_num: vfp.relay_parent_number,
+					});
+				},
 				Some(relay_chain::UpgradeGoAhead::Abort) => {
 					<PendingValidationCode<T>>::kill();
 					Self::deposit_event(Event::ValidationFunctionDiscarded);
@@ -649,12 +641,6 @@ pub mod pallet {
 			check_version: bool,
 		) -> DispatchResult {
 			ensure_root(origin)?;
-
-			ensure!(
-				T::MaintenanceStatusProvider::is_upgradable(),
-				Error::<T>::UpgradeBlockedByMaintenanceMode
-			);
-
 			AuthorizedUpgrade::<T>::put(CodeUpgradeAuthorization { code_hash, check_version });
 
 			Self::deposit_event(Event::UpgradeAuthorized { code_hash });
@@ -721,8 +707,6 @@ pub mod pallet {
 		NothingAuthorized,
 		/// The given code upgrade has not been authorized.
 		Unauthorized,
-		/// Upgrades are blocked due to maintenance mode
-		UpgradeBlockedByMaintenanceMode,
 	}
 
 	/// Latest included block descendants the runtime accepted. In other words, these are
@@ -1359,10 +1343,6 @@ impl<T: Config> Pallet<T> {
 		// inherent.
 		ensure!(<ValidationData<T>>::exists(), Error::<T>::ValidationDataNotAvailable,);
 		ensure!(<UpgradeRestrictionSignal<T>>::get().is_none(), Error::<T>::ProhibitedByPolkadot);
-		ensure!(
-			T::MaintenanceStatusProvider::is_upgradable(),
-			Error::<T>::UpgradeBlockedByMaintenanceMode
-		);
 
 		ensure!(!<PendingValidationCode<T>>::exists(), Error::<T>::OverlappingUpgrades);
 		let cfg = Self::host_configuration().ok_or(Error::<T>::HostConfigurationNotAvailable)?;
@@ -1420,12 +1400,12 @@ impl<T: Config> Pallet<T> {
 		CustomValidationHeadData::<T>::put(head_data);
 	}
 
-	/// Open HRMP channel for using it in benchmarks.
+	/// Open HRMP channel for using it in benchmarks or tests.
 	///
 	/// The caller assumes that the pallet will accept regular outbound message to the sibling
 	/// `target_parachain` after this call. No other assumptions are made.
-	#[cfg(feature = "runtime-benchmarks")]
-	pub fn open_outbound_hrmp_channel_for_benchmarks(target_parachain: ParaId) {
+	#[cfg(any(feature = "runtime-benchmarks", feature = "std"))]
+	pub fn open_outbound_hrmp_channel_for_benchmarks_or_tests(target_parachain: ParaId) {
 		RelevantMessagingState::<T>::put(MessagingStateSnapshot {
 			dmq_mqc_head: Default::default(),
 			relay_dispatch_queue_remaining_capacity: Default::default(),
@@ -1467,7 +1447,7 @@ impl<T: Config> Pallet<T> {
 			hrmp_max_message_num_per_candidate: 2,
 			validation_upgrade_cooldown: 2,
 			validation_upgrade_delay: 2,
-			async_backing_params: relay_chain::vstaging::AsyncBackingParams {
+			async_backing_params: relay_chain::AsyncBackingParams {
 				allowed_ancestry_len: 0,
 				max_candidate_depth: 0,
 			},

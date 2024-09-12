@@ -30,7 +30,6 @@ pub mod wasm_spec_version_incremented {
 mod test_pallet;
 
 use frame_support::traits::OnRuntimeUpgrade;
-use mangata_support::traits::GetMaintenanceStatusTrait;
 use sp_api::{decl_runtime_apis, impl_runtime_apis};
 use sp_core::{ConstU32, OpaqueMetadata};
 use sp_runtime::{
@@ -277,21 +276,8 @@ impl pallet_glutton::Config for Runtime {
 	type WeightInfo = pallet_glutton::weights::SubstrateWeight<Runtime>;
 }
 
-pub struct MockMaintenanceStatusProvider;
-
-impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-	fn is_maintenance() -> bool {
-		false
-	}
-
-	fn is_upgradable() -> bool {
-		true
-	}
-}
-
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type SelfParaId = ParachainId;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type RuntimeEvent = RuntimeEvent;
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
@@ -389,13 +375,6 @@ decl_runtime_apis! {
 		fn get_last_timestamp() -> u64;
 	}
 }
-
-use codec::alloc::string::String;
-use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
-impl ExtendedCall for RuntimeCall {
-		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
-}
-
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

@@ -39,6 +39,7 @@ use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_config, create_default_config},
 	ord_parameter_types, parameter_types,
 	traits::{
 		tokens::nonfungibles_v2::Inspect, AsEnsureOriginWithArg, ConstBool, ConstU128, ConstU32,
@@ -51,7 +52,6 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureRoot, EnsureSigned, EnsureSignedBy,
 };
-use mangata_support::traits::GetMaintenanceStatusTrait;
 use pallet_asset_conversion_tx_payment::AssetConversionAdapter;
 use pallet_nfts::PalletFeatures;
 pub use parachains_common as common;
@@ -577,18 +577,6 @@ impl pallet_proxy::Config for Runtime {
 	type AnnouncementDepositFactor = AnnouncementDepositFactor;
 }
 
-pub struct MockMaintenanceStatusProvider;
-
-impl GetMaintenanceStatusTrait for MockMaintenanceStatusProvider {
-	fn is_maintenance() -> bool {
-		false
-	}
-
-	fn is_upgradable() -> bool {
-		true
-	}
-}
-
 parameter_types! {
 	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
@@ -602,7 +590,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type OutboundXcmpMessageSource = XcmpQueue;
 	type XcmpMessageHandler = XcmpQueue;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 	type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
@@ -621,7 +608,6 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ChannelInfo = ParachainSystem;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type VersionWrapper = PolkadotXcm;
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 	type ControllerOrigin = EnsureRoot<AccountId>;
@@ -632,7 +618,6 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type MaintenanceStatusProvider = MockMaintenanceStatusProvider;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 }
@@ -914,13 +899,6 @@ mod benches {
 		[pallet_xcm_benchmarks::generic, XcmGeneric]
 	);
 }
-
-use codec::alloc::string::String;
-use sp_runtime::generic::{ExtendedCall, MetamaskSigningCtx};
-impl ExtendedCall for RuntimeCall {
-		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
-}
-
 
 impl_runtime_apis! {
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
@@ -1374,6 +1352,16 @@ impl_runtime_apis! {
 			add_benchmarks!(params, batches);
 
 			Ok(batches)
+		}
+	}
+
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
 		}
 	}
 }

@@ -469,7 +469,7 @@ impl Verify for MultiSignature {
 			},
 			(Self::Ecdsa(ref sig), who) => {
 				log::info!(target: "metamask::verify", "ECDSA");
-				let m = sp_io::hashing::blake2_256(msg.get());
+				let m = sp_io::hashing::keccak_256(msg.get());
 				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
 					Ok(pubkey) =>
 						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==

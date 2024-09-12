@@ -131,7 +131,7 @@ impl Verify for sp_core::ecdsa::Signature {
 	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &sp_core::ecdsa::Public) -> bool {
 		match sp_io::crypto::secp256k1_ecdsa_recover_compressed(
 			self.as_ref(),
-			&sp_io::hashing::blake2_256(msg.get()),
+			&sp_io::hashing::keccak_256(msg.get()),
 		) {
 			Ok(pubkey) => signer.as_ref() == &pubkey[..],
 			_ => false,
