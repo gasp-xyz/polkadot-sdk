@@ -20,7 +20,7 @@
 use crate::{
 	generic::CheckedExtrinsic,
 	traits::{
-		self, Checkable, Extrinsic, ExtrinsicMetadata, Hash, IdentifyAccount,
+		self, Checkable, Extrinsic, ExtrinsicMetadata, IdentifyAccount,
 		IdentifyAccountWithLookup, LookupError, MaybeDisplay, Member, SignaturePayload,
 		SignedExtension,
 	},
@@ -30,7 +30,6 @@ use crate::{
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 // use ethers_core::types::transaction::eip712::Eip712;
 use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
-use sha3::{Digest, Keccak256};
 use sp_io::hashing::blake2_256;
 #[cfg(all(not(feature = "std"), feature = "serde"))]
 use sp_std::alloc::format;

@@ -68,11 +68,11 @@ pub use sp_core::storage::StateVersion;
 pub use sp_core::storage::{Storage, StorageChild};
 
 use sp_core::{
-	crypto::{self, ByteArray, FromEntropy, UncheckedFrom},
+	crypto::{self, ByteArray, FromEntropy},
 	ecdsa, ed25519,
 	hash::{H256, H512},
 	hexdisplay::HexDisplay,
-	sr25519, H160,
+	sr25519,
 };
 use sp_std::prelude::*;
 
@@ -206,7 +206,7 @@ impl From<Justification> for Justifications {
 	}
 }
 
-use traits::{Hash, Keccak256, Lazy, Verify};
+use traits::{Lazy, Verify};
 
 use crate::traits::IdentifyAccount;
 #[cfg(feature = "serde")]

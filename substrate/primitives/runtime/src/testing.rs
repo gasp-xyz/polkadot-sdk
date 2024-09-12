@@ -341,7 +341,6 @@ pub struct TestXt<Call, Extra> {
 }
 
 
-use codec::alloc::string::String;
 use crate::generic::{ExtendedCall, MetamaskSigningCtx};
 impl<Call, Extra> ExtendedCall for TestXt<Call, Extra> {
 		fn context(&self) -> Option<MetamaskSigningCtx>{ None }

@@ -58,7 +58,7 @@ use lazy_static::lazy_static;
 pub use sp_core::ecdsa;
 use sp_core::{
 	ecdsa::{Pair, Public, Signature},
-	ByteArray, Pair as PairT, H160,
+	ByteArray, Pair as PairT,
 };
 use sp_runtime::AccountId20;
 use std::{collections::HashMap, ops::Deref};

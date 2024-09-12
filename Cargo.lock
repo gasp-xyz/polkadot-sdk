@@ -684,7 +684,7 @@ dependencies = [
  "ark-std 0.4.0",
  "digest 0.10.7",
  "rand_core 0.6.4",
- "sha3 0.10.8",
+ "sha3",
 ]
 
 [[package]]
@@ -1182,7 +1182,6 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
- "block-padding 0.2.1",
  "generic-array 0.14.7",
 ]
 
@@ -5688,7 +5687,7 @@ dependencies = [
  "digest 0.10.7",
  "multihash-derive",
  "sha2 0.10.7",
- "sha3 0.10.8",
+ "sha3",
  "unsigned-varint",
 ]
 
@@ -11625,18 +11624,6 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f81199417d4e5de3f04b1e871023acea7389672c4135918f05aa9cbf2f2fa809"
-dependencies = [
- "block-buffer 0.9.0",
- "digest 0.9.0",
- "keccak",
- "opaque-debug 0.3.0",
-]
-
-[[package]]
-name = "sha3"
 version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
@@ -12199,7 +12186,6 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_json",
- "sha3 0.9.1",
  "sp-core-hashing",
  "sp-core-hashing-proc-macro",
  "sp-debug-derive",
@@ -12224,7 +12210,7 @@ dependencies = [
  "byteorder",
  "digest 0.10.7",
  "sha2 0.10.7",
- "sha3 0.10.8",
+ "sha3",
  "twox-hash",
 ]
 
@@ -12474,7 +12460,7 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
- "sha3 0.10.8",
+ "sha3",
  "sp-api",
  "sp-application-crypto",
  "sp-arithmetic",
@@ -14142,7 +14128,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "sha2 0.10.7",
- "sha3 0.10.8",
+ "sha3",
  "thiserror",
  "zeroize",
 ]

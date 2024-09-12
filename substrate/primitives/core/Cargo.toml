@@ -13,7 +13,6 @@ documentation = "https://docs.rs/sp-core"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-sha3 = { version = "0.9.1", default-features = false }
 arrayvec = { version = "0.7.2", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive","max-encoded-len"] }
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
@@ -108,7 +107,6 @@ std = [
 	"secp256k1/std",
 	"secrecy/alloc",
 	"serde/std",
-	"sha3/std",
 	"sp-core-hashing/std",
 	"sp-debug-derive/std",
 	"sp-externalities/std",

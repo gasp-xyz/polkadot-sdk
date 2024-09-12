@@ -29,7 +29,7 @@ use crate::crypto::{
 #[cfg(feature = "full_crypto")]
 use crate::{
 	crypto::{DeriveError, DeriveJunction, Pair as TraitPair, SecretStringError},
-	hashing::{blake2_256, keccak_256},
+	hashing::keccak_256,
 };
 #[cfg(all(feature = "full_crypto", not(feature = "std")))]
 use secp256k1::Secp256k1;
@@ -46,7 +46,6 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sp_std::alloc::{format, string::String};
 #[cfg(feature = "full_crypto")]
 use sp_std::vec::Vec;
-use sha3::{Digest, Keccak256};
 
 /// An identifier used to match public keys against ecdsa keys
 pub const CRYPTO_ID: CryptoTypeId = CryptoTypeId(*b"ecds");
@@ -579,7 +578,7 @@ mod test {
 		let message = b"";
 		let signature = array_bytes::hex2array_unchecked("4e1fd58a98bbce5fe948c4e5fec7662d253130a300156c037429dca66f9f6a0728e8b5e8bc55f4bcf445af4b75928a876d54949aaee93a62e3eb1cf12aefb60800");
 		let signature = Signature::from_raw(signature);
-		assert_eq!(pair.sign(&message[..]), signature);
+		assert!(pair.sign(&message[..]) == signature);
 		assert!(Pair::verify(&signature, &message[..], &public));
 	}
 
@@ -600,7 +599,7 @@ mod test {
 		let message = b"";
 		let signature = array_bytes::hex2array_unchecked("4e1fd58a98bbce5fe948c4e5fec7662d253130a300156c037429dca66f9f6a0728e8b5e8bc55f4bcf445af4b75928a876d54949aaee93a62e3eb1cf12aefb60800");
 		let signature = Signature::from_raw(signature);
-		assert_eq!(pair.sign(&message[..]), signature);
+		assert!(pair.sign(&message[..]) == signature);
 		assert!(Pair::verify(&signature, &message[..], &public));
 	}
 
