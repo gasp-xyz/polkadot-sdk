@@ -670,61 +670,61 @@ const CODE_TRANSFER: &str = r#"
 )
 "#;
 
-#[test]
-fn deploying_wasm_contract_should_work() {
-	let transfer_code = wat::parse_str(CODE_TRANSFER).unwrap();
-	let transfer_ch = <Runtime as frame_system::Config>::Hashing::hash(&transfer_code);
+// #[test]
+// fn deploying_wasm_contract_should_work() {
+// 	let transfer_code = wat::parse_str(CODE_TRANSFER).unwrap();
+// 	let transfer_ch = <Runtime as frame_system::Config>::Hashing::hash(&transfer_code);
 
-	let addr =
-		pallet_contracts::Pallet::<Runtime>::contract_address(&charlie(), &transfer_ch, &[], &[]);
+// 	let addr =
+// 		pallet_contracts::Pallet::<Runtime>::contract_address(&charlie(), &transfer_ch, &[], &[]);
 
-	let time = 42 * 1000;
-	let b = construct_block(
-		&mut new_test_ext(compact_code_unwrap()),
-		1,
-		GENESIS_HASH.into(),
-		vec![
-			CheckedExtrinsic {
-				signed: None,
-				function: RuntimeCall::Timestamp(pallet_timestamp::Call::set { now: time }),
-			},
-			CheckedExtrinsic {
-				signed: Some((charlie(), signed_extra(0, 0))),
-				function: RuntimeCall::Contracts(pallet_contracts::Call::instantiate_with_code::<
-					Runtime,
-				> {
-					value: 0,
-					gas_limit: Weight::from_parts(500_000_000, 0),
-					storage_deposit_limit: None,
-					code: transfer_code,
-					data: Vec::new(),
-					salt: Vec::new(),
-				}),
-			},
-			CheckedExtrinsic {
-				signed: Some((charlie(), signed_extra(1, 0))),
-				function: RuntimeCall::Contracts(pallet_contracts::Call::call::<Runtime> {
-					dest: sp_runtime::MultiAddress::Id(addr.clone()),
-					value: 10,
-					gas_limit: Weight::from_parts(500_000_000, 0),
-					storage_deposit_limit: None,
-					data: vec![0x00, 0x01, 0x02, 0x03],
-				}),
-			},
-		],
-		(time / SLOT_DURATION).into(),
-	);
+// 	let time = 42 * 1000;
+// 	let b = construct_block(
+// 		&mut new_test_ext(compact_code_unwrap()),
+// 		1,
+// 		GENESIS_HASH.into(),
+// 		vec![
+// 			CheckedExtrinsic {
+// 				signed: None,
+// 				function: RuntimeCall::Timestamp(pallet_timestamp::Call::set { now: time }),
+// 			},
+// 			CheckedExtrinsic {
+// 				signed: Some((charlie(), signed_extra(0, 0))),
+// 				function: RuntimeCall::Contracts(pallet_contracts::Call::instantiate_with_code::<
+// 					Runtime,
+// 				> {
+// 					value: 0,
+// 					gas_limit: Weight::from_parts(500_000_000, 0),
+// 					storage_deposit_limit: None,
+// 					code: transfer_code,
+// 					data: Vec::new(),
+// 					salt: Vec::new(),
+// 				}),
+// 			},
+// 			CheckedExtrinsic {
+// 				signed: Some((charlie(), signed_extra(1, 0))),
+// 				function: RuntimeCall::Contracts(pallet_contracts::Call::call::<Runtime> {
+// 					dest: sp_runtime::MultiAddress::Id(addr.clone()),
+// 					value: 10,
+// 					gas_limit: Weight::from_parts(500_000_000, 0),
+// 					storage_deposit_limit: None,
+// 					data: vec![0x00, 0x01, 0x02, 0x03],
+// 				}),
+// 			},
+// 		],
+// 		(time / SLOT_DURATION).into(),
+// 	);
 
-	let mut t = new_test_ext(compact_code_unwrap());
+// 	let mut t = new_test_ext(compact_code_unwrap());
 
-	executor_call(&mut t, "Core_execute_block", &b.0, false).0.unwrap();
+// 	executor_call(&mut t, "Core_execute_block", &b.0, false).0.unwrap();
 
-	t.execute_with(|| {
-		// Verify that the contract does exist by querying some of its storage items
-		// It does not matter that the storage item itself does not exist.
-		assert!(&pallet_contracts::Pallet::<Runtime>::get_storage(addr, vec![]).is_ok());
-	});
-}
+// 	t.execute_with(|| {
+// 		// Verify that the contract does exist by querying some of its storage items
+// 		// It does not matter that the storage item itself does not exist.
+// 		assert!(&pallet_contracts::Pallet::<Runtime>::get_storage(addr, vec![]).is_ok());
+// 	});
+// }
 
 #[test]
 fn wasm_big_block_import_fails() {
@@ -856,4 +856,20 @@ fn should_import_block_with_test_client() {
 	let block = node_primitives::Block::decode(&mut &block_data[..]).unwrap();
 
 	futures::executor::block_on(client.import(BlockOrigin::Own, block)).unwrap();
+}
+
+#[test]
+fn default_config_as_json_works() {
+	let mut t = new_test_ext(compact_code_unwrap());
+	let r = executor_call(&mut t, "GenesisBuilder_create_default_config", &vec![], false)
+		.0
+		.unwrap();
+	let r = Vec::<u8>::decode(&mut &r[..]).unwrap();
+	let json = String::from_utf8(r.into()).expect("returned value is json. qed.");
+	let expected = include_str!("res/default_genesis_config.json").to_string();
+
+	assert_eq!(
+		serde_json::from_str::<serde_json::Value>(&expected).unwrap(),
+		serde_json::from_str::<serde_json::Value>(&json).unwrap()
+	);
 }

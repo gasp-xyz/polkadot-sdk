@@ -17,35 +17,35 @@
 
 //! Contains the core benchmarking logic.
 
-use log::{debug, error, info};
-use sc_block_builder::{BlockBuilderApi, BlockBuilderProvider};
+use sc_block_builder::{BlockBuilderApi, BlockBuilderBuilder};
 use sc_block_builder_ver::{
 	validate_transaction, BlockBuilderApi as BlockBuilderApiVer,
-	BlockBuilderProvider as BlockBuilderProviderVer,
+	BlockBuilderBuilder as BlockBuilderBuilderVer,
 };
 use sc_cli::{Error, Result};
-use sc_client_api::Backend as ClientBackend;
+use sc_client_api::UsageProvider;
 use sc_consensus::{
 	block_import::{BlockImportParams, ForkChoiceStrategy},
-	StateAction, BlockImport,
+	BlockImport, StateAction,
 };
-use sp_api::{ApiExt, Core, ProvideRuntimeApi};
+use sp_api::{ApiExt, CallApiAt, Core, ProvideRuntimeApi};
 use sp_blockchain::{
 	ApplyExtrinsicFailed::Validity,
 	Error::{ApplyExtrinsicFailed, RuntimeApiError},
 };
+use sp_consensus::BlockOrigin;
 use sp_consensus_aura::{digests::CompatibleDigestItem, sr25519::AuthoritySignature};
 use sp_runtime::{
 	traits::{Block as BlockT, Header as HeaderT},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
 	Digest, DigestItem, OpaqueExtrinsic,
 };
-use std::{cell::RefCell, rc::Rc, sync::Mutex};
+use std::sync::Mutex;
 use ver_api::VerApi;
 
 use clap::Args;
+use log::{debug, error, info};
 use serde::Serialize;
-use sp_consensus::BlockOrigin;
 use std::{marker::PhantomData, sync::Arc, time::Instant};
 
 use super::ExtrinsicBuilder;
@@ -73,27 +73,27 @@ pub struct BenchmarkParams {
 pub(crate) type BenchRecord = Vec<u64>;
 
 /// Holds all objects needed to run the *overhead* benchmarks.
-pub(crate) struct Benchmark<Block, BA, C> {
+pub(crate) struct Benchmark<Block, C> {
 	client: Arc<C>,
 	params: BenchmarkParams,
 	inherent_data: sp_inherents::InherentData,
 	digest_items: Vec<DigestItem>,
-	_p: PhantomData<(Block, BA)>,
+	_p: PhantomData<Block>,
 }
 
-pub(crate) struct BenchmarkVer<Block, BA, C> {
+pub(crate) struct BenchmarkVer<Block, C> {
 	client: Arc<Mutex<C>>,
 	params: BenchmarkParams,
 	inherent_data: (sp_inherents::InherentData, sp_inherents::InherentData),
-	_p: PhantomData<(Block, BA)>,
+	_p: PhantomData<Block>,
 }
 
-impl<Block, BA, C> Benchmark<Block, BA, C>
+impl<Block, C> Benchmark<Block, C>
 where
 	Block: BlockT<Extrinsic = OpaqueExtrinsic>,
-	BA: ClientBackend<Block>,
-	C: BlockBuilderProvider<BA, Block, C>
-		+ ProvideRuntimeApi<Block>
+	C: ProvideRuntimeApi<Block>
+		+ CallApiAt<Block>
+		+ UsageProvider<Block>
 		+ sp_blockchain::HeaderBackend<Block>,
 	C::Api: ApiExt<Block> + BlockBuilderApi<Block>,
 {
@@ -148,7 +148,13 @@ where
 		&self,
 		ext_builder: Option<&dyn ExtrinsicBuilder>,
 	) -> Result<(Block, Option<u64>)> {
-		let mut builder = self.client.new_block(Digest { logs: self.digest_items.clone() })?;
+		let chain = self.client.usage_info().chain;
+		let mut builder = BlockBuilderBuilder::new(&*self.client)
+			.on_parent_block(chain.best_hash)
+			.with_parent_block_number(chain.best_number)
+			.with_inherent_digests(Digest { logs: self.digest_items.clone() })
+			.build()?;
+
 		// Create and insert the inherents.
 		let inherents = builder.create_inherents(self.inherent_data.clone())?;
 		for inherent in inherents {
@@ -222,14 +228,14 @@ where
 	}
 }
 
-impl<Block, BA, C> BenchmarkVer<Block, BA, C>
+impl<Block, C> BenchmarkVer<Block, C>
 where
 	Block: BlockT<Extrinsic = OpaqueExtrinsic>,
-	BA: ClientBackend<Block>,
-	C: BlockBuilderProviderVer<BA, Block, C>
-		+ ProvideRuntimeApi<Block>
-		+ sp_blockchain::HeaderBackend<Block>
-		+ BlockImport<Block>,
+	C: ProvideRuntimeApi<Block>
+		+ CallApiAt<Block>
+		+ UsageProvider<Block>
+		+ BlockImport<Block>
+		+ sp_blockchain::HeaderBackend<Block>,
 	C::Api: ApiExt<Block> + BlockBuilderApiVer<Block> + VerApi<Block>,
 {
 	/// Create a new [`Self`] from the arguments.
@@ -305,13 +311,18 @@ where
 		ext_builder: &dyn ExtrinsicBuilder,
 	) -> Result<sc_block_builder_ver::BuiltBlock<Block>> {
 		let digest = self.create_digest(1_u64);
+		let chain = self.client.lock().unwrap().usage_info().chain;
 		info!("creating remarks");
 		let remarks = (0..self.max_ext_per_block())
 			.map(|nonce| ext_builder.build(nonce).expect("remark txs creation should not fail"))
 			.collect::<Vec<_>>();
 
 		let client = self.client.lock().unwrap();
-		let mut builder = client.new_block(digest)?;
+		let mut builder = BlockBuilderBuilderVer::new(&*client)
+			.on_parent_block(chain.best_hash)
+			.with_parent_block_number(chain.best_number)
+			.with_inherent_digests(digest)
+			.build()?;
 
 		info!("creating inherents");
 		let (seed, inherents) = builder.create_inherents(self.inherent_data.0.clone()).unwrap();
@@ -371,9 +382,15 @@ where
 			})
 			.collect::<Vec<_>>();
 
+		let chain = self.client.lock().unwrap().usage_info().chain;
 		let digest = self.create_digest(3_u64);
 		let client = self.client.lock().unwrap();
-		let mut builder = client.new_block(digest)?;
+		let mut builder = BlockBuilderBuilderVer::new(&*client)
+			.on_parent_block(chain.best_hash)
+			.with_parent_block_number(chain.best_number)
+			.with_inherent_digests(digest)
+			.build()?;
+
 		let (seed, inherents) = builder.create_inherents(self.inherent_data.1.clone()).unwrap();
 		info!("pushing inherents");
 		for inherent in inherents {
@@ -404,7 +421,9 @@ where
 
 		info!("Running {} warmups...", self.params.warmup);
 		for _ in 0..self.params.warmup {
-			self.client.lock().unwrap()
+			self.client
+				.lock()
+				.unwrap()
 				.runtime_api()
 				.execute_block(parent, block.clone())
 				.map_err(|e| Error::Client(RuntimeApiError(e)))?;

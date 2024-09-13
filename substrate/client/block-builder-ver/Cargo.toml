@@ -18,7 +18,6 @@ log = "0.4.8"
 codec = { package = "parity-scale-codec", version = "3.6.1", features = [
 	"derive",
 ] }
-sc-client-api = { path = "../api" }
 sp-api = { path = "../../primitives/api" }
 sp-block-builder = { path = "../../primitives/block-builder" }
 sp-blockchain = { path = "../../primitives/blockchain" }

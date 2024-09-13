@@ -18,7 +18,7 @@ codec = { package = "parity-scale-codec", version = "3.0.0", default-features = 
 derive_more = { version = "0.99.2", optional = true }
 futures = { version = "0.3.19", optional = true }
 log = { version = "0.4.8", optional = true }
-serde = { version = "1.0.136", features = ["derive"], optional = true}
+serde = { version = "1.0.188", features = ["derive"], optional = true}
 frame-support = { path = "../../frame/support", default-features = false }
 sp-api = { version = "4.0.0-dev", default-features = false, path = "../../primitives/api"}
 sp-std = { version = "8.0.0", default-features = false, path = "../../primitives/std"}

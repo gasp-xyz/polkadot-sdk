@@ -29,55 +29,146 @@
 use codec::{Decode, Encode};
 
 use sp_api::{
-	ApiExt, ApiRef, Core, ProvideRuntimeApi, StorageChanges, StorageProof, TransactionOutcome,
+	ApiExt, ApiRef, CallApiAt, Core, ProvideRuntimeApi, StorageChanges, StorageProof,
+	TransactionOutcome,
 };
-use sp_blockchain::{ApplyExtrinsicFailed, Error};
+use sp_blockchain::{ApplyExtrinsicFailed, Error, HeaderBackend};
 use sp_core::{traits::CallContext, ShufflingSeed};
 use sp_runtime::{
 	legacy,
 	traits::{BlakeTwo256, Block as BlockT, Hash, HashingFor, Header as HeaderT, NumberFor, One},
 	Digest,
 };
+use std::marker::PhantomData;
 
-use sc_client_api::backend;
 pub use sp_block_builder::BlockBuilder as BlockBuilderApi;
 use sp_ver::extract_inherent_data;
 use ver_api::VerApi;
 
-/// Used as parameter to [`BlockBuilderProvider`] to express if proof recording should be enabled.
+/// A builder for creating an instance of [`BlockBuilder`].
+pub struct BlockBuilderBuilder<'a, B, C> {
+	call_api_at: &'a C,
+	_phantom: PhantomData<B>,
+}
+
+impl<'a, B, C> BlockBuilderBuilder<'a, B, C>
+where
+	B: BlockT,
+{
+	/// Create a new instance of the builder.
+	///
+	/// `call_api_at`: Something that implements [`CallApiAt`].
+	pub fn new(call_api_at: &'a C) -> Self {
+		Self { call_api_at, _phantom: PhantomData }
+	}
+
+	/// Specify the parent block to build on top of.
+	pub fn on_parent_block(self, parent_block: B::Hash) -> BlockBuilderBuilderStage1<'a, B, C> {
+		BlockBuilderBuilderStage1 { call_api_at: self.call_api_at, parent_block }
+	}
+}
+
+/// The second stage of the [`BlockBuilderBuilder`].
 ///
-/// When `RecordProof::Yes` is given, all accessed trie nodes should be saved. These recorded
-/// trie nodes can be used by a third party to proof this proposal without having access to the
-/// full storage.
-#[derive(Copy, Clone, PartialEq)]
-pub enum RecordProof {
-	/// `Yes`, record a proof.
-	Yes,
-	/// `No`, don't record any proof.
-	No,
+/// This type can not be instantiated directly. To get an instance of it
+/// [`BlockBuilderBuilder::new`] needs to be used.
+pub struct BlockBuilderBuilderStage1<'a, B: BlockT, C> {
+	call_api_at: &'a C,
+	parent_block: B::Hash,
 }
 
-impl RecordProof {
-	/// Returns if `Self` == `Yes`.
-	pub fn yes(&self) -> bool {
-		matches!(self, Self::Yes)
+impl<'a, B, C> BlockBuilderBuilderStage1<'a, B, C>
+where
+	B: BlockT,
+{
+	/// Fetch the parent block number from the given `header_backend`.
+	///
+	/// The parent block number is used to initialize the block number of the new block.
+	///
+	/// Returns an error if the parent block specified in
+	/// [`on_parent_block`](BlockBuilderBuilder::on_parent_block) does not exist.
+	pub fn fetch_parent_block_number<H: HeaderBackend<B>>(
+		self,
+		header_backend: &H,
+	) -> Result<BlockBuilderBuilderStage2<'a, B, C>, Error> {
+		let parent_number = header_backend.number(self.parent_block)?.ok_or_else(|| {
+			Error::Backend(format!(
+				"Could not fetch block number for block: {:?}",
+				self.parent_block
+			))
+		})?;
+
+		Ok(BlockBuilderBuilderStage2 {
+			call_api_at: self.call_api_at,
+			enable_proof_recording: false,
+			inherent_digests: Default::default(),
+			parent_block: self.parent_block,
+			parent_number,
+		})
 	}
-}
 
-/// Will return [`RecordProof::No`] as default value.
-impl Default for RecordProof {
-	fn default() -> Self {
-		Self::No
-	}
-}
-
-impl From<bool> for RecordProof {
-	fn from(val: bool) -> Self {
-		if val {
-			Self::Yes
-		} else {
-			Self::No
+	/// Provide the block number for the parent block directly.
+	///
+	/// The parent block is specified in [`on_parent_block`](BlockBuilderBuilder::on_parent_block).
+	/// The parent block number is used to initialize the block number of the new block.
+	pub fn with_parent_block_number(
+		self,
+		parent_number: NumberFor<B>,
+	) -> BlockBuilderBuilderStage2<'a, B, C> {
+		BlockBuilderBuilderStage2 {
+			call_api_at: self.call_api_at,
+			enable_proof_recording: false,
+			inherent_digests: Default::default(),
+			parent_block: self.parent_block,
+			parent_number,
 		}
+	}
+}
+
+/// The second stage of the [`BlockBuilderBuilder`].
+///
+/// This type can not be instantiated directly. To get an instance of it
+/// [`BlockBuilderBuilder::new`] needs to be used.
+pub struct BlockBuilderBuilderStage2<'a, B: BlockT, C> {
+	call_api_at: &'a C,
+	enable_proof_recording: bool,
+	inherent_digests: Digest,
+	parent_block: B::Hash,
+	parent_number: NumberFor<B>,
+}
+
+impl<'a, B: BlockT, C> BlockBuilderBuilderStage2<'a, B, C> {
+	/// Enable proof recording for the block builder.
+	pub fn enable_proof_recording(mut self) -> Self {
+		self.enable_proof_recording = true;
+		self
+	}
+
+	/// Enable/disable proof recording for the block builder.
+	pub fn with_proof_recording(mut self, enable: bool) -> Self {
+		self.enable_proof_recording = enable;
+		self
+	}
+
+	/// Build the block with the given inherent digests.
+	pub fn with_inherent_digests(mut self, inherent_digests: Digest) -> Self {
+		self.inherent_digests = inherent_digests;
+		self
+	}
+
+	/// Create the instance of the [`BlockBuilder`].
+	pub fn build(self) -> Result<BlockBuilder<'a, B, C>, Error>
+	where
+		C: CallApiAt<B> + ProvideRuntimeApi<B>,
+		C::Api: BlockBuilderApi<B> + VerApi<B>,
+	{
+		BlockBuilder::new(
+			self.call_api_at,
+			self.parent_block,
+			self.parent_number,
+			self.enable_proof_recording,
+			self.inherent_digests,
+		)
 	}
 }
 
@@ -127,63 +218,34 @@ impl<Block: BlockT> BuiltBlock<Block> {
 	}
 }
 
-/// Block builder provider
-pub trait BlockBuilderProvider<B, Block, RA>
-where
-	Block: BlockT,
-	B: backend::Backend<Block>,
-	Self: Sized,
-	RA: ProvideRuntimeApi<Block>,
-{
-	/// Create a new block, built on top of `parent`.
-	///
-	/// When proof recording is enabled, all accessed trie nodes are saved.
-	/// These recorded trie nodes can be used by a third party to proof the
-	/// output of this block builder without having access to the full storage.
-	fn new_block_at<R: Into<RecordProof>>(
-		&self,
-		parent: Block::Hash,
-		inherent_digests: Digest,
-		record_proof: R,
-	) -> sp_blockchain::Result<BlockBuilder<Block, RA, B>>;
-
-	/// Create a new block, built on the head of the chain.
-	fn new_block(
-		&self,
-		inherent_digests: Digest,
-	) -> sp_blockchain::Result<BlockBuilder<Block, RA, B>>;
-}
-
 /// Utility for building new (valid) blocks from a stream of extrinsics.
-pub struct BlockBuilder<'a, Block: BlockT, A: ProvideRuntimeApi<Block>, B> {
+pub struct BlockBuilder<'a, Block: BlockT, C: ProvideRuntimeApi<Block> + 'a> {
 	inherents: Vec<Block::Extrinsic>,
 	extrinsics: Vec<Block::Extrinsic>,
-	api: ApiRef<'a, A::Api>,
+	api: ApiRef<'a, C::Api>,
+	call_api_at: &'a C,
 	parent_hash: Block::Hash,
-	backend: &'a B,
 	/// The estimated size of the block header.
 	estimated_header_size: usize,
 }
 
-impl<'a, Block, A, B> BlockBuilder<'a, Block, A, B>
+impl<'a, Block, C> BlockBuilder<'a, Block, C>
 where
 	Block: BlockT,
-	A: ProvideRuntimeApi<Block> + 'a,
-	A::Api: BlockBuilderApi<Block> + ApiExt<Block> + VerApi<Block>,
-	B: backend::Backend<Block>,
+	C: CallApiAt<Block> + ProvideRuntimeApi<Block> + 'a,
+	C::Api: BlockBuilderApi<Block> + ApiExt<Block> + VerApi<Block>,
 {
 	/// Create a new instance of builder based on the given `parent_hash` and `parent_number`.
 	///
 	/// While proof recording is enabled, all accessed trie nodes are saved.
 	/// These recorded trie nodes can be used by a third party to prove the
 	/// output of this block builder without having access to the full storage.
-	pub fn new(
-		api: &'a A,
+	fn new(
+		call_api_at: &'a C,
 		parent_hash: Block::Hash,
 		parent_number: NumberFor<Block>,
-		record_proof: RecordProof,
+		record_proof: bool,
 		inherent_digests: Digest,
-		backend: &'a B,
 	) -> Result<Self, Error> {
 		let header = <<Block as BlockT>::Header as HeaderT>::new(
 			parent_number + One::one(),
@@ -195,9 +257,9 @@ where
 
 		let estimated_header_size = header.encoded_size();
 
-		let mut api = api.runtime_api();
+		let mut api = call_api_at.runtime_api();
 
-		if record_proof.yes() {
+		if record_proof {
 			api.record_proof();
 		}
 
@@ -210,8 +272,8 @@ where
 			inherents: Vec::new(),
 			extrinsics: Vec::new(),
 			api,
-			backend,
 			estimated_header_size,
+			call_api_at,
 		})
 	}
 
@@ -223,7 +285,7 @@ where
 		let inherents = &mut self.inherents;
 
 		self.api.execute_in_transaction(|api| {
-			match apply_transaction_wrapper::<Block, A>(api, parent_hash, xt.clone()) {
+			match apply_transaction_wrapper::<Block, C>(api, parent_hash, xt.clone()) {
 				Ok(Ok(_)) => {
 					inherents.push(xt);
 					TransactionOutcome::Commit(Ok(()))
@@ -240,7 +302,7 @@ where
 	pub fn build_with_seed<
 		F: FnOnce(
 			&'_ Block::Hash,
-			&'_ A::Api,
+			&'_ C::Api,
 		) -> Vec<(Option<sp_runtime::AccountId20>, Block::Extrinsic)>,
 	>(
 		mut self,
@@ -297,13 +359,13 @@ where
 			)
 			.unwrap();
 
-		apply_transaction_wrapper::<Block, A>(&self.api, parent_hash, store_txs_inherent.clone())
+		apply_transaction_wrapper::<Block, C>(&self.api, parent_hash, store_txs_inherent.clone())
 			.unwrap()
 			.unwrap()
 			.unwrap();
 
 		for (_, valid_tx) in valid_txs {
-			self.api
+			let _ = self.api
 				.account_extrinsic_dispatch_weight(
 					parent_hash,
 					Default::default(),
@@ -317,7 +379,7 @@ where
 
 		let proof = self.api.extract_proof();
 
-		let state = self.backend.state_at(self.parent_hash)?;
+		let state = self.call_api_at.state_at(self.parent_hash)?;
 		let storage_changes = self
 			.api
 			.into_storage_changes(&state, parent_hash)
@@ -377,7 +439,7 @@ where
 
 			if let Ok(xt) = <Block as BlockT>::Extrinsic::decode(&mut tx_bytes.as_slice()) {
 				if self.api.execute_in_transaction(|api| { // execute tx to get execution status
-					match apply_transaction_wrapper::<Block, A>(
+					match apply_transaction_wrapper::<Block, C>(
 						api,
 						parent_hash,
 						xt.clone(),
@@ -501,17 +563,14 @@ mod tests {
 
 		let genesis_hash = client.info().best_hash;
 
-		let block = BlockBuilder::new(
-			&client,
-			genesis_hash,
-			client.info().best_number,
-			RecordProof::Yes,
-			Default::default(),
-			&*backend,
-		)
-		.unwrap()
-		.build_with_seed(Default::default(), |_, _| Default::default())
-		.unwrap();
+		let block = BlockBuilderBuilder::new(&client)
+			.on_parent_block(genesis_hash)
+			.with_parent_block_number(0)
+			.enable_proof_recording()
+			.build()
+			.unwrap()
+			.build_with_seed(Default::default(), |_, _| Default::default())
+			.unwrap();
 
 		let proof = block.proof.expect("Proof is build on request");
 		let genesis_state_root = client.header(genesis_hash).unwrap().unwrap().state_root;

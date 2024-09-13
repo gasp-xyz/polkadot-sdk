@@ -136,7 +136,6 @@ impl<Address: TypeInfo, Call: TypeInfo, Signature: TypeInfo, Extra: SignedExtens
 	}
 }
 
-use alloy_primitives::address;
 use alloy_sol_types::{sol, SolStruct};
 /// Metamask EIP712 compatible struct
 use sp_core::hexdisplay::HexDisplay;
@@ -151,25 +150,29 @@ pub use alloy_sol_types::eip712_domain;
 pub use alloy_sol_types::Eip712Domain;
 use codec::alloc::string::{String, ToString};
 
+/// Metamask singer extra data struct
 pub struct MetamaskSigningCtx {
+	/// string call data
 	pub call: String,
+	/// encoded eip712
 	pub eip712: Eip712Domain,
 }
 
+/// Extra context for metamask singer
 pub trait ExtendedCall {
 	fn context(&self) -> Option<MetamaskSigningCtx>;
 }
 
-impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
-	for UncheckedExtrinsic<Address, Call, Signature, Extra>
+impl<LookupSource, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
+	for UncheckedExtrinsic<LookupSource, Call, Signature, Extra>
 where
-	Address: Member + MaybeDisplay,
+	LookupSource: Member + MaybeDisplay,
 	Call: Encode + Member + ExtendedCall,
 	Signature: Member + traits::Verify,
 	<Signature as traits::Verify>::Signer: IdentifyAccount<AccountId = AccountId>,
 	Extra: SignedExtension<AccountId = AccountId>,
 	AccountId: Member + MaybeDisplay,
-	Lookup: traits::Lookup<Source = Address, Target = AccountId>,
+	Lookup: traits::Lookup<Source = LookupSource, Target = AccountId>,
 {
 	type Checked = CheckedExtrinsic<AccountId, Call, Extra>;
 
@@ -469,8 +472,6 @@ mod tests {
 		testing::TestSignature as TestSig,
 		traits::{DispatchInfoOf, IdentityLookup, SignedExtension},
 	};
-	use codec::alloc::string::String;
-	use sp_core::{crypto::UncheckedFrom, keccak_256};
 	use sp_io::hashing::blake2_256;
 
 	type TestContext = IdentityLookup<u64>;

@@ -145,6 +145,7 @@ impl FromEntropy for AccountId20 {
 	}
 }
 
+/// Eth signature verification type
 #[derive(
 	Eq, PartialEq, Clone, Encode, Decode, sp_core::RuntimeDebug, TypeInfo
 )]
