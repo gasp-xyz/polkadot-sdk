@@ -87,6 +87,7 @@ impl pallet_balances::Config for Test {
 	type FreezeIdentifier = ();
 	type MaxFreezes = ();
 	type RuntimeHoldReason = ();
+	type RuntimeFreezeReason = ();
 	type MaxHolds = ();
 }
 parameter_types! {
@@ -389,6 +390,10 @@ mod imbalances {
 	impl<T: Config> Imbalance<T::Balance> for PositiveImbalance<T> {
 		type Opposite = NegativeImbalance<T>;
 
+		fn extract(&mut self, _: T::Balance) -> Self {
+			unimplemented!("PositiveImbalance::extract is not implemented");
+		}
+
 		fn zero() -> Self {
 			unimplemented!("PositiveImbalance::zero is not implemented");
 		}
@@ -448,6 +453,10 @@ mod imbalances {
 
 	impl<T: Config> Imbalance<T::Balance> for NegativeImbalance<T> {
 		type Opposite = PositiveImbalance<T>;
+
+		fn extract(&mut self, _: T::Balance) -> Self {
+			unimplemented!("PositiveImbalance::extract is not implemented");
+		}
 
 		fn zero() -> Self {
 			unimplemented!("NegativeImbalance::zero is not implemented");

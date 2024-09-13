@@ -23,7 +23,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
-use sp_core::{ecdsa, H160};
+use sp_core::{crypto::FromEntropy, ecdsa, H160};
 use crate::traits::IdentifyAccount;
 
 #[cfg(feature = "std")]
@@ -135,6 +135,13 @@ impl std::str::FromStr for AccountId20 {
 		H160::from_str(input)
 			.map(Into::into)
 			.map_err(|_| "invalid hex address.")
+	}
+}
+
+/// Creates an [`AccountId20`] from the input, which should contain at least 20 bytes.
+impl FromEntropy for AccountId20 {
+	fn from_entropy(input: &mut impl codec::Input) -> Result<Self, codec::Error> {
+		Ok(AccountId20(FromEntropy::from_entropy(input)?))
 	}
 }
 

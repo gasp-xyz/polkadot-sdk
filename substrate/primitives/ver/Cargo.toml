@@ -23,7 +23,7 @@ sp-runtime = { version = "24.0.0", default-features = false , path = "../runtime
 sp-keystore = { version = "0.27.0", path = "../../primitives/keystore", default-features=false , optional=true}
 sp-std = { version = "8.0.0", default-features = false, path = "../std" }
 async-trait = { version = "0.1.50", optional = true }
-scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
+scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
 schnorrkel = { version = "0.9.1", features = ["preaudit_deprecated", "u64_backend"], default-features = false}
 
 [features]
