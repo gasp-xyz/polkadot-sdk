@@ -424,7 +424,7 @@ pub mod pallet {
 	}
 
 	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	#[pallet::generate_deposit(pub fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A transaction fee `actual_fee`, of which `tip` was added to the minimum inclusion fee,
 		/// has been paid by `who`.

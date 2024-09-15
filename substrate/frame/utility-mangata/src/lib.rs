@@ -517,7 +517,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			let _ = weight; // Explicitly don't check the the weight witness.
-			
+
 			let res = call.dispatch_bypass_filter(frame_system::RawOrigin::Root.into());
 			res.map(|_| ()).map_err(|e| e.error)
 		}

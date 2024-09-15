@@ -1178,6 +1178,42 @@ fn vested_transfer_less_than_existential_deposit_fails() {
 }
 
 #[test]
+fn remove_vesting_schedule() {
+	ExtBuilder::default().existential_deposit(ED).build().execute_with(|| {
+		assert_eq!(Balances::free_balance(&3), 256 * 30);
+		assert_eq!(Balances::free_balance(&4), 256 * 40);
+		// Account 4 should not have any vesting yet.
+		assert_eq!(Vesting::vesting(&4, TKN), None);
+		// Make the schedule for the new transfer.
+		let new_vesting_schedule = VestingInfo::new(
+			ED * 5,
+			(ED * 5) / 20, // Vesting over 20 blocks
+			10,
+		);
+		assert_ok!(Vesting::do_vested_transfer(3u64, 4u64, new_vesting_schedule, TKN));
+		// Now account 4 should have vesting.
+		assert_eq!(Vesting::vesting(&4, TKN).unwrap(), vec![new_vesting_schedule]);
+		// Account 4 has 5 * 256 locked.
+		assert_eq!(Vesting::vesting_balance(&4, TKN), Some(256 * 5));
+		// Verify only root can call.
+		assert_noop!(Vesting::force_remove_vesting_schedule(Some(4).into(), TKN,  4, 0), BadOrigin);
+		// Verify that root can remove the schedule.
+		assert_ok!(Vesting::force_remove_vesting_schedule(RawOrigin::Root.into(), TKN, 4, 0));
+		// Verify that last event is VestingCompleted.
+		System::assert_last_event(Event::VestingCompleted { account: 4, token_id: TKN }.into());
+		// Appropriate storage is cleaned up.
+		assert!(!<VestingStorage<Test>>::contains_key(4, TKN));
+		// Check the vesting balance is zero.
+		assert_eq!(Vesting::vesting(&4, TKN), None);
+		// Verifies that trying to remove a schedule when it doesnt exist throws error.
+		assert_noop!(
+			Vesting::force_remove_vesting_schedule(RawOrigin::Root.into(), TKN, 4, 0),
+			Error::<Test>::InvalidScheduleParams
+		);
+	});
+}
+
+#[test]
 fn lock_tokens_works() {
 	ExtBuilder::default().existential_deposit(ED).build().execute_with(|| {
 		let now = <frame_system::Pallet<Test>>::block_number();
