@@ -1,12 +1,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-use sp_api::{Encode, HashT};
 
-use sp_runtime::traits::BlakeTwo256;
-
-use sp_std::{collections::btree_map::BTreeMap, convert::TryInto};
+use codec::Encode;
 
 use sp_core::H256;
-use sp_std::{collections::vec_deque::VecDeque, vec::Vec};
+use sp_runtime::traits::{BlakeTwo256, Hash as HashT};
+use sp_std::{
+	collections::{btree_map::BTreeMap, vec_deque::VecDeque},
+	convert::TryInto,
+	vec::Vec,
+};
 
 pub struct Xoshiro256PlusPlus {
 	s: [u64; 4],

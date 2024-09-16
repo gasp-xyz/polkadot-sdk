@@ -428,7 +428,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A transaction fee `actual_fee`, of which `tip` was added to the minimum inclusion fee,
 		/// has been paid by `who`.
-		TransactionFeePaid { who: T::AccountId, actual_fee: BalanceOf<T>, tip: BalanceOf<T> },
+		TransactionFeePaid { who: T::AccountId, token_id: u32, actual_fee: BalanceOf<T>, tip: BalanceOf<T> },
 	}
 
 	#[pallet::hooks]
@@ -876,7 +876,9 @@ where
 			T::OnChargeTransaction::correct_and_deposit_fee(
 				&who, info, post_info, actual_fee, tip, imbalance,
 			)?;
-			Pallet::<T>::deposit_event(Event::<T>::TransactionFeePaid { who, actual_fee, tip });
+			// removed the event due to gasless
+			// todo should try out the skip-feeless-payment ?
+			// Pallet::<T>::deposit_event(Event::<T>::TransactionFeePaid { who, actual_fee, tip });
 		}
 		Ok(())
 	}

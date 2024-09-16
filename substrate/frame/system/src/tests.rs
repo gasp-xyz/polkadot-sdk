@@ -19,7 +19,7 @@ use crate::*;
 use frame_support::{
 	assert_err, assert_noop, assert_ok,
 	dispatch::{Pays, PostDispatchInfo, WithPostDispatchInfo},
-	traits::WhitelistedStorageKeys,
+	traits::{OnRuntimeUpgrade, WhitelistedStorageKeys},
 };
 use std::collections::BTreeSet;
 
@@ -903,4 +903,27 @@ fn do_not_allow_for_storing_txs_when_queue_is_full() {
 		System::finalize();
 		System::enqueue_txs(RuntimeOrigin::none(), dummy_txs.clone()).unwrap();
 	});
+}
+
+#[docify::export]
+#[test]
+fn last_runtime_upgrade_spec_version_usage() {
+	struct Migration;
+
+	impl OnRuntimeUpgrade for Migration {
+		fn on_runtime_upgrade() -> Weight {
+			// Ensure to compare the spec version against some static version to prevent applying
+			// the same migration multiple times.
+			//
+			// `1337` here is the spec version of the runtime running on chain. If there is maybe
+			// a runtime upgrade in the pipeline of being applied, you should use the spec version
+			// of this upgrade.
+			if System::last_runtime_upgrade_spec_version() > 1337 {
+				return Weight::zero();
+			}
+
+			// Do the migration.
+			Weight::zero()
+		}
+	}
 }

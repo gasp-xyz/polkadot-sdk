@@ -111,6 +111,10 @@ type RuntimeExecutive =
 
 use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 
+impl ExtendedCall for RuntimeCall {
+		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
+}
+
 impl_runtime_apis! {
 	impl apis::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {

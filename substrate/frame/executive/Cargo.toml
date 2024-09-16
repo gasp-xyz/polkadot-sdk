@@ -19,14 +19,14 @@ codec = { package = "parity-scale-codec", version = "3.6.1", default-features = 
 ] }
 log = { version = "0.4.17", default-features = false }
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
-frame-support = { path = "../support", default-features = false}
-frame-system = { path = "../system", default-features = false}
+frame-support = { path = "../support", default-features = false }
+frame-system = { path = "../system", default-features = false }
 frame-try-runtime = { path = "../try-runtime", default-features = false, optional = true }
-sp-core = { path = "../../primitives/core", default-features = false}
-sp-io = { path = "../../primitives/io", default-features = false}
-sp-runtime = { path = "../../primitives/runtime", default-features = false}
-sp-std = { path = "../../primitives/std", default-features = false}
-sp-tracing = { path = "../../primitives/tracing", default-features = false}
+sp-core = { path = "../../primitives/core", default-features = false }
+sp-io = { path = "../../primitives/io", default-features = false }
+sp-runtime = { path = "../../primitives/runtime", default-features = false }
+sp-std = { path = "../../primitives/std", default-features = false }
+sp-tracing = { path = "../../primitives/tracing", default-features = false }
 schnorrkel = { version = "0.9.1", features = ["preaudit_deprecated", "u64_backend"], default-features = false }
 merlin = { version = "2.0", default-features = false }
 extrinsic-shuffler = { default-features = false, path = '../../primitives/shuffler'}
@@ -44,8 +44,8 @@ sp-keystore = { path = "../../primitives/keystore" }
 sp-ver = { path = "../../primitives/ver" , features=["helpers"]}
 
 [features]
-default = [ "std" ]
-with-tracing = [ "sp-tracing/with-tracing" ]
+default = ["std"]
+with-tracing = ["sp-tracing/with-tracing"]
 std = [
 	"codec/std",
 	"log/std",

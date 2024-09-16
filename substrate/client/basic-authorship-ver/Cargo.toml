@@ -27,6 +27,7 @@ sp-api = { path = "../../primitives/api" }
 sp-blockchain = { path = "../../primitives/blockchain" }
 sp-consensus = { path = "../../primitives/consensus/common" }
 sp-core = { path = "../../primitives/core" }
+sp-trie = { path = "../../primitives/trie" }
 sp-inherents = { path = "../../primitives/inherents" }
 sp-runtime = { path = "../../primitives/runtime" }
 ver-api = { path="../../primitives/ver-api" }

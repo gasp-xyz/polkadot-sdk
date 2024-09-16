@@ -15,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 array-bytes = "6.1"
 chrono = "0.4"
-clap = { version = "4.4.6", features = ["derive"] }
+clap = { version = "4.4.10", features = ["derive"] }
 codec = { package = "parity-scale-codec", version = "3.6.1" }
 comfy-table = { version = "7.0.1", default-features = false }
 handlebars = "4.2.2"
@@ -26,7 +26,7 @@ linked-hash-map = "0.5.4"
 log = "0.4.17"
 rand = { version = "0.8.4", features = ["small_rng"] }
 rand_pcg = "0.3.1"
-serde = "1.0.188"
+serde = "1.0.193"
 serde_json = "1.0.108"
 thiserror = "1.0.48"
 thousands = "0.2.0"
@@ -39,11 +39,11 @@ sc-block-builder-ver = { path = "../../../client/block-builder-ver" }
 sp-consensus-aura = { default-features = false, path = "../../../primitives/consensus/aura" }
 ver-api = { path = "../../../primitives/ver-api" }
 sp-consensus = { path = "../../../primitives/consensus/common" }
-sc-cli = { path = "../../../client/cli", default-features = false}
+sc-cli = { path = "../../../client/cli", default-features = false }
 sc-client-api = { path = "../../../client/api" }
-sc-client-db = { path = "../../../client/db", default-features = false}
+sc-client-db = { path = "../../../client/db", default-features = false }
 sc-executor = { path = "../../../client/executor" }
-sc-service = { path = "../../../client/service", default-features = false}
+sc-service = { path = "../../../client/service", default-features = false }
 sc-sysinfo = { path = "../../../client/sysinfo" }
 sp-api = { path = "../../../primitives/api" }
 sp-blockchain = { path = "../../../primitives/blockchain" }
@@ -62,7 +62,7 @@ gethostname = "0.2.3"
 futures = "0.3.21"
 
 [features]
-default = [ "rocksdb" ]
+default = ["rocksdb"]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
@@ -71,4 +71,4 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
-rocksdb = [ "sc-cli/rocksdb", "sc-client-db/rocksdb" ]
+rocksdb = ["sc-cli/rocksdb", "sc-client-db/rocksdb"]

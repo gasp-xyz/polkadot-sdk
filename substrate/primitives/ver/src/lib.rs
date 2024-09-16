@@ -11,7 +11,7 @@ use sp_core::hexdisplay::AsBytesRef;
 #[cfg(feature = "helpers")]
 use sp_core::sr25519;
 #[cfg(feature = "helpers")]
-pub use sp_core::sr25519::vrf::{VrfOutput, VrfProof, VrfSignData, VrfSignature, VrfTranscript};
+pub use sp_core::sr25519::vrf::{VrfPreOutput, VrfProof, VrfSignData, VrfSignature, VrfTranscript};
 use sp_core::ShufflingSeed;
 use sp_inherents::{InherentData, InherentIdentifier};
 #[cfg(feature = "helpers")]
@@ -59,7 +59,7 @@ pub fn calculate_next_seed_from_bytes<T: Keystore + ?Sized>(
 		.ok()
 		.flatten()
 		.map(|sig| ShufflingSeed {
-			seed: H256::from_slice(sig.output.encode().as_bytes_ref()),
+			seed: H256::from_slice(sig.pre_output.encode().as_bytes_ref()),
 			proof: H512::from_slice(sig.proof.encode().as_bytes_ref()),
 		})
 }
