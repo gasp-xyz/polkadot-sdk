@@ -32,17 +32,17 @@ use sp_api::{
 	ApiExt, ApiRef, CallApiAt, Core, ProvideRuntimeApi, StorageChanges, StorageProof,
 	TransactionOutcome,
 };
+pub use sp_block_builder::BlockBuilder as BlockBuilderApi;
 use sp_blockchain::{ApplyExtrinsicFailed, Error, HeaderBackend};
 use sp_core::{traits::CallContext, ShufflingSeed};
 use sp_runtime::{
 	legacy,
 	traits::{BlakeTwo256, Block as BlockT, Hash, HashingFor, Header as HeaderT, NumberFor, One},
-	Digest,
+	Digest, ExtrinsicInclusionMode,
 };
-use std::marker::PhantomData;
-
-pub use sp_block_builder::BlockBuilder as BlockBuilderApi;
+use sp_trie::proof_size_extension::ProofSizeExt;
 use sp_ver::extract_inherent_data;
+use std::marker::PhantomData;
 use ver_api::VerApi;
 
 /// A builder for creating an instance of [`BlockBuilder`].
@@ -227,6 +227,7 @@ pub struct BlockBuilder<'a, Block: BlockT, C: ProvideRuntimeApi<Block> + 'a> {
 	parent_hash: Block::Hash,
 	/// The estimated size of the block header.
 	estimated_header_size: usize,
+	extrinsic_inclusion_mode: ExtrinsicInclusionMode,
 }
 
 impl<'a, Block, C> BlockBuilder<'a, Block, C>
@@ -261,11 +262,25 @@ where
 
 		if record_proof {
 			api.record_proof();
+			let recorder = api
+				.proof_recorder()
+				.expect("Proof recording is enabled in the line above; qed.");
+			api.register_extension(ProofSizeExt::new(recorder));
 		}
 
 		api.set_call_context(CallContext::Onchain);
 
-		api.initialize_block(parent_hash, &header)?;
+		let core_version = api
+			.api_version::<dyn Core<Block>>(parent_hash)?
+			.ok_or_else(|| Error::VersionInvalid("Core".to_string()))?;
+
+		let extrinsic_inclusion_mode = if core_version >= 5 {
+			api.initialize_block(parent_hash, &header)?
+		} else {
+			#[allow(deprecated)]
+			api.initialize_block_before_version_5(parent_hash, &header)?;
+			ExtrinsicInclusionMode::AllExtrinsics
+		};
 
 		Ok(Self {
 			parent_hash,
@@ -274,7 +289,13 @@ where
 			api,
 			estimated_header_size,
 			call_api_at,
+			extrinsic_inclusion_mode,
 		})
+	}
+
+	/// The extrinsic inclusion mode of the runtime for this block.
+	pub fn extrinsic_inclusion_mode(&self) -> ExtrinsicInclusionMode {
+		self.extrinsic_inclusion_mode
 	}
 
 	/// Push onto the block's list of extrinsics.
@@ -365,7 +386,8 @@ where
 			.unwrap();
 
 		for (_, valid_tx) in valid_txs {
-			let _ = self.api
+			let _ = self
+				.api
 				.account_extrinsic_dispatch_weight(
 					parent_hash,
 					Default::default(),
@@ -553,12 +575,13 @@ mod tests {
 	use sp_blockchain::HeaderBackend;
 	use sp_core::Blake2Hasher;
 	use sp_state_machine::Backend;
-	use substrate_test_runtime_client::{DefaultTestClientBuilderExt, TestClientBuilderExt};
+	use substrate_test_runtime_client::{
+		runtime::ExtrinsicBuilder, DefaultTestClientBuilderExt, TestClientBuilderExt,
+	};
 
 	#[test]
 	fn block_building_storage_proof_does_not_include_runtime_by_default() {
 		let builder = substrate_test_runtime_client::TestClientBuilder::new();
-		let backend = builder.backend();
 		let client = builder.build();
 
 		let genesis_hash = client.info().best_hash;
@@ -583,5 +606,58 @@ mod tests {
 			.storage(&sp_core::storage::well_known_keys::CODE)
 			.unwrap_err()
 			.contains("Database missing expected key"),);
+	}
+
+	#[test]
+	fn failing_extrinsic_rolls_back_changes_in_storage_proof() {
+		let builder = substrate_test_runtime_client::TestClientBuilder::new();
+		let client = builder.build();
+		let genesis_hash = client.info().best_hash;
+
+		let mut block_builder = BlockBuilderBuilder::new(&client)
+			.on_parent_block(genesis_hash)
+			.with_parent_block_number(0)
+			.enable_proof_recording()
+			.build()
+			.unwrap();
+
+		block_builder.push(ExtrinsicBuilder::new_read_and_panic(8).build()).unwrap_err();
+
+		let block = block_builder
+			.build_with_seed(Default::default(), |_, _| Default::default())
+			.unwrap();
+
+		let proof_with_panic = block.proof.expect("Proof is build on request").encoded_size();
+
+		let mut block_builder = BlockBuilderBuilder::new(&client)
+			.on_parent_block(genesis_hash)
+			.with_parent_block_number(0)
+			.enable_proof_recording()
+			.build()
+			.unwrap();
+
+		block_builder.push(ExtrinsicBuilder::new_read(8).build()).unwrap();
+
+		let block = block_builder
+			.build_with_seed(Default::default(), |_, _| Default::default())
+			.unwrap();
+
+		let proof_without_panic = block.proof.expect("Proof is build on request").encoded_size();
+
+		let block = BlockBuilderBuilder::new(&client)
+			.on_parent_block(genesis_hash)
+			.with_parent_block_number(0)
+			.enable_proof_recording()
+			.build()
+			.unwrap()
+			.build_with_seed(Default::default(), |_, _| Default::default())
+			.unwrap();
+
+		let proof_empty_block = block.proof.expect("Proof is build on request").encoded_size();
+
+		// Ensure that we rolled back the changes of the panicked transaction.
+		assert!(proof_without_panic > proof_with_panic);
+		assert!(proof_without_panic > proof_empty_block);
+		assert_eq!(proof_empty_block, proof_with_panic);
 	}
 }

@@ -54,14 +54,15 @@
 
 //! Support code for the runtime. A set of test accounts.
 
-use lazy_static::lazy_static;
 pub use sp_core::ecdsa;
 use sp_core::{
 	ecdsa::{Pair, Public, Signature},
-	ByteArray, Pair as PairT,
+	hex2array, ByteArray, Pair as PairT,
 };
 use sp_runtime::AccountId20;
-use std::{collections::HashMap, ops::Deref};
+
+extern crate alloc;
+use alloc::{fmt, format, str::FromStr, string::String, vec::Vec};
 
 /// Set of test accounts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::Display, strum::EnumIter)]
@@ -99,13 +100,15 @@ impl Keyring {
 		Public::from(self).into()
 	}
 
+	#[cfg(feature = "std")]
 	pub fn sign(self, msg: &[u8]) -> Signature {
-		self.pair().sign(msg)
+		Pair::from(self).sign(msg)
 	}
 
 	pub fn pair(self) -> Pair {
-        // Naked unwrap here!!
-		Pair::from_seed_slice(PRIVATE_KEYS.get(&self).unwrap()).unwrap()
+		// Naked unwrap here!!
+		let seed = seed(self);
+		Pair::from_seed_slice(&seed).expect("static values are known good; qed")
 	}
 
 	/// Returns an iterator over all test accounts.
@@ -114,13 +117,12 @@ impl Keyring {
 	}
 
 	pub fn public(self) -> Public {
-		self.pair().public()
+		Public::from(self)
 	}
 
 	pub fn to_seed(self) -> Vec<u8> {
-		Pair::from_seed_slice(PRIVATE_KEYS.get(&self).unwrap()).unwrap().to_raw_vec()
+		seed(self).to_vec()
 	}
-
 }
 
 impl From<Keyring> for &'static str {
@@ -145,16 +147,16 @@ impl From<Keyring> for sp_runtime::account::EthereumSigner {
 #[derive(Debug)]
 pub struct ParseKeyringError;
 
-impl std::fmt::Display for ParseKeyringError {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ParseKeyringError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "ParseKeyringError")
 	}
 }
 
-impl std::str::FromStr for Keyring {
+impl FromStr for Keyring {
 	type Err = ParseKeyringError;
 
-	fn from_str(s: &str) -> Result<Self, <Self as std::str::FromStr>::Err> {
+	fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
 		match s {
 			"Alith" => Ok(Keyring::Alith),
 			"Baltathar" => Ok(Keyring::Baltathar),
@@ -167,19 +169,21 @@ impl std::str::FromStr for Keyring {
 	}
 }
 
-lazy_static! {
-    static ref PRIVATE_KEYS: HashMap<Keyring, [u8; 32]> = HashMap::from([
-        (Keyring::Alith, array_bytes::hex2array("0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133").unwrap()),
-        (Keyring::Baltathar, array_bytes::hex2array("0x8075991ce870b93a8870eca0c0f91913d12f47948ca0fd25b49c6fa7cdbeee8b").unwrap()),
-        (Keyring::Charleth, array_bytes::hex2array("0x0b6e18cafb6ed99687ec547bd28139cafdd2bffe70e6b688025de6b445aa5c5b").unwrap()),
-        (Keyring::Dorothy, array_bytes::hex2array("0x39539ab1876910bbf3a223d84a29e28f1cb4e2e456503e7e91ed39b2e7223d68").unwrap()),
-        (Keyring::Ethan, array_bytes::hex2array("0x7dce9bc8babb68fec1409be38c8e1a52650206a7ed90ff956ae8a6d15eeaaef4").unwrap()),
-        (Keyring::Faith, array_bytes::hex2array("0xb9d2ea9a615f3165812e8d44de0d24da9bbd164b65c4f0573e1ce2c8dbd9c8df").unwrap()),
-    ]);
-	static ref PAIRS: HashMap<Keyring, Pair> =
-		Keyring::iter().map(|i| (i, i.pair())).collect();
-	static ref PUBLIC_KEYS: HashMap<Keyring, Public> =
-        PAIRS.iter().map(|(&name, pair)| (name, pair.public())).collect();
+fn seed(keyring: Keyring) -> [u8; 32] {
+	match keyring {
+		Keyring::Alith =>
+			hex2array!("5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133"),
+		Keyring::Baltathar =>
+			hex2array!("8075991ce870b93a8870eca0c0f91913d12f47948ca0fd25b49c6fa7cdbeee8b"),
+		Keyring::Charleth =>
+			hex2array!("0b6e18cafb6ed99687ec547bd28139cafdd2bffe70e6b688025de6b445aa5c5b"),
+		Keyring::Dorothy =>
+			hex2array!("39539ab1876910bbf3a223d84a29e28f1cb4e2e456503e7e91ed39b2e7223d68"),
+		Keyring::Ethan =>
+			hex2array!("7dce9bc8babb68fec1409be38c8e1a52650206a7ed90ff956ae8a6d15eeaaef4"),
+		Keyring::Faith =>
+			hex2array!("b9d2ea9a615f3165812e8d44de0d24da9bbd164b65c4f0573e1ce2c8dbd9c8df"),
+	}
 }
 
 impl From<Keyring> for AccountId20 {
@@ -190,7 +194,7 @@ impl From<Keyring> for AccountId20 {
 
 impl From<Keyring> for Public {
 	fn from(k: Keyring) -> Self {
-		*(*PUBLIC_KEYS).get(&k).unwrap()
+		Public::from_raw(k.into())
 	}
 }
 
@@ -202,32 +206,20 @@ impl From<Keyring> for Pair {
 
 impl From<Keyring> for [u8; 33] {
 	fn from(k: Keyring) -> Self {
-		*(*PUBLIC_KEYS).get(&k).unwrap().as_array_ref()
-	}
-}
-
-impl From<Keyring> for &'static [u8; 33] {
-	fn from(k: Keyring) -> Self {
-		(*PUBLIC_KEYS).get(&k).unwrap().as_array_ref()
-	}
-}
-
-impl AsRef<[u8; 33]> for Keyring {
-	fn as_ref(&self) -> &[u8; 33] {
-		(*PUBLIC_KEYS).get(self).unwrap().as_array_ref()
-	}
-}
-
-impl AsRef<Public> for Keyring {
-	fn as_ref(&self) -> &Public {
-		(*PUBLIC_KEYS).get(self).unwrap()
-	}
-}
-
-impl Deref for Keyring {
-	type Target = [u8; 33];
-	fn deref(&self) -> &[u8; 33] {
-		(*PUBLIC_KEYS).get(self).unwrap().as_array_ref()
+		match k {
+			Keyring::Alith =>
+				hex2array!("02509540919faacf9ab52146c9aa40db68172d83777250b28e4679176e49ccdd9f"),
+			Keyring::Baltathar =>
+				hex2array!("033bc19e36ff1673910575b6727a974a9abd80c9a875d41ab3e2648dbfb9e4b518"),
+			Keyring::Charleth =>
+				hex2array!("0234637bdc0e89b5d46543bcbf8edff329d2702bc995e27e9af4b1ba009a3c2a5e"),
+			Keyring::Dorothy =>
+				hex2array!("02a00d60b2b408c2a14c5d70cdd2c205db8985ef737a7e55ad20ea32cc9e7c417c"),
+			Keyring::Ethan =>
+				hex2array!("025cdc005b752651cd3f728fb9192182acb3a9c89e19072cbd5b03f3ee1f1b3ffa"),
+			Keyring::Faith =>
+				hex2array!("037964b6c9d546da4646ada28a99e34acaa1d14e7aba861a9055f9bd200c8abf74"),
+		}
 	}
 }
 
@@ -253,5 +245,9 @@ mod tests {
 			b"I am Alith!",
 			&Keyring::Baltathar.public(),
 		));
+	}
+	#[test]
+	fn verify_static_public_keys() {
+		assert!(Keyring::iter().all(|k| { k.pair().public().as_ref() == <[u8; 33]>::from(k) }));
 	}
 }

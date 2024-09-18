@@ -42,7 +42,7 @@ use sp_core::{traits::SpawnNamed, ShufflingSeed};
 use sp_inherents::InherentData;
 use sp_runtime::{
 	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT},
-	Digest, Percent, SaturatedConversion,
+	Digest, ExtrinsicInclusionMode, Percent, SaturatedConversion,
 };
 use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 use ver_api::VerApi;
@@ -90,6 +90,22 @@ pub struct ProposerFactory<A, C, PR> {
 	include_proof_in_block_size_estimation: bool,
 	/// phantom member to pin the `ProofRecording` type.
 	_phantom: PhantomData<PR>,
+}
+
+impl<A, C, PR> Clone for ProposerFactory<A, C, PR> {
+	fn clone(&self) -> Self {
+		Self {
+			spawn_handle: self.spawn_handle.clone(),
+			client: self.client.clone(),
+			transaction_pool: self.transaction_pool.clone(),
+			metrics: self.metrics.clone(),
+			default_block_size_limit: self.default_block_size_limit,
+			soft_deadline_percent: self.soft_deadline_percent,
+			telemetry: self.telemetry.clone(),
+			include_proof_in_block_size_estimation: self.include_proof_in_block_size_estimation,
+			_phantom: self._phantom,
+		}
+	}
 }
 
 impl<A, C> ProposerFactory<A, C, DisableProofRecording> {
@@ -392,16 +408,23 @@ where
 
 		let seed = self.apply_inherents(&mut block_builder, inherent_data)?;
 
-		// TODO call `after_inherents` and check if we should apply extrinsincs here
-		// <https://github.com/paritytech/substrate/pull/14275/>
-
 		// apply_extrinsics
-		let (built_block, end_reason) =
-			self.apply_extrinsic(block_builder, deadline, block_size_limit, seed).await?;
+		let mode = block_builder.extrinsic_inclusion_mode();
+		let (built_block, end_reason) = match mode {
+			ExtrinsicInclusionMode::AllExtrinsics =>
+				self.apply_extrinsic(block_builder, deadline, block_size_limit, seed).await?,
+			ExtrinsicInclusionMode::OnlyInherents => (
+				block_builder.build_with_seed(seed.clone(), |&parent_hash, api| {
+					api.store_seed(parent_hash, seed.seed).unwrap();
+					vec![]
+				}).unwrap(),
+				EndProposingReason::TransactionForbidden,
+			),
+		};
 		let (block, storage_changes, proof) = built_block.into_inner();
+		let block_took = block_timer.elapsed();
 		// end apply_extrinsics
 
-		let block_took = block_timer.elapsed();
 		debug!(target: LOG_TARGET,"created block {:?}", block);
 		debug!(target: LOG_TARGET,"created block with hash {}", block.header().hash());
 

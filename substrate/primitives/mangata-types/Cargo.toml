@@ -7,10 +7,10 @@ edition = "2018"
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
-serde = { version = "1.0.188", default-features = false, features = ["derive", "alloc"], optional = true }
+serde = { default-features = false, features = ["derive", "alloc"], optional = true, workspace = true }
 
-sp-core = { version = "21.0.0", default-features = false, path = "../core" }
-sp-runtime = { version = "24.0.0", default-features = false, path = "../runtime" }
+sp-core = { version = "28.0.0", default-features = false, path = "../core" }
+sp-runtime = { version = "31.0.1", default-features = false, path = "../runtime" }
 sp-std = { default-features = false, path = "../std" }
 
 [features]

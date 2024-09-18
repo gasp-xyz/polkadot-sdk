@@ -27,7 +27,7 @@ pub mod substrate_test_pallet;
 
 use codec::{Decode, Encode};
 use frame_support::{
-	construct_runtime,
+	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
 	genesis_builder_helper::{build_config, create_default_config},
 	parameter_types,
@@ -61,7 +61,7 @@ use sp_runtime::{
 	create_runtime_str, impl_opaque_keys,
 	traits::{BlakeTwo256, Block as BlockT, DispatchInfoOf, NumberFor, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
-	ApplyExtrinsicResult, Perbill,
+	ApplyExtrinsicResult, ExtrinsicInclusionMode, Perbill,
 };
 #[cfg(any(feature = "std", test))]
 use sp_version::NativeVersion;
@@ -350,6 +350,7 @@ parameter_types! {
 		.build_or_panic();
 }
 
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
 impl frame_system::pallet::Config for Runtime {
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = RuntimeBlockWeights;
@@ -405,7 +406,6 @@ impl pallet_balances::Config for Runtime {
 	type MaxFreezes = ();
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type MaxHolds = ConstU32<1>;
 }
 
 impl substrate_test_pallet::Config for Runtime {}
@@ -488,9 +488,9 @@ impl_runtime_apis! {
 			Executive::execute_block(block);
 		}
 
-		fn initialize_block(header: &<Block as BlockT>::Header) {
+		fn initialize_block(header: &<Block as BlockT>::Header) -> ExtrinsicInclusionMode {
 			log::trace!(target: LOG_TARGET, "initialize_block: {header:#?}");
-			Executive::initialize_block(header);
+			Executive::initialize_block(header)
 		}
 	}
 
@@ -532,6 +532,13 @@ impl_runtime_apis! {
 
 		fn account_extrinsic_dispatch_weight(consumed: ver_api::ConsumedWeight, tx: <Block as BlockT>::Extrinsic) -> Result<ver_api::ConsumedWeight, ()> {
 			Ok(Default::default())
+		}
+	}
+
+	impl ver_api::VerNonceApi<Block, AccountId> for Runtime {
+		fn enqueued_txs_count(acc: AccountId) -> u64 {
+
+			System::enqueued_txs_count(&acc) as u64
 		}
 	}
 
@@ -893,11 +900,11 @@ pub mod storage_key_generator {
 	}
 
 	fn concat_hashes(input: &Vec<&[u8]>) -> String {
-		input.iter().map(|s| sp_core::hashing::twox_128(s)).map(hex).collect()
+		input.iter().map(|s| sp_crypto_hashing::twox_128(s)).map(hex).collect()
 	}
 
 	fn twox_64_concat(x: &[u8]) -> Vec<u8> {
-		sp_core::hashing::twox_64(x).iter().chain(x.iter()).cloned().collect::<Vec<_>>()
+		sp_crypto_hashing::twox_64(x).iter().chain(x.iter()).cloned().collect()
 	}
 
 	/// Generate the hashed storage keys from the raw literals. These keys are expected to be be in
@@ -939,7 +946,7 @@ pub mod storage_key_generator {
 				AccountKeyring::Charlie.public().to_vec(),
 			])
 			.map(|pubkey| {
-				sp_core::hashing::blake2_128(&pubkey)
+				sp_crypto_hashing::blake2_128(&pubkey)
 					.iter()
 					.chain(pubkey.iter())
 					.cloned()
@@ -1345,7 +1352,7 @@ mod tests {
 			let r = Vec::<u8>::decode(&mut &r[..]).unwrap();
 			let json = String::from_utf8(r.into()).expect("returned value is json. qed.");
 
-			let expected = r#"{"system":{},"babe":{"authorities":[],"epochConfig":null},"substrateTest":{"authorities":[]},"balances":{"balances":[]}}"#;
+			let expected = r#"{"system":{},"babe":{"authorities":[],"epochConfig":{"c":[1,4],"allowed_slots":"PrimaryAndSecondaryVRFSlots"}},"substrateTest":{"authorities":[]},"balances":{"balances":[]}}"#;
 			assert_eq!(expected.to_string(), json);
 		}
 
@@ -1463,7 +1470,7 @@ mod tests {
 				}
 			});
 
-			json_patch::merge(&mut default_config, &patch);
+			sc_chain_spec::json_merge(&mut default_config, patch);
 
 			// Build genesis config using custom json:
 			let mut t = BasicExternalities::new_empty();
