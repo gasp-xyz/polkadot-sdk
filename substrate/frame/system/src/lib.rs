@@ -106,7 +106,7 @@ use sp_runtime::{
 	traits::{
 		self, AtLeast32Bit, BadOrigin, BlockNumberProvider, Bounded, CheckEqual, Dispatchable,
 		Hash, Header, Lookup, LookupError, MaybeDisplay, MaybeSerializeDeserialize, Member, One,
-	    SaturatedConversion, Saturating, SimpleBitOps, StaticLookup, Zero,
+		SaturatedConversion, Saturating, SimpleBitOps, StaticLookup, Zero,
 	},
 	transaction_validity::{
 		InvalidTransaction, TransactionLongevity, TransactionSource, TransactionValidity,
@@ -779,13 +779,13 @@ pub mod pallet {
 			ensure_signed(origin)?;
 
 			if !task.is_valid() {
-				return Err(Error::<T>::InvalidTask.into())
+				return Err(Error::<T>::InvalidTask.into());
 			}
 
 			Self::deposit_event(Event::TaskStarted { task: task.clone() });
 			if let Err(err) = task.run() {
 				Self::deposit_event(Event::TaskFailed { task, err });
-				return Err(Error::<T>::FailedTask.into())
+				return Err(Error::<T>::FailedTask.into());
 			}
 
 			// Emit a success event, if your design includes events for this pallet.
@@ -1116,6 +1116,9 @@ pub mod pallet {
 						propagate: true,
 					})
 				}
+			}
+			if let Call::enqueue_txs { .. } = call {
+				return Ok(ValidTransaction::default());
 			}
 			Err(InvalidTransaction::Call.into())
 		}
@@ -1769,7 +1772,7 @@ impl<T: Config> Pallet<T> {
 
 		// Don't populate events on genesis.
 		if block_number.is_zero() {
-			return
+			return;
 		}
 
 		let phase = ExecutionPhase::<T>::get().unwrap_or_default();
@@ -1918,7 +1921,7 @@ impl<T: Config> Pallet<T> {
 
 		for (nr, index, txs) in queue.iter_mut() {
 			if len == 0 {
-				break
+				break;
 			}
 
 			if let Some(id) = index {
@@ -1935,7 +1938,7 @@ impl<T: Config> Pallet<T> {
 				log::debug!( target: "runtime::ver", "fetched {} tx from block {}", count, nr.clone().saturated_into::<u32>());
 			} else {
 				log::debug!( target: "runtime::ver", "unshuffled block found {}", nr.clone().saturated_into::<u32>());
-				break
+				break;
 			}
 		}
 
@@ -2256,7 +2259,7 @@ impl<T: Config> Pallet<T> {
 	/// of the old and new runtime has the same spec name and that the spec version is increasing.
 	pub fn can_set_code(code: &[u8]) -> Result<(), sp_runtime::DispatchError> {
 		if T::MultiBlockMigrator::ongoing() {
-			return Err(Error::<T>::MultiBlockMigrationsOngoing.into())
+			return Err(Error::<T>::MultiBlockMigrationsOngoing.into());
 		}
 
 		let current_version = T::Version::get();
