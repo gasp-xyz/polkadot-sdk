@@ -36,7 +36,6 @@ use frame_support::assert_noop;
 use keyring::Sr25519Keyring;
 use parity_scale_codec::DecodeAll;
 use primitives::{
-	v5::{Assignment, ParasEntry},
 	BlockNumber, CandidateCommitments, CandidateDescriptor, CollatorId,
 	CompactStatement as Statement, Hash, SignedAvailabilityBitfield, SignedStatement,
 	ValidationCode, ValidatorId, ValidityAttestation, PARACHAIN_KEY_TYPE_ID,
@@ -48,10 +47,10 @@ use test_helpers::{dummy_collator, dummy_collator_signature, dummy_validation_co
 
 fn default_config() -> HostConfiguration<BlockNumber> {
 	let mut config = HostConfiguration::default();
-	config.on_demand_cores = 1;
+	config.scheduler_params.num_cores = 1;
 	config.max_code_size = 0b100000;
 	config.max_head_data_size = 0b100000;
-	config.group_rotation_frequency = u32::MAX;
+	config.scheduler_params.group_rotation_frequency = u32::MAX;
 	config
 }
 
@@ -121,6 +120,7 @@ pub(crate) fn back_candidate(
 	keystore: &KeystorePtr,
 	signing_context: &SigningContext,
 	kind: BackingKind,
+	core_index: Option<CoreIndex>,
 ) -> BackedCandidate {
 	let mut validator_indices = bitvec::bitvec![u8, BitOrderLsb0; 0; group.len()];
 	let threshold = effective_minimum_backing_votes(
@@ -156,15 +156,20 @@ pub(crate) fn back_candidate(
 		validity_votes.push(ValidityAttestation::Explicit(signature).into());
 	}
 
-	let backed = BackedCandidate { candidate, validity_votes, validator_indices };
+	let backed =
+		BackedCandidate::new(candidate, validity_votes, validator_indices.clone(), core_index);
 
-	let successfully_backed =
-		primitives::check_candidate_backing(&backed, signing_context, group.len(), |i| {
-			Some(validators[group[i].0 as usize].public().into())
-		})
-		.ok()
-		.unwrap_or(0) >=
-			threshold;
+	let successfully_backed = primitives::check_candidate_backing(
+		backed.candidate().hash(),
+		backed.validity_votes(),
+		validator_indices.as_bitslice(),
+		signing_context,
+		group.len(),
+		|i| Some(validators[group[i].0 as usize].public().into()),
+	)
+	.ok()
+	.unwrap_or(0) >=
+		threshold;
 
 	match kind {
 		BackingKind::Unanimous | BackingKind::Threshold => assert!(successfully_backed),
@@ -219,7 +224,7 @@ pub(crate) fn run_to_block(
 }
 
 pub(crate) fn expected_bits() -> usize {
-	Paras::parachains().len() + Configuration::config().on_demand_cores as usize
+	Paras::parachains().len() + Configuration::config().scheduler_params.num_cores as usize
 }
 
 fn default_bitfield() -> AvailabilityBitfield {
@@ -380,7 +385,9 @@ fn collect_pending_cleans_up_pending() {
 		(chain_b, ParaKind::Parachain),
 		(thread_a, ParaKind::Parathread),
 	];
-	new_test_ext(genesis_config(paras)).execute_with(|| {
+	let mut config = genesis_config(paras);
+	config.configuration.config.scheduler_params.group_rotation_frequency = 3;
+	new_test_ext(config).execute_with(|| {
 		let default_candidate = TestCandidateBuilder::default().build();
 		<PendingAvailability<Test>>::insert(
 			chain_a,
@@ -408,7 +415,7 @@ fn collect_pending_cleans_up_pending() {
 				descriptor: default_candidate.descriptor,
 				availability_votes: default_availability_votes(),
 				relay_parent_number: 0,
-				backed_in_number: 0,
+				backed_in_number: 5,
 				backers: default_backing_bitfield(),
 				backing_group: GroupIndex::from(1),
 			},
@@ -422,7 +429,7 @@ fn collect_pending_cleans_up_pending() {
 		assert!(<PendingAvailabilityCommitments<Test>>::get(&chain_a).is_some());
 		assert!(<PendingAvailabilityCommitments<Test>>::get(&chain_b).is_some());
 
-		ParaInclusion::collect_pending(|core, _since| core == CoreIndex::from(0));
+		ParaInclusion::collect_pending(Scheduler::availability_timeout_predicate());
 
 		assert!(<PendingAvailability<Test>>::get(&chain_a).is_none());
 		assert!(<PendingAvailability<Test>>::get(&chain_b).is_some());
@@ -910,57 +917,24 @@ fn candidate_checks() {
 		];
 		Scheduler::set_validator_groups(validator_groups);
 
-		let entry_ttl = 10_000;
 		let thread_collator: CollatorId = Sr25519Keyring::Two.public().into();
-		let chain_a_assignment = CoreAssignment {
-			core: CoreIndex::from(0),
-			paras_entry: ParasEntry::new(Assignment::new(chain_a), entry_ttl),
-		};
+		let chain_a_assignment = (chain_a, CoreIndex::from(0));
 
-		let chain_b_assignment = CoreAssignment {
-			core: CoreIndex::from(1),
-			paras_entry: ParasEntry::new(Assignment::new(chain_b), entry_ttl),
-		};
+		let chain_b_assignment = (chain_b, CoreIndex::from(1));
 
-		let thread_a_assignment = CoreAssignment {
-			core: CoreIndex::from(2),
-			paras_entry: ParasEntry::new(Assignment::new(thread_a), entry_ttl),
-		};
-
+		let thread_a_assignment = (thread_a, CoreIndex::from(2));
 		let allowed_relay_parents = default_allowed_relay_parent_tracker();
 
-		// unscheduled candidate.
-		{
-			let mut candidate = TestCandidateBuilder {
-				para_id: chain_a,
-				relay_parent: System::parent_hash(),
-				pov_hash: Hash::repeat_byte(1),
-				persisted_validation_data_hash: make_vdata_hash(chain_a).unwrap(),
-				hrmp_watermark: RELAY_PARENT_NUM,
-				..Default::default()
-			}
-			.build();
-			collator_sign_candidate(Sr25519Keyring::One, &mut candidate);
-
-			let backed = back_candidate(
-				candidate,
-				&validators,
-				group_validators(GroupIndex::from(0)).unwrap().as_ref(),
-				&keystore,
-				&signing_context,
-				BackingKind::Threshold,
-			);
-
-			assert_noop!(
-				ParaInclusion::process_candidates(
-					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_b_assignment.clone()],
-					&group_validators,
-				),
-				Error::<Test>::UnscheduledCandidate
-			);
-		}
+		// no candidates.
+		assert_eq!(
+			ParaInclusion::process_candidates(
+				&allowed_relay_parents,
+				vec![],
+				&group_validators,
+				false
+			),
+			Ok(ProcessedCandidates::default())
+		);
 
 		// candidates out of order.
 		{
@@ -994,6 +968,7 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			let backed_b = back_candidate(
@@ -1003,17 +978,18 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			// out-of-order manifests as unscheduled.
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed_b, backed_a],
-					vec![chain_a_assignment.clone(), chain_b_assignment.clone()],
+					vec![(backed_b, chain_b_assignment.1), (backed_a, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
-				Error::<Test>::UnscheduledCandidate
+				Error::<Test>::ScheduledOutOfOrder
 			);
 		}
 
@@ -1037,14 +1013,15 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Lacking,
+				None,
 			);
 
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_a_assignment.clone()],
+					vec![(backed, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::InsufficientBacking
 			);
@@ -1085,6 +1062,7 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			let backed_b = back_candidate(
@@ -1094,14 +1072,15 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed_b, backed_a],
-					vec![chain_a_assignment.clone(), chain_b_assignment.clone()],
+					vec![(backed_b, chain_b_assignment.1), (backed_a, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::DisallowedRelayParent
 			);
@@ -1132,14 +1111,15 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![thread_a_assignment.clone()],
+					vec![(backed, thread_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::NotCollatorSigned
 			);
@@ -1166,6 +1146,7 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			let candidate = TestCandidateBuilder::default().build();
@@ -1187,9 +1168,9 @@ fn candidate_checks() {
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_a_assignment.clone()],
+					vec![(backed, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::CandidateScheduledBeforeParaFree
 			);
@@ -1222,14 +1203,15 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_a_assignment.clone()],
+					vec![(backed, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::CandidateScheduledBeforeParaFree
 			);
@@ -1243,7 +1225,7 @@ fn candidate_checks() {
 				para_id: chain_a,
 				relay_parent: System::parent_hash(),
 				pov_hash: Hash::repeat_byte(1),
-				new_validation_code: Some(vec![5, 6, 7, 8].into()),
+				new_validation_code: Some(dummy_validation_code()),
 				persisted_validation_data_hash: make_vdata_hash(chain_a).unwrap(),
 				hrmp_watermark: RELAY_PARENT_NUM,
 				..Default::default()
@@ -1259,21 +1241,28 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			{
 				let cfg = Configuration::config();
 				let expected_at = 10 + cfg.validation_upgrade_delay;
 				assert_eq!(expected_at, 12);
-				Paras::schedule_code_upgrade(chain_a, vec![1, 2, 3, 4].into(), expected_at, &cfg);
+				Paras::schedule_code_upgrade(
+					chain_a,
+					vec![9, 8, 7, 6, 5, 4, 3, 2, 1].into(),
+					expected_at,
+					&cfg,
+					SetGoAhead::Yes,
+				);
 			}
 
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_a_assignment.clone()],
+					vec![(backed, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::PrematureCodeUpgrade
 			);
@@ -1300,14 +1289,15 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			assert_eq!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_a_assignment.clone()],
+					vec![(backed, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Err(Error::<Test>::ValidationDataHashMismatch.into()),
 			);
@@ -1321,7 +1311,7 @@ fn candidate_checks() {
 				pov_hash: Hash::repeat_byte(1),
 				persisted_validation_data_hash: make_vdata_hash(chain_a).unwrap(),
 				hrmp_watermark: RELAY_PARENT_NUM,
-				validation_code: ValidationCode(vec![1]),
+				validation_code: ValidationCode(vec![9, 8, 7, 6, 5, 4, 3, 2, 1]),
 				..Default::default()
 			}
 			.build();
@@ -1335,14 +1325,15 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_a_assignment.clone()],
+					vec![(backed, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::InvalidValidationCodeHash
 			);
@@ -1370,14 +1361,15 @@ fn candidate_checks() {
 				&keystore,
 				&signing_context,
 				BackingKind::Threshold,
+				None,
 			);
 
 			assert_noop!(
 				ParaInclusion::process_candidates(
 					&allowed_relay_parents,
-					vec![backed],
-					vec![chain_a_assignment.clone()],
+					vec![(backed, chain_a_assignment.1)],
 					&group_validators,
+					false
 				),
 				Error::<Test>::ParaHeadMismatch
 			);
@@ -1446,21 +1438,9 @@ fn backing_works() {
 
 		let allowed_relay_parents = default_allowed_relay_parent_tracker();
 
-		let entry_ttl = 10_000;
-		let chain_a_assignment = CoreAssignment {
-			core: CoreIndex::from(0),
-			paras_entry: ParasEntry::new(Assignment::new(chain_a), entry_ttl),
-		};
-
-		let chain_b_assignment = CoreAssignment {
-			core: CoreIndex::from(1),
-			paras_entry: ParasEntry::new(Assignment::new(chain_b), entry_ttl),
-		};
-
-		let thread_a_assignment = CoreAssignment {
-			core: CoreIndex::from(2),
-			paras_entry: ParasEntry::new(Assignment::new(thread_a), entry_ttl),
-		};
+		let chain_a_assignment = (chain_a, CoreIndex::from(0));
+		let chain_b_assignment = (chain_b, CoreIndex::from(1));
+		let thread_a_assignment = (thread_a, CoreIndex::from(2));
 
 		let mut candidate_a = TestCandidateBuilder {
 			para_id: chain_a,
@@ -1502,6 +1482,7 @@ fn backing_works() {
 			&keystore,
 			&signing_context,
 			BackingKind::Threshold,
+			None,
 		);
 
 		let backed_b = back_candidate(
@@ -1511,6 +1492,7 @@ fn backing_works() {
 			&keystore,
 			&signing_context,
 			BackingKind::Threshold,
+			None,
 		);
 
 		let backed_c = back_candidate(
@@ -1520,15 +1502,20 @@ fn backing_works() {
 			&keystore,
 			&signing_context,
 			BackingKind::Threshold,
+			None,
 		);
 
-		let backed_candidates = vec![backed_a.clone(), backed_b.clone(), backed_c];
+		let backed_candidates = vec![
+			(backed_a.clone(), chain_a_assignment.1),
+			(backed_b.clone(), chain_b_assignment.1),
+			(backed_c, thread_a_assignment.1),
+		];
 		let get_backing_group_idx = {
 			// the order defines the group implicitly for this test case
 			let backed_candidates_with_groups = backed_candidates
 				.iter()
 				.enumerate()
-				.map(|(idx, backed_candidate)| (backed_candidate.hash(), GroupIndex(idx as _)))
+				.map(|(idx, (backed_candidate, _))| (backed_candidate.hash(), GroupIndex(idx as _)))
 				.collect::<Vec<_>>();
 
 			move |candidate_hash_x: CandidateHash| -> Option<GroupIndex> {
@@ -1548,12 +1535,8 @@ fn backing_works() {
 		} = ParaInclusion::process_candidates(
 			&allowed_relay_parents,
 			backed_candidates.clone(),
-			vec![
-				chain_a_assignment.clone(),
-				chain_b_assignment.clone(),
-				thread_a_assignment.clone(),
-			],
 			&group_validators,
+			false,
 		)
 		.expect("candidates scheduled, in order, and backed");
 
@@ -1572,22 +1555,22 @@ fn backing_works() {
 				CandidateHash,
 				(CandidateReceipt, Vec<(ValidatorIndex, ValidityAttestation)>),
 			>::new();
-			backed_candidates.into_iter().for_each(|backed_candidate| {
+			backed_candidates.into_iter().for_each(|(backed_candidate, _)| {
 				let candidate_receipt_with_backers = intermediate
 					.entry(backed_candidate.hash())
 					.or_insert_with(|| (backed_candidate.receipt(), Vec::new()));
-
-				assert_eq!(
-					backed_candidate.validity_votes.len(),
-					backed_candidate.validator_indices.count_ones()
-				);
+				let (validator_indices, None) =
+					backed_candidate.validator_indices_and_core_index(false)
+				else {
+					panic!("Expected no injected core index")
+				};
+				assert_eq!(backed_candidate.validity_votes().len(), validator_indices.count_ones());
 				candidate_receipt_with_backers.1.extend(
-					backed_candidate
-						.validator_indices
+					validator_indices
 						.iter()
 						.enumerate()
 						.filter(|(_, signed)| **signed)
-						.zip(backed_candidate.validity_votes.iter().cloned())
+						.zip(backed_candidate.validity_votes().iter().cloned())
 						.filter_map(|((validator_index_within_group, _), attestation)| {
 							let grp_idx = get_backing_group_idx(backed_candidate.hash()).unwrap();
 							group_validators(grp_idx).map(|validator_indices| {
@@ -1685,6 +1668,257 @@ fn backing_works() {
 }
 
 #[test]
+fn backing_works_with_elastic_scaling_mvp() {
+	let chain_a = ParaId::from(1_u32);
+	let chain_b = ParaId::from(2_u32);
+	let thread_a = ParaId::from(3_u32);
+
+	// The block number of the relay-parent for testing.
+	const RELAY_PARENT_NUM: BlockNumber = 4;
+
+	let paras = vec![
+		(chain_a, ParaKind::Parachain),
+		(chain_b, ParaKind::Parachain),
+		(thread_a, ParaKind::Parathread),
+	];
+	let validators = vec![
+		Sr25519Keyring::Alice,
+		Sr25519Keyring::Bob,
+		Sr25519Keyring::Charlie,
+		Sr25519Keyring::Dave,
+		Sr25519Keyring::Ferdie,
+	];
+	let keystore: KeystorePtr = Arc::new(LocalKeystore::in_memory());
+	for validator in validators.iter() {
+		Keystore::sr25519_generate_new(
+			&*keystore,
+			PARACHAIN_KEY_TYPE_ID,
+			Some(&validator.to_seed()),
+		)
+		.unwrap();
+	}
+	let validator_public = validator_pubkeys(&validators);
+
+	new_test_ext(genesis_config(paras)).execute_with(|| {
+		shared::Pallet::<Test>::set_active_validators_ascending(validator_public.clone());
+		shared::Pallet::<Test>::set_session_index(5);
+
+		run_to_block(5, |_| None);
+
+		let signing_context =
+			SigningContext { parent_hash: System::parent_hash(), session_index: 5 };
+
+		let group_validators = |group_index: GroupIndex| {
+			match group_index {
+				group_index if group_index == GroupIndex::from(0) => Some(vec![0, 1]),
+				group_index if group_index == GroupIndex::from(1) => Some(vec![2, 3]),
+				group_index if group_index == GroupIndex::from(2) => Some(vec![4]),
+				_ => panic!("Group index out of bounds for 2 parachains and 1 parathread core"),
+			}
+			.map(|vs| vs.into_iter().map(ValidatorIndex).collect::<Vec<_>>())
+		};
+
+		// When processing candidates, we compute the group index from scheduler.
+		let validator_groups = vec![
+			vec![ValidatorIndex(0), ValidatorIndex(1)],
+			vec![ValidatorIndex(2), ValidatorIndex(3)],
+			vec![ValidatorIndex(4)],
+		];
+		Scheduler::set_validator_groups(validator_groups);
+
+		let allowed_relay_parents = default_allowed_relay_parent_tracker();
+
+		let mut candidate_a = TestCandidateBuilder {
+			para_id: chain_a,
+			relay_parent: System::parent_hash(),
+			pov_hash: Hash::repeat_byte(1),
+			persisted_validation_data_hash: make_vdata_hash(chain_a).unwrap(),
+			hrmp_watermark: RELAY_PARENT_NUM,
+			..Default::default()
+		}
+		.build();
+		collator_sign_candidate(Sr25519Keyring::One, &mut candidate_a);
+
+		let mut candidate_b_1 = TestCandidateBuilder {
+			para_id: chain_b,
+			relay_parent: System::parent_hash(),
+			pov_hash: Hash::repeat_byte(2),
+			persisted_validation_data_hash: make_vdata_hash(chain_b).unwrap(),
+			hrmp_watermark: RELAY_PARENT_NUM,
+			..Default::default()
+		}
+		.build();
+		collator_sign_candidate(Sr25519Keyring::One, &mut candidate_b_1);
+
+		let mut candidate_b_2 = TestCandidateBuilder {
+			para_id: chain_b,
+			relay_parent: System::parent_hash(),
+			pov_hash: Hash::repeat_byte(3),
+			persisted_validation_data_hash: make_vdata_hash(chain_b).unwrap(),
+			hrmp_watermark: RELAY_PARENT_NUM,
+			..Default::default()
+		}
+		.build();
+		collator_sign_candidate(Sr25519Keyring::One, &mut candidate_b_2);
+
+		let backed_a = back_candidate(
+			candidate_a.clone(),
+			&validators,
+			group_validators(GroupIndex::from(0)).unwrap().as_ref(),
+			&keystore,
+			&signing_context,
+			BackingKind::Threshold,
+			None,
+		);
+
+		let backed_b_1 = back_candidate(
+			candidate_b_1.clone(),
+			&validators,
+			group_validators(GroupIndex::from(1)).unwrap().as_ref(),
+			&keystore,
+			&signing_context,
+			BackingKind::Threshold,
+			Some(CoreIndex(1)),
+		);
+
+		let backed_b_2 = back_candidate(
+			candidate_b_2.clone(),
+			&validators,
+			group_validators(GroupIndex::from(2)).unwrap().as_ref(),
+			&keystore,
+			&signing_context,
+			BackingKind::Threshold,
+			Some(CoreIndex(2)),
+		);
+
+		let backed_candidates = vec![
+			(backed_a.clone(), CoreIndex(0)),
+			(backed_b_1.clone(), CoreIndex(1)),
+			(backed_b_2.clone(), CoreIndex(2)),
+		];
+		let get_backing_group_idx = {
+			// the order defines the group implicitly for this test case
+			let backed_candidates_with_groups = backed_candidates
+				.iter()
+				.enumerate()
+				.map(|(idx, (backed_candidate, _))| (backed_candidate.hash(), GroupIndex(idx as _)))
+				.collect::<Vec<_>>();
+
+			move |candidate_hash_x: CandidateHash| -> Option<GroupIndex> {
+				backed_candidates_with_groups.iter().find_map(|(candidate_hash, grp)| {
+					if *candidate_hash == candidate_hash_x {
+						Some(*grp)
+					} else {
+						None
+					}
+				})
+			}
+		};
+
+		let ProcessedCandidates {
+			core_indices: occupied_cores,
+			candidate_receipt_with_backing_validator_indices,
+		} = ParaInclusion::process_candidates(
+			&allowed_relay_parents,
+			backed_candidates.clone(),
+			&group_validators,
+			true,
+		)
+		.expect("candidates scheduled, in order, and backed");
+
+		// Both b candidates will be backed. However, only one will be recorded on-chain and proceed
+		// with being made available.
+		assert_eq!(
+			occupied_cores,
+			vec![
+				(CoreIndex::from(0), chain_a),
+				(CoreIndex::from(1), chain_b),
+				(CoreIndex::from(2), chain_b),
+			]
+		);
+
+		// Transform the votes into the setup we expect
+		let mut expected = std::collections::HashMap::<
+			CandidateHash,
+			(CandidateReceipt, Vec<(ValidatorIndex, ValidityAttestation)>),
+		>::new();
+		backed_candidates.into_iter().for_each(|(backed_candidate, _)| {
+			let candidate_receipt_with_backers = expected
+				.entry(backed_candidate.hash())
+				.or_insert_with(|| (backed_candidate.receipt(), Vec::new()));
+			let (validator_indices, _maybe_core_index) =
+				backed_candidate.validator_indices_and_core_index(true);
+			assert_eq!(backed_candidate.validity_votes().len(), validator_indices.count_ones());
+			candidate_receipt_with_backers.1.extend(
+				validator_indices
+					.iter()
+					.enumerate()
+					.filter(|(_, signed)| **signed)
+					.zip(backed_candidate.validity_votes().iter().cloned())
+					.filter_map(|((validator_index_within_group, _), attestation)| {
+						let grp_idx = get_backing_group_idx(backed_candidate.hash()).unwrap();
+						group_validators(grp_idx).map(|validator_indices| {
+							(validator_indices[validator_index_within_group], attestation)
+						})
+					}),
+			);
+		});
+
+		assert_eq!(
+			expected,
+			candidate_receipt_with_backing_validator_indices
+				.into_iter()
+				.map(|c| (c.0.hash(), c))
+				.collect()
+		);
+
+		let backers = {
+			let num_backers = effective_minimum_backing_votes(
+				group_validators(GroupIndex(0)).unwrap().len(),
+				configuration::Pallet::<Test>::config().minimum_backing_votes,
+			);
+			backing_bitfield(&(0..num_backers).collect::<Vec<_>>())
+		};
+		assert_eq!(
+			<PendingAvailability<Test>>::get(&chain_a),
+			Some(CandidatePendingAvailability {
+				core: CoreIndex::from(0),
+				hash: candidate_a.hash(),
+				descriptor: candidate_a.descriptor,
+				availability_votes: default_availability_votes(),
+				relay_parent_number: System::block_number() - 1,
+				backed_in_number: System::block_number(),
+				backers,
+				backing_group: GroupIndex::from(0),
+			})
+		);
+		assert_eq!(
+			<PendingAvailabilityCommitments<Test>>::get(&chain_a),
+			Some(candidate_a.commitments),
+		);
+
+		// Only one candidate for b will be recorded on chain.
+		assert_eq!(
+			<PendingAvailability<Test>>::get(&chain_b),
+			Some(CandidatePendingAvailability {
+				core: CoreIndex::from(2),
+				hash: candidate_b_2.hash(),
+				descriptor: candidate_b_2.descriptor,
+				availability_votes: default_availability_votes(),
+				relay_parent_number: System::block_number() - 1,
+				backed_in_number: System::block_number(),
+				backers: backing_bitfield(&[4]),
+				backing_group: GroupIndex::from(2),
+			})
+		);
+		assert_eq!(
+			<PendingAvailabilityCommitments<Test>>::get(&chain_b),
+			Some(candidate_b_2.commitments),
+		);
+	});
+}
+
+#[test]
 fn can_include_candidate_with_ok_code_upgrade() {
 	let chain_a = ParaId::from(1_u32);
 
@@ -1738,18 +1972,13 @@ fn can_include_candidate_with_ok_code_upgrade() {
 		Scheduler::set_validator_groups(validator_groups);
 
 		let allowed_relay_parents = default_allowed_relay_parent_tracker();
-		let entry_ttl = 10_000;
-		let chain_a_assignment = CoreAssignment {
-			core: CoreIndex::from(0),
-			paras_entry: ParasEntry::new(Assignment::new(chain_a), entry_ttl),
-		};
-
+		let chain_a_assignment = (chain_a, CoreIndex::from(0));
 		let mut candidate_a = TestCandidateBuilder {
 			para_id: chain_a,
 			relay_parent: System::parent_hash(),
 			pov_hash: Hash::repeat_byte(1),
 			persisted_validation_data_hash: make_vdata_hash(chain_a).unwrap(),
-			new_validation_code: Some(vec![1, 2, 3].into()),
+			new_validation_code: Some(vec![9, 8, 7, 6, 5, 4, 3, 2, 1].into()),
 			hrmp_watermark: RELAY_PARENT_NUM,
 			..Default::default()
 		}
@@ -1763,14 +1992,15 @@ fn can_include_candidate_with_ok_code_upgrade() {
 			&keystore,
 			&signing_context,
 			BackingKind::Threshold,
+			None,
 		);
 
 		let ProcessedCandidates { core_indices: occupied_cores, .. } =
 			ParaInclusion::process_candidates(
 				&allowed_relay_parents,
-				vec![backed_a],
-				vec![chain_a_assignment.clone()],
+				vec![(backed_a, chain_a_assignment.1)],
 				&group_validators,
+				false,
 			)
 			.expect("candidates scheduled, in order, and backed");
 
@@ -1832,7 +2062,7 @@ fn check_allowed_relay_parents() {
 	}
 	let validator_public = validator_pubkeys(&validators);
 	let mut config = genesis_config(paras);
-	config.configuration.config.group_rotation_frequency = 1;
+	config.configuration.config.scheduler_params.group_rotation_frequency = 1;
 
 	new_test_ext(config).execute_with(|| {
 		shared::Pallet::<Test>::set_active_validators_ascending(validator_public.clone());
@@ -1895,28 +2125,10 @@ fn check_allowed_relay_parents() {
 			max_ancestry_len,
 		);
 
-		let chain_a_assignment = CoreAssignment {
-			core: CoreIndex::from(0),
-			paras_entry: ParasEntry {
-				assignment: Assignment { para_id: chain_a },
-				availability_timeouts: 0,
-				ttl: 5,
-			},
-		};
+		let chain_a_assignment = (chain_a, CoreIndex::from(0));
 
-		let chain_b_assignment = CoreAssignment {
-			core: CoreIndex::from(1),
-			paras_entry: ParasEntry {
-				assignment: Assignment { para_id: chain_b },
-				availability_timeouts: 0,
-				ttl: 5,
-			},
-		};
-
-		let thread_a_assignment = CoreAssignment {
-			core: CoreIndex::from(2),
-			paras_entry: ParasEntry::new(Assignment::new(thread_a), 5),
-		};
+		let chain_b_assignment = (chain_b, CoreIndex::from(1));
+		let thread_a_assignment = (thread_a, CoreIndex::from(2));
 
 		let mut candidate_a = TestCandidateBuilder {
 			para_id: chain_a,
@@ -1973,6 +2185,7 @@ fn check_allowed_relay_parents() {
 			&keystore,
 			&signing_context_a,
 			BackingKind::Threshold,
+			None,
 		);
 
 		let backed_b = back_candidate(
@@ -1982,6 +2195,7 @@ fn check_allowed_relay_parents() {
 			&keystore,
 			&signing_context_b,
 			BackingKind::Threshold,
+			None,
 		);
 
 		let backed_c = back_candidate(
@@ -1991,19 +2205,20 @@ fn check_allowed_relay_parents() {
 			&keystore,
 			&signing_context_c,
 			BackingKind::Threshold,
+			None,
 		);
 
-		let backed_candidates = vec![backed_a, backed_b, backed_c];
+		let backed_candidates = vec![
+			(backed_a, chain_a_assignment.1),
+			(backed_b, chain_b_assignment.1),
+			(backed_c, thread_a_assignment.1),
+		];
 
 		ParaInclusion::process_candidates(
 			&allowed_relay_parents,
 			backed_candidates.clone(),
-			vec![
-				chain_a_assignment.clone(),
-				chain_b_assignment.clone(),
-				thread_a_assignment.clone(),
-			],
 			&group_validators,
+			false,
 		)
 		.expect("candidates scheduled, in order, and backed");
 	});
@@ -2176,7 +2391,7 @@ fn para_upgrade_delay_scheduled_from_inclusion() {
 		shared::Pallet::<Test>::set_active_validators_ascending(validator_public.clone());
 		shared::Pallet::<Test>::set_session_index(5);
 
-		let new_validation_code: ValidationCode = vec![1, 2, 3, 4, 5].into();
+		let new_validation_code: ValidationCode = vec![9, 8, 7, 6, 5, 4, 3, 2, 1].into();
 		let new_validation_code_hash = new_validation_code.hash();
 
 		// Otherwise upgrade is no-op.
@@ -2212,15 +2427,7 @@ fn para_upgrade_delay_scheduled_from_inclusion() {
 
 		let allowed_relay_parents = default_allowed_relay_parent_tracker();
 
-		let chain_a_assignment = CoreAssignment {
-			core: CoreIndex::from(0),
-			paras_entry: ParasEntry {
-				assignment: Assignment { para_id: chain_a },
-				availability_timeouts: 0,
-				ttl: 5,
-			},
-		};
-
+		let chain_a_assignment = (chain_a, CoreIndex::from(0));
 		let mut candidate_a = TestCandidateBuilder {
 			para_id: chain_a,
 			relay_parent: System::parent_hash(),
@@ -2240,14 +2447,15 @@ fn para_upgrade_delay_scheduled_from_inclusion() {
 			&keystore,
 			&signing_context,
 			BackingKind::Threshold,
+			None,
 		);
 
 		let ProcessedCandidates { core_indices: occupied_cores, .. } =
 			ParaInclusion::process_candidates(
 				&allowed_relay_parents,
-				vec![backed_a],
-				vec![chain_a_assignment.clone()],
+				vec![(backed_a, chain_a_assignment.1)],
 				&group_validators,
+				false,
 			)
 			.expect("candidates scheduled, in order, and backed");
 
@@ -2292,7 +2500,7 @@ fn para_upgrade_delay_scheduled_from_inclusion() {
 		let cause = &active_vote_state.causes()[0];
 		// Upgrade block is the block of inclusion, not candidate's parent.
 		assert_matches!(cause,
-			paras::PvfCheckCause::Upgrade { id, included_at }
+			paras::PvfCheckCause::Upgrade { id, included_at, set_go_ahead: SetGoAhead::Yes }
 				if id == &chain_a && included_at == &7
 		);
 	});

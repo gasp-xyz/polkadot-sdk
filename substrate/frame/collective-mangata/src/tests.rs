@@ -18,7 +18,7 @@
 use super::{Event as CollectiveEvent, *};
 use crate as pallet_collective_mangata;
 use frame_support::{
-	assert_noop, assert_ok,
+	assert_noop, assert_ok, derive_impl,
 	dispatch::Pays,
 	parameter_types,
 	traits::{ConstU32, ConstU64, StorageVersion},
@@ -26,11 +26,7 @@ use frame_support::{
 };
 use frame_system::{EnsureRoot, EventRecord, Phase};
 use sp_core::H256;
-use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
-	BuildStorage,
-};
+use sp_runtime::{testing::Header, traits::BlakeTwo256, BuildStorage};
 
 pub type Block = sp_runtime::generic::Block<Header, UncheckedExtrinsic>;
 pub type UncheckedExtrinsic = sp_runtime::generic::UncheckedExtrinsic<u32, u64, RuntimeCall, ()>;
@@ -38,11 +34,11 @@ pub type UncheckedExtrinsic = sp_runtime::generic::UncheckedExtrinsic<u32, u64, 
 frame_support::construct_runtime!(
 	pub enum Test
 	{
-		System: frame_system::{Pallet, Call, Event<T>},
-		Collective: pallet_collective_mangata::<Instance1>::{Pallet, Call, Event<T>, Origin<T>, Config<T>},
-		CollectiveMajority: pallet_collective_mangata::<Instance2>::{Pallet, Call, Event<T>, Origin<T>, Config<T>},
-		DefaultCollective: pallet_collective_mangata::{Pallet, Call, Event<T>, Origin<T>, Config<T>},
-		Democracy: mock_democracy::{Pallet, Call, Event<T>},
+		System: frame_system,
+		Collective: pallet_collective_mangata::<Instance1>,
+		CollectiveMajority: pallet_collective_mangata::<Instance2>,
+		DefaultCollective: pallet_collective_mangata,
+		Democracy: mock_democracy,
 	}
 );
 
@@ -102,30 +98,10 @@ parameter_types! {
 		frame_system::limits::BlockWeights::simple_max(Weight::MAX);
 	pub static MaxProposalWeight: Weight = default_max_proposal_weight();
 }
+
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
 impl frame_system::Config for Test {
-	type BaseCallFilter = frame_support::traits::Everything;
-	type BlockWeights = BlockWeights;
-	type BlockLength = ();
-	type DbWeight = ();
-	type RuntimeOrigin = RuntimeOrigin;
-	type Nonce = u64;
-	type RuntimeCall = RuntimeCall;
-	type Hash = H256;
-	type Hashing = BlakeTwo256;
-	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
 	type Block = Block;
-	type RuntimeEvent = RuntimeEvent;
-	type BlockHashCount = ConstU64<250>;
-	type Version = ();
-	type PalletInfo = PalletInfo;
-	type AccountData = ();
-	type OnNewAccount = ();
-	type OnKilledAccount = ();
-	type SystemWeightInfo = ();
-	type SS58Prefix = ();
-	type OnSetCode = ();
-	type MaxConsumers = ConstU32<16>;
 }
 impl Config<Instance1> for Test {
 	type RuntimeOrigin = RuntimeOrigin;
@@ -192,6 +168,7 @@ impl ExtBuilder {
 
 	pub fn build(self) -> sp_io::TestExternalities {
 		let mut ext: sp_io::TestExternalities = RuntimeGenesisConfig {
+			system: frame_system::GenesisConfig::default(),
 			collective: pallet_collective_mangata::GenesisConfig {
 				members: self.collective_members,
 				phantom: Default::default(),
@@ -234,8 +211,8 @@ fn default_max_proposal_weight() -> Weight {
 #[test]
 fn motions_basic_environment_works() {
 	ExtBuilder::default().build_and_execute(|| {
-		assert_eq!(Collective::members(), vec![1, 2, 3]);
-		assert_eq!(*Collective::proposals(), Vec::<H256>::new());
+		assert_eq!(Members::<Test, Instance1>::get(), vec![1, 2, 3]);
+		assert_eq!(*Proposals::<Test, Instance1>::get(), Vec::<H256>::new());
 	});
 }
 
@@ -246,7 +223,7 @@ fn initialize_members_sorts_members() {
 	ExtBuilder::default()
 		.set_collective_members(unsorted_members)
 		.build_and_execute(|| {
-			assert_eq!(Collective::members(), expected_members);
+			assert_eq!(Members::<Test, Instance1>::get(), expected_members);
 		});
 }
 
@@ -260,8 +237,8 @@ fn set_members_with_prime_works() {
 			Some(3),
 			MaxMembers::get()
 		));
-		assert_eq!(Collective::members(), members.clone());
-		assert_eq!(Collective::prime(), Some(3));
+		assert_eq!(Members::<Test, Instance1>::get(), members.clone());
+		assert_eq!(Prime::<Test, Instance1>::get(), Some(3));
 		assert_noop!(
 			Collective::set_members(RuntimeOrigin::root(), members, Some(4), MaxMembers::get()),
 			Error::<Test, Instance1>::PrimeAccountNotMember
@@ -828,12 +805,12 @@ fn removal_of_old_voters_votes_works() {
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(1), hash, 0, true));
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(2), hash, 0, true));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 3, ayes: vec![1, 2], nays: vec![], end })
 		);
 		Collective::change_members_sorted(&[4], &[1], &[2, 3, 4]);
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 3, ayes: vec![2], nays: vec![], end })
 		);
 
@@ -849,12 +826,12 @@ fn removal_of_old_voters_votes_works() {
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(2), hash, 1, true));
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(3), hash, 1, false));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 1, threshold: 2, ayes: vec![2], nays: vec![3], end })
 		);
 		Collective::change_members_sorted(&[], &[3], &[2, 4]);
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 1, threshold: 2, ayes: vec![2], nays: vec![], end })
 		);
 	});
@@ -876,7 +853,7 @@ fn removal_of_old_voters_votes_works_with_set_members() {
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(1), hash, 0, true));
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(2), hash, 0, true));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 3, ayes: vec![1, 2], nays: vec![], end })
 		);
 		assert_ok!(Collective::set_members(
@@ -886,7 +863,7 @@ fn removal_of_old_voters_votes_works_with_set_members() {
 			MaxMembers::get()
 		));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 3, ayes: vec![2], nays: vec![], end })
 		);
 
@@ -902,7 +879,7 @@ fn removal_of_old_voters_votes_works_with_set_members() {
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(2), hash, 1, true));
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(3), hash, 1, false));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 1, threshold: 2, ayes: vec![2], nays: vec![3], end })
 		);
 		assert_ok!(Collective::set_members(
@@ -912,7 +889,7 @@ fn removal_of_old_voters_votes_works_with_set_members() {
 			MaxMembers::get()
 		));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 1, threshold: 2, ayes: vec![2], nays: vec![], end })
 		);
 	});
@@ -931,10 +908,10 @@ fn propose_works() {
 			Box::new(proposal.clone()),
 			proposal_len
 		));
-		assert_eq!(*Collective::proposals(), vec![hash]);
-		assert_eq!(Collective::proposal_of(&hash), Some(proposal));
+		assert_eq!(*Proposals::<Test, Instance1>::get(), vec![hash]);
+		assert_eq!(ProposalOf::<Test, Instance1>::get(&hash), Some(proposal));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 3, ayes: vec![], nays: vec![], end })
 		);
 
@@ -1094,13 +1071,13 @@ fn motions_vote_after_works() {
 		));
 		// Initially there a no votes when the motion is proposed.
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 2, ayes: vec![], nays: vec![], end })
 		);
 		// Cast first aye vote.
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(1), hash, 0, true));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 2, ayes: vec![1], nays: vec![], end })
 		);
 		// Try to cast a duplicate aye vote.
@@ -1111,7 +1088,7 @@ fn motions_vote_after_works() {
 		// Cast a nay vote.
 		assert_ok!(Collective::vote(RuntimeOrigin::signed(1), hash, 0, false));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 2, ayes: vec![], nays: vec![1], end })
 		);
 		// Try to cast a duplicate nay vote.
@@ -1162,7 +1139,7 @@ fn motions_all_first_vote_free_works() {
 			proposal_len,
 		));
 		assert_eq!(
-			Collective::voting(&hash),
+			Voting::<Test, Instance1>::get(&hash),
 			Some(Votes { index: 0, threshold: 2, ayes: vec![], nays: vec![], end })
 		);
 
@@ -1231,14 +1208,14 @@ fn motions_reproposing_disapproved_works() {
 			proposal_weight,
 			proposal_len
 		));
-		assert_eq!(*Collective::proposals(), vec![]);
+		assert_eq!(*Proposals::<Test, Instance1>::get(), vec![]);
 		assert_ok!(Collective::propose(
 			RuntimeOrigin::signed(1),
 			2,
 			Box::new(proposal.clone()),
 			proposal_len
 		));
-		assert_eq!(*Collective::proposals(), vec![hash]);
+		assert_eq!(*Proposals::<Test, Instance1>::get(), vec![hash]);
 	});
 }
 

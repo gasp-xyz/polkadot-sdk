@@ -19,17 +19,15 @@
 //! the *overhead* benchmarks.
 
 use crate::extrinsic::bench::BenchmarkVer;
-use sc_block_builder::{BlockBuilderApi, BlockBuilderProvider};
-use sc_block_builder_ver::{
-	BlockBuilderApi as BlockBuilderApiVer, BlockBuilderProvider as BlockBuilderProviderVer,
-};
+use sc_block_builder::BlockBuilderApi;
+use sc_block_builder_ver::BlockBuilderApi as BlockBuilderApiVer;
 use sc_cli::{CliConfiguration, ImportParams, Result, SharedParams};
-use sc_client_api::Backend as ClientBackend;
+use sc_client_api::UsageProvider;
 use sc_consensus::BlockImport;
 use sc_service::Configuration;
-use sp_api::{ApiExt, ProvideRuntimeApi};
+use sp_api::{ApiExt, CallApiAt, ProvideRuntimeApi};
 use sp_runtime::{traits::Block as BlockT, DigestItem, OpaqueExtrinsic};
-use std::{cell::RefCell, rc::Rc, sync::Mutex};
+use std::sync::Mutex;
 use ver_api::VerApi;
 
 use clap::{Args, Parser};
@@ -104,7 +102,7 @@ impl OverheadCmd {
 	///
 	/// Writes the results to console and into two instances of the
 	/// `weights.hbs` template, one for each benchmark.
-	pub fn run<Block, BA, C>(
+	pub fn run<Block, C>(
 		&self,
 		cfg: Configuration,
 		client: Arc<C>,
@@ -114,9 +112,9 @@ impl OverheadCmd {
 	) -> Result<()>
 	where
 		Block: BlockT<Extrinsic = OpaqueExtrinsic>,
-		BA: ClientBackend<Block>,
-		C: BlockBuilderProvider<BA, Block, C>
-			+ ProvideRuntimeApi<Block>
+		C: ProvideRuntimeApi<Block>
+			+ CallApiAt<Block>
+			+ UsageProvider<Block>
 			+ sp_blockchain::HeaderBackend<Block>,
 		C::Api: ApiExt<Block> + BlockBuilderApi<Block>,
 	{
@@ -142,7 +140,7 @@ impl OverheadCmd {
 
 		Ok(())
 	}
-	pub fn run_ver<Block, BA, C>(
+	pub fn run_ver<Block, C>(
 		&self,
 		cfg: Configuration,
 		client: Arc<Mutex<C>>,
@@ -151,9 +149,9 @@ impl OverheadCmd {
 	) -> Result<()>
 	where
 		Block: BlockT<Extrinsic = OpaqueExtrinsic>,
-		BA: ClientBackend<Block>,
-		C: BlockBuilderProviderVer<BA, Block, C>
-			+ ProvideRuntimeApi<Block>
+		C: ProvideRuntimeApi<Block>
+			+ CallApiAt<Block>
+			+ UsageProvider<Block>
 			+ sp_blockchain::HeaderBackend<Block>
 			+ BlockImport<Block>,
 		C::Api: ApiExt<Block> + BlockBuilderApiVer<Block> + VerApi<Block>,

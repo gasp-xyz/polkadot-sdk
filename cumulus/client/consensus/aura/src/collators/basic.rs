@@ -23,7 +23,9 @@
 //! For more information about AuRa, the Substrate crate should be checked.
 
 use codec::{Codec, Decode};
-use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
+use cumulus_client_collator::{
+	relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
+};
 use cumulus_client_consensus_common::ParachainBlockImportMarker;
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{relay_chain::BlockId as RBlockId, CollectCollationInfo};
@@ -31,20 +33,21 @@ use cumulus_relay_chain_interface::RelayChainInterface;
 
 use polkadot_node_primitives::CollationResult;
 use polkadot_overseer::Handle as OverseerHandle;
-use polkadot_primitives::{CollatorPair, Id as ParaId};
+use polkadot_primitives::{CollatorPair, Id as ParaId, ValidationCode};
 
-use futures::prelude::*;
+use futures::{channel::mpsc::Receiver, prelude::*};
 use sc_client_api::{backend::AuxStore, BlockBackend, BlockOf};
 use sc_consensus::BlockImport;
-use sp_api::ProvideRuntimeApi;
+use sp_api::{CallApiAt, ProvideRuntimeApi};
 use sp_application_crypto::AppPublic;
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle;
 use sp_consensus_aura::{AuraApi, SlotDuration};
-use sp_core::{crypto::Pair, sr25519, ByteArray, ShufflingSeed};
-use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
-use sp_keystore::{Keystore, KeystorePtr};
+use sp_core::crypto::Pair;
+use sp_inherents::CreateInherentDataProviders;
+use sp_keystore::KeystorePtr;
 use sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
+use sp_state_machine::Backend as _;
 use std::{convert::TryFrom, sync::Arc, time::Duration};
 
 use crate::collator as collator_util;
@@ -81,6 +84,10 @@ pub struct Params<BI, CIDP, Client, RClient, SO, Proposer, CS> {
 	pub collator_service: CS,
 	/// The amount of time to spend authoring each block.
 	pub authoring_duration: Duration,
+	/// Receiver for collation requests. If `None`, Aura consensus will establish a new receiver.
+	/// Should be used when a chain migrates from a different consensus algorithm and was already
+	/// processing collation requests before initializing Aura.
+	pub collation_request_receiver: Option<Receiver<CollationRequest>>,
 }
 
 /// Run bare Aura consensus as a relay-chain-driven collator.
@@ -94,6 +101,7 @@ where
 		+ AuxStore
 		+ HeaderBackend<Block>
 		+ BlockBackend<Block>
+		+ CallApiAt<Block>
 		+ Send
 		+ Sync
 		+ 'static,
@@ -110,12 +118,16 @@ where
 	P::Signature: TryFrom<Vec<u8>> + Member + Codec,
 {
 	async move {
-		let mut collation_requests = cumulus_client_collator::relay_chain_driven::init(
-			params.collator_key,
-			params.para_id,
-			params.overseer_handle,
-		)
-		.await;
+		let mut collation_requests = match params.collation_request_receiver {
+			Some(receiver) => receiver,
+			None =>
+				cumulus_client_collator::relay_chain_driven::init(
+					params.collator_key,
+					params.para_id,
+					params.overseer_handle,
+				)
+				.await,
+		};
 
 		let mut collator = {
 			let params = collator_util::Params {
@@ -130,6 +142,8 @@ where
 
 			collator_util::Collator::<Block, P, _, _, _, _, _>::new(params)
 		};
+
+		let mut last_processed_slot = 0;
 
 		while let Some(request) = collation_requests.next().await {
 			macro_rules! reject_with_error {
@@ -160,6 +174,22 @@ where
 				continue
 			}
 
+			let Ok(Some(code)) =
+				params.para_client.state_at(parent_hash).map_err(drop).and_then(|s| {
+					s.storage(&sp_core::storage::well_known_keys::CODE).map_err(drop)
+				})
+			else {
+				continue;
+			};
+
+			super::check_validation_code_or_log(
+				&ValidationCode::from(code).hash(),
+				params.para_id,
+				&params.relay_client,
+				*request.relay_parent(),
+			)
+			.await;
+
 			let relay_parent_header =
 				match params.relay_client.header(RBlockId::hash(*request.relay_parent())).await {
 					Err(e) => reject_with_error!(e),
@@ -182,7 +212,19 @@ where
 				Err(e) => reject_with_error!(e),
 			};
 
-			let (parachain_inherent_data, mut other_inherent_data) = try_request!(
+			// With async backing this function will be called every relay chain block.
+			//
+			// Most parachains currently run with 12 seconds slots and thus, they would try to
+			// produce multiple blocks per slot which very likely would fail on chain. Thus, we have
+			// this "hack" to only produce on block per slot.
+			//
+			// With https://github.com/paritytech/polkadot-sdk/issues/3168 this implementation will be
+			// obsolete and also the underlying issue will be fixed.
+			if last_processed_slot >= *claim.slot() {
+				continue
+			}
+
+			let (parachain_inherent_data, other_inherent_data) = try_request!(
 				collator
 					.create_inherent_data(
 						*request.relay_parent(),
@@ -193,19 +235,7 @@ where
 					.await
 			);
 
-			let keystore = params.keystore.clone();
-			let key = claim.author_pub().as_slice().try_into().unwrap();
-			try_request!(
-				inject_inherents::<Block>(
-					keystore,
-					&key,
-					parent_header.seed(),
-					&mut other_inherent_data
-				)
-				.await
-			);
-
-			let (collation, _, post_hash) = try_request!(
+			let maybe_collation = try_request!(
 				collator
 					.collate(
 						&parent_header,
@@ -222,29 +252,16 @@ where
 					.await
 			);
 
-			let result_sender = Some(collator.collator_service().announce_with_barrier(post_hash));
-			request.complete(Some(CollationResult { collation, result_sender }));
+			if let Some((collation, _, post_hash)) = maybe_collation {
+				let result_sender =
+					Some(collator.collator_service().announce_with_barrier(post_hash));
+				request.complete(Some(CollationResult { collation, result_sender }));
+			} else {
+				request.complete(None);
+				tracing::debug!(target: crate::LOG_TARGET, "No block proposal");
+			}
+
+			last_processed_slot = *claim.slot();
 		}
 	}
-}
-
-async fn inject_inherents<'a, B: BlockT>(
-	keystore: KeystorePtr,
-	public: &'a sr25519::Public,
-	prev_seed: &ShufflingSeed,
-	in_data: &'a mut InherentData,
-) -> Result<(), sp_consensus::Error> {
-	let seed = sp_ver::calculate_next_seed::<dyn Keystore>(&(*keystore), public, prev_seed)
-		.ok_or(sp_consensus::Error::StateUnavailable(String::from("signing seed failure")))?;
-
-	sp_ver::RandomSeedInherentDataProvider(seed)
-		.provide_inherent_data(in_data)
-		.map_err(|_| {
-			sp_consensus::Error::StateUnavailable(String::from(
-				"cannot inject RandomSeed inherent data",
-			))
-		})
-		.await?;
-
-	Ok(())
 }

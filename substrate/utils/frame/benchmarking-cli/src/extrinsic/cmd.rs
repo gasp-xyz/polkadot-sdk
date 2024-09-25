@@ -15,23 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use sc_block_builder::{BlockBuilderApi, BlockBuilderProvider};
-use sc_cli::{CliConfiguration, ImportParams, Result, SharedParams};
-use sc_client_api::Backend as ClientBackend;
-use sp_api::{ApiExt, ProvideRuntimeApi};
-use sp_runtime::{traits::Block as BlockT, DigestItem, OpaqueExtrinsic};
-use sc_block_builder_ver::{
-	validate_transaction, BlockBuilderApi as BlockBuilderApiVer,
-	BlockBuilderProvider as BlockBuilderProviderVer,
-};
-use ver_api::VerApi;
 use crate::extrinsic::bench::BenchmarkVer;
+use sc_block_builder::BlockBuilderApi;
+use sc_block_builder_ver::{BlockBuilderApi as BlockBuilderApiVer};
+use sc_cli::{CliConfiguration, ImportParams, Result, SharedParams};
+use sc_client_api::UsageProvider;
 use sc_consensus::BlockImport;
+use sp_api::{ApiExt, CallApiAt, ProvideRuntimeApi};
+use sp_runtime::{traits::Block as BlockT, DigestItem, OpaqueExtrinsic};
+use ver_api::VerApi;
 
 use clap::{Args, Parser};
 use log::info;
 use serde::Serialize;
-use std::{fmt::Debug, sync::Arc, sync::Mutex};
+use std::{
+	fmt::Debug,
+	sync::{Arc, Mutex},
+};
 
 use super::{
 	bench::{Benchmark, BenchmarkParams},
@@ -91,7 +91,7 @@ impl ExtrinsicCmd {
 	/// Benchmark the execution time of a specific type of extrinsic.
 	///
 	/// The output will be printed to console.
-	pub fn run<Block, BA, C>(
+	pub fn run<Block, C>(
 		&self,
 		client: Arc<C>,
 		inherent_data: sp_inherents::InherentData,
@@ -100,9 +100,9 @@ impl ExtrinsicCmd {
 	) -> Result<()>
 	where
 		Block: BlockT<Extrinsic = OpaqueExtrinsic>,
-		BA: ClientBackend<Block>,
-		C: BlockBuilderProvider<BA, Block, C>
-			+ ProvideRuntimeApi<Block>
+		C: ProvideRuntimeApi<Block>
+			+ CallApiAt<Block>
+			+ UsageProvider<Block>
 			+ sp_blockchain::HeaderBackend<Block>,
 		C::Api: ApiExt<Block> + BlockBuilderApi<Block>,
 	{
@@ -137,18 +137,18 @@ impl ExtrinsicCmd {
 		Ok(())
 	}
 
-	pub fn run_ver<Block, BA, C>(
+	pub fn run_ver<Block, C>(
 		&self,
 		client: Arc<Mutex<C>>,
 		inherent_data: (sp_inherents::InherentData, sp_inherents::InherentData),
-		digest_items: Vec<DigestItem>,
+		_digest_items: Vec<DigestItem>,
 		ext_factory: &ExtrinsicFactory,
 	) -> Result<()>
 	where
 		Block: BlockT<Extrinsic = OpaqueExtrinsic>,
-		BA: ClientBackend<Block>,
-		C: BlockBuilderProviderVer<BA, Block, C>
-			+ ProvideRuntimeApi<Block>
+		C: ProvideRuntimeApi<Block>
+			+ CallApiAt<Block>
+			+ UsageProvider<Block>
 			+ sp_blockchain::HeaderBackend<Block>
 			+ BlockImport<Block>,
 		C::Api: ApiExt<Block> + BlockBuilderApiVer<Block> + VerApi<Block>,

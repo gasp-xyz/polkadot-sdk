@@ -13,9 +13,9 @@ readme = "README.md"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-serde = { version = "1.0.126", features = ["derive"], optional = true }
+serde = { features = ["derive"], optional = true, workspace = true }
 codec = { package = "parity-scale-codec", version = "3.0.0" }
-jsonrpsee = { version = "0.16.2", features = ["server", "macros"] }
+jsonrpsee = { version = "0.22", features = ["server", "macros"] }
 pallet-vesting-mangata-rpc-runtime-api = { version = "4.0.0-dev", path = "./runtime-api" }
 sp-api = { version = "4.0.0-dev", path = "../../../primitives/api" }
 sp-blockchain = { version = "4.0.0-dev", path = "../../../primitives/blockchain" }

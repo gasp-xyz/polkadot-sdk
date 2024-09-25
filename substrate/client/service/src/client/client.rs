@@ -19,16 +19,11 @@
 //! Substrate Client
 
 use super::block_rules::{BlockRules, LookupResult as BlockLookupResult};
-use futures::{FutureExt, StreamExt};
-use log::{error, info, trace, warn};
+use crate::client::notification_pinning::NotificationPinningWorker;
+use log::{debug, info, trace, warn};
 use parking_lot::{Mutex, RwLock};
 use prometheus_endpoint::Registry;
 use rand::Rng;
-use sc_block_builder::{BlockBuilderApi, BlockBuilderProvider, RecordProof};
-use sc_block_builder_ver::{
-	BlockBuilderApi as BlockBuilderApiVer, BlockBuilderProvider as BlockBuilderProviderVer,
-	RecordProof as RecordProofVer,
-};
 use sc_chain_spec::{resolve_state_version_from_wasm, BuildGenesisBlock};
 use sc_client_api::{
 	backend::{
@@ -43,7 +38,7 @@ use sc_client_api::{
 	execution_extensions::ExecutionExtensions,
 	notifications::{StorageEventStream, StorageNotifications},
 	CallExecutor, ExecutorProvider, KeysIter, OnFinalityAction, OnImportAction, PairsIter,
-	ProofProvider, UsageProvider,
+	ProofProvider, UnpinWorkerMessage, UsageProvider,
 };
 use sc_consensus::{
 	BlockCheckParams, BlockImportParams, ForkChoiceStrategy, ImportResult, StateAction,
@@ -59,7 +54,6 @@ use sp_blockchain::{
 	HeaderBackend as ChainHeaderBackend, HeaderMetadata, Info as BlockchainInfo,
 };
 use sp_consensus::{BlockOrigin, BlockStatus, Error as ConsensusError};
-use ver_api::VerApi;
 
 use sc_utils::mpsc::{tracing_unbounded, TracingUnboundedSender};
 use sp_core::{
@@ -75,7 +69,7 @@ use sp_runtime::{
 		Block as BlockT, BlockIdTo, HashingFor, Header as HeaderT, NumberFor, One,
 		SaturatedConversion, Zero,
 	},
-	Digest, Justification, Justifications, StateVersion,
+	Justification, Justifications, StateVersion,
 };
 use sp_state_machine::{
 	prove_child_read, prove_range_read_with_child_with_size, prove_read,
@@ -83,7 +77,7 @@ use sp_state_machine::{
 	ChildStorageCollection, KeyValueStates, KeyValueStorageLevel, StorageCollection,
 	MAX_NESTED_TRIE_DEPTH,
 };
-use sp_trie::{CompactProof, StorageProof};
+use sp_trie::{proof_size_extension::ProofSizeExt, CompactProof, MerkleValue, StorageProof};
 use std::{
 	collections::{HashMap, HashSet},
 	marker::PhantomData,
@@ -120,7 +114,7 @@ where
 	block_rules: BlockRules<Block>,
 	config: ClientConfig<Block>,
 	telemetry: Option<TelemetryHandle>,
-	unpin_worker_sender: TracingUnboundedSender<Block::Hash>,
+	unpin_worker_sender: TracingUnboundedSender<UnpinWorkerMessage<Block>>,
 	_phantom: PhantomData<RA>,
 }
 
@@ -190,7 +184,7 @@ where
 	)
 }
 
-/// Relevant client configuration items relevant for the client.
+/// Client configuration items.
 #[derive(Debug, Clone)]
 pub struct ClientConfig<Block: BlockT> {
 	/// Enable the offchain worker db.
@@ -204,6 +198,8 @@ pub struct ClientConfig<Block: BlockT> {
 	/// Map of WASM runtime substitute starting at the child of the given block until the runtime
 	/// version doesn't match anymore.
 	pub wasm_runtime_substitutes: HashMap<NumberFor<Block>, Vec<u8>>,
+	/// Enable recording of storage proofs during block import
+	pub enable_import_proof_recording: bool,
 }
 
 impl<Block: BlockT> Default for ClientConfig<Block> {
@@ -214,6 +210,7 @@ impl<Block: BlockT> Default for ClientConfig<Block> {
 			wasm_runtime_overrides: None,
 			no_genesis: false,
 			wasm_runtime_substitutes: HashMap::new(),
+			enable_import_proof_recording: false,
 		}
 	}
 }
@@ -329,19 +326,35 @@ where
 			// dropped, the block will be unpinned automatically.
 			if let Some(ref notification) = finality_notification {
 				if let Err(err) = self.backend.pin_block(notification.hash) {
-					error!(
+					debug!(
 						"Unable to pin block for finality notification. hash: {}, Error: {}",
 						notification.hash, err
 					);
-				};
+				} else {
+					let _ = self
+						.unpin_worker_sender
+						.unbounded_send(UnpinWorkerMessage::AnnouncePin(notification.hash))
+						.map_err(|e| {
+							log::error!(
+								"Unable to send AnnouncePin worker message for finality: {e}"
+							)
+						});
+				}
 			}
 
 			if let Some(ref notification) = import_notification {
 				if let Err(err) = self.backend.pin_block(notification.hash) {
-					error!(
+					debug!(
 						"Unable to pin block for import notification. hash: {}, Error: {}",
 						notification.hash, err
 					);
+				} else {
+					let _ = self
+						.unpin_worker_sender
+						.unbounded_send(UnpinWorkerMessage::AnnouncePin(notification.hash))
+						.map_err(|e| {
+							log::error!("Unable to send AnnouncePin worker message for import: {e}")
+						});
 				};
 			}
 
@@ -419,25 +432,12 @@ where
 			backend.commit_operation(op)?;
 		}
 
-		let (unpin_worker_sender, mut rx) =
-			tracing_unbounded::<Block::Hash>("unpin-worker-channel", 10_000);
-		let task_backend = Arc::downgrade(&backend);
-		spawn_handle.spawn(
-			"unpin-worker",
-			None,
-			async move {
-				while let Some(message) = rx.next().await {
-					if let Some(backend) = task_backend.upgrade() {
-						backend.unpin_block(message);
-					} else {
-						log::debug!("Terminating unpin-worker, backend reference was dropped.");
-						return
-					}
-				}
-				log::debug!("Terminating unpin-worker, stream terminated.")
-			}
-			.boxed(),
+		let (unpin_worker_sender, rx) = tracing_unbounded::<UnpinWorkerMessage<Block>>(
+			"notification-pinning-worker-channel",
+			10_000,
 		);
+		let unpin_worker = NotificationPinningWorker::new(rx, backend.clone());
+		spawn_handle.spawn("notification-pinning-worker", None, Box::pin(unpin_worker.run()));
 
 		Ok(Client {
 			backend,
@@ -489,8 +489,7 @@ where
 		CallExecutor::runtime_version(&self.executor, hash)
 	}
 
-	/// Apply a checked and validated block to an operation. If a justification is provided
-	/// then `finalized` *must* be true.
+	/// Apply a checked and validated block to an operation.
 	fn apply_block(
 		&self,
 		operation: &mut ClientImportOperation<Block, B>,
@@ -608,8 +607,6 @@ where
 			.block_gap
 			.map_or(false, |(start, _)| *import_headers.post().number() == start);
 
-		assert!(justifications.is_some() && finalized || justifications.is_none() || gap_block);
-
 		// the block is lower than our last finalized block so it must revert
 		// finality, refusing import.
 		if status == blockchain::BlockStatus::Unknown &&
@@ -681,8 +678,10 @@ where
 
 						// This is use by fast sync for runtime version to be resolvable from
 						// changes.
-						let state_version =
-							resolve_state_version_from_wasm(&storage, &self.executor)?;
+						let state_version = resolve_state_version_from_wasm::<_, HashingFor<Block>>(
+							&storage,
+							&self.executor,
+						)?;
 						let state_root = operation.op.reset_storage(storage, state_version)?;
 						if state_root != *import_headers.post().state_root() {
 							// State root mismatch when importing state. This should not happen in
@@ -866,6 +865,14 @@ where
 				let mut runtime_api = self.runtime_api();
 
 				runtime_api.set_call_context(CallContext::Onchain);
+
+				if self.config.enable_import_proof_recording {
+					runtime_api.record_proof();
+					let recorder = runtime_api
+						.proof_recorder()
+						.expect("Proof recording is enabled in the line above; qed.");
+					runtime_api.register_extension(ProofSizeExt::new(recorder));
+				}
 
 				runtime_api.execute_block(
 					*parent_hash,
@@ -1410,87 +1417,6 @@ where
 	}
 }
 
-impl<B, E, Block, RA> BlockBuilderProvider<B, Block, Self> for Client<B, E, Block, RA>
-where
-	B: backend::Backend<Block> + Send + Sync + 'static,
-	E: CallExecutor<Block> + Send + Sync + 'static,
-	Block: BlockT,
-	Self: ChainHeaderBackend<Block> + ProvideRuntimeApi<Block>,
-	<Self as ProvideRuntimeApi<Block>>::Api: ApiExt<Block> + BlockBuilderApi<Block>,
-{
-	fn new_block_at<R: Into<RecordProof>>(
-		&self,
-		parent: Block::Hash,
-		inherent_digests: Digest,
-		record_proof: R,
-	) -> sp_blockchain::Result<sc_block_builder::BlockBuilder<Block, Self, B>> {
-		sc_block_builder::BlockBuilder::new(
-			self,
-			parent,
-			self.expect_block_number_from_id(&BlockId::Hash(parent))?,
-			record_proof.into(),
-			inherent_digests,
-			&self.backend,
-		)
-	}
-
-	fn new_block(
-		&self,
-		inherent_digests: Digest,
-	) -> sp_blockchain::Result<sc_block_builder::BlockBuilder<Block, Self, B>> {
-		let info = self.chain_info();
-		sc_block_builder::BlockBuilder::new(
-			self,
-			info.best_hash,
-			info.best_number,
-			RecordProof::No,
-			inherent_digests,
-			&self.backend,
-		)
-	}
-}
-
-impl<B, E, Block, RA> BlockBuilderProviderVer<B, Block, Self> for Client<B, E, Block, RA>
-where
-	B: backend::Backend<Block> + Send + Sync + 'static,
-	E: CallExecutor<Block> + Send + Sync + 'static,
-	Block: BlockT,
-	Self: ChainHeaderBackend<Block> + ProvideRuntimeApi<Block>,
-	<Self as ProvideRuntimeApi<Block>>::Api:
-		ApiExt<Block> + BlockBuilderApiVer<Block> + VerApi<Block>,
-{
-	fn new_block_at<R: Into<RecordProofVer>>(
-		&self,
-		parent: Block::Hash,
-		inherent_digests: Digest,
-		record_proof: R,
-	) -> sp_blockchain::Result<sc_block_builder_ver::BlockBuilder<Block, Self, B>> {
-		sc_block_builder_ver::BlockBuilder::new(
-			self,
-			parent,
-			self.expect_block_number_from_id(&BlockId::Hash(parent))?,
-			record_proof.into(),
-			inherent_digests,
-			&self.backend,
-		)
-	}
-
-	fn new_block(
-		&self,
-		inherent_digests: Digest,
-	) -> sp_blockchain::Result<sc_block_builder_ver::BlockBuilder<Block, Self, B>> {
-		let info = self.chain_info();
-		sc_block_builder_ver::BlockBuilder::new(
-			self,
-			info.best_hash,
-			info.best_number,
-			RecordProofVer::No,
-			inherent_digests,
-			&self.backend,
-		)
-	}
-}
-
 impl<B, E, Block, RA> ExecutorProvider<Block> for Client<B, E, Block, RA>
 where
 	B: backend::Backend<Block>,
@@ -1591,6 +1517,27 @@ where
 	) -> sp_blockchain::Result<Option<Block::Hash>> {
 		self.state_at(hash)?
 			.child_storage_hash(child_info, &key.0)
+			.map_err(|e| sp_blockchain::Error::from_state(Box::new(e)))
+	}
+
+	fn closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		key: &StorageKey,
+	) -> blockchain::Result<Option<MerkleValue<<Block as BlockT>::Hash>>> {
+		self.state_at(hash)?
+			.closest_merkle_value(&key.0)
+			.map_err(|e| sp_blockchain::Error::from_state(Box::new(e)))
+	}
+
+	fn child_closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		child_info: &ChildInfo,
+		key: &StorageKey,
+	) -> blockchain::Result<Option<MerkleValue<<Block as BlockT>::Hash>>> {
+		self.state_at(hash)?
+			.child_closest_merkle_value(child_info, &key.0)
 			.map_err(|e| sp_blockchain::Error::from_state(Box::new(e)))
 	}
 }
@@ -1793,8 +1740,7 @@ where
 {
 	type Error = ConsensusError;
 
-	/// Import a checked and validated block. If a justification is provided in
-	/// `BlockImportParams` then `finalized` *must* be true.
+	/// Import a checked and validated block.
 	///
 	/// NOTE: only use this implementation when there are NO consensus-level BlockImport
 	/// objects. Otherwise, importing blocks directly into the client would be bypassing

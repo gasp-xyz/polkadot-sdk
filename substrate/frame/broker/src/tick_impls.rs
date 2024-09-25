@@ -36,12 +36,13 @@ impl<T: Config> Pallet<T> {
 	/// - Request revenue information for a previous timeslice
 	/// - Initialize an instantaneous core pool historical revenue record
 	pub(crate) fn do_tick() -> Weight {
+		let mut meter = WeightMeter::new();
+		meter.consume(T::WeightInfo::do_tick_base());
+
 		let (mut status, config) = match (Status::<T>::get(), Configuration::<T>::get()) {
 			(Some(s), Some(c)) => (s, c),
-			_ => return Weight::zero(),
+			_ => return meter.consumed(),
 		};
-
-		let mut meter = WeightMeter::new();
 
 		if Self::process_core_count(&mut status) {
 			meter.consume(T::WeightInfo::process_core_count(status.core_count.into()));
@@ -86,7 +87,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn process_core_count(status: &mut StatusRecord) -> bool {
-		if let Some(core_count) = T::Coretime::check_notify_core_count() {
+		if let Some(core_count) = CoreCountInbox::<T>::take() {
 			status.core_count = core_count;
 			Self::deposit_event(Event::<T>::CoreCountChanged { core_count });
 			return true
@@ -111,10 +112,16 @@ impl<T: Config> Pallet<T> {
 		}
 		// Payout system InstaPool Cores.
 		let total_contrib = r.system_contributions.saturating_add(r.private_contributions);
-		let system_payout =
-			revenue.saturating_mul(r.system_contributions.into()) / total_contrib.into();
-		let _ = Self::charge(&Self::account_id(), system_payout);
-		revenue.saturating_reduce(system_payout);
+		let system_payout = if !total_contrib.is_zero() {
+			let system_payout =
+				revenue.saturating_mul(r.system_contributions.into()) / total_contrib.into();
+			let _ = Self::charge(&Self::account_id(), system_payout);
+			revenue.saturating_reduce(system_payout);
+
+			system_payout
+		} else {
+			Zero::zero()
+		};
 
 		if !revenue.is_zero() && r.private_contributions > 0 {
 			r.maybe_payout = Some(revenue);
@@ -209,7 +216,9 @@ impl<T: Config> Pallet<T> {
 			let assignment = CoreAssignment::Task(task);
 			let schedule = BoundedVec::truncate_from(vec![ScheduleItem { mask, assignment }]);
 			Workplan::<T>::insert((region_begin, first_core), &schedule);
-			let expiring = until >= region_begin && until < region_end;
+			// Separate these to avoid missed expired leases hanging around forever.
+			let expired = until < region_end;
+			let expiring = until >= region_begin && expired;
 			if expiring {
 				// last time for this one - make it renewable.
 				let renewal_id = AllowedRenewalId { core: first_core, when: region_end };
@@ -224,7 +233,7 @@ impl<T: Config> Pallet<T> {
 				Self::deposit_event(Event::LeaseEnding { when: region_end, task });
 			}
 			first_core.saturating_inc();
-			!expiring
+			!expired
 		});
 		Leases::<T>::put(&leases);
 

@@ -323,7 +323,7 @@ pub mod pallet {
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub authorities: Vec<(AuthorityId, BabeAuthorityWeight)>,
-		pub epoch_config: Option<BabeEpochConfiguration>,
+		pub epoch_config: BabeEpochConfiguration,
 		#[serde(skip)]
 		pub _config: sp_std::marker::PhantomData<T>,
 	}
@@ -333,9 +333,7 @@ pub mod pallet {
 		fn build(&self) {
 			SegmentIndex::<T>::put(0);
 			Pallet::<T>::initialize_genesis_authorities(&self.authorities);
-			EpochConfig::<T>::put(
-				self.epoch_config.clone().expect("epoch_config must not be None"),
-			);
+			EpochConfig::<T>::put(&self.epoch_config);
 		}
 	}
 
@@ -384,7 +382,11 @@ pub mod pallet {
 							});
 
 							public
-								.make_bytes(RANDOMNESS_VRF_CONTEXT, &transcript, &signature.output)
+								.make_bytes(
+									RANDOMNESS_VRF_CONTEXT,
+									&transcript,
+									&signature.pre_output,
+								)
 								.ok()
 						});
 
@@ -590,7 +592,6 @@ impl<T: Config> Pallet<T> {
 
 		if authorities.is_empty() {
 			log::warn!(target: LOG_TARGET, "Ignoring empty epoch change.");
-
 			return
 		}
 
@@ -664,7 +665,7 @@ impl<T: Config> Pallet<T> {
 		let next_randomness = NextRandomness::<T>::get();
 
 		let next_epoch = NextEpochDescriptor {
-			authorities: next_authorities.to_vec(),
+			authorities: next_authorities.into_inner(),
 			randomness: next_randomness,
 		};
 		Self::deposit_consensus(ConsensusLog::NextEpochData(next_epoch));
@@ -700,7 +701,7 @@ impl<T: Config> Pallet<T> {
 			epoch_index: EpochIndex::<T>::get(),
 			start_slot: Self::current_epoch_start(),
 			duration: T::EpochDuration::get(),
-			authorities: Self::authorities().to_vec(),
+			authorities: Self::authorities().into_inner(),
 			randomness: Self::randomness(),
 			config: EpochConfig::<T>::get()
 				.expect("EpochConfig is initialized in genesis; we never `take` or `kill` it; qed"),
@@ -725,7 +726,7 @@ impl<T: Config> Pallet<T> {
 			epoch_index: next_epoch_index,
 			start_slot,
 			duration: T::EpochDuration::get(),
-			authorities: NextAuthorities::<T>::get().to_vec(),
+			authorities: NextAuthorities::<T>::get().into_inner(),
 			randomness: NextRandomness::<T>::get(),
 			config: NextEpochConfig::<T>::get().unwrap_or_else(|| {
 				EpochConfig::<T>::get().expect(
@@ -778,7 +779,7 @@ impl<T: Config> Pallet<T> {
 		// we use the same values as genesis because we haven't collected any
 		// randomness yet.
 		let next = NextEpochDescriptor {
-			authorities: Self::authorities().to_vec(),
+			authorities: Self::authorities().into_inner(),
 			randomness: Self::randomness(),
 		};
 
@@ -901,8 +902,9 @@ impl<T: Config> OnTimestampSet<T::Moment> for Pallet<T> {
 		let timestamp_slot = moment / slot_duration;
 		let timestamp_slot = Slot::from(timestamp_slot.saturated_into::<u64>());
 
-		assert!(
-			CurrentSlot::<T>::get() == timestamp_slot,
+		assert_eq!(
+			CurrentSlot::<T>::get(),
+			timestamp_slot,
 			"Timestamp slot must match `CurrentSlot`"
 		);
 	}

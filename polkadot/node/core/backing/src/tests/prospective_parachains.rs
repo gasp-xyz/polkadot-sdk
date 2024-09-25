@@ -18,14 +18,14 @@
 
 use polkadot_node_subsystem::{
 	messages::{ChainApiMessage, FragmentTreeMembership},
-	TimeoutExt,
+	ActivatedLeaf, TimeoutExt,
 };
-use polkadot_primitives::{vstaging as vstaging_primitives, BlockNumber, Header, OccupiedCore};
+use polkadot_primitives::{AsyncBackingParams, BlockNumber, Header, OccupiedCore};
 
 use super::*;
 
-const ASYNC_BACKING_PARAMETERS: vstaging_primitives::AsyncBackingParams =
-	vstaging_primitives::AsyncBackingParams { max_candidate_depth: 4, allowed_ancestry_len: 3 };
+const ASYNC_BACKING_PARAMETERS: AsyncBackingParams =
+	AsyncBackingParams { max_candidate_depth: 4, allowed_ancestry_len: 3 };
 
 struct TestLeaf {
 	activated: ActivatedLeaf,
@@ -56,7 +56,7 @@ async fn activate_leaf(
 	assert_matches!(
 		virtual_overseer.recv().await,
 		AllMessages::RuntimeApi(
-			RuntimeApiMessage::Request(parent, RuntimeApiRequest::StagingAsyncBackingParams(tx))
+			RuntimeApiMessage::Request(parent, RuntimeApiRequest::AsyncBackingParams(tx))
 		) if parent == leaf_hash => {
 			tx.send(Ok(ASYNC_BACKING_PARAMETERS)).unwrap();
 		}
@@ -185,6 +185,16 @@ async fn activate_leaf(
 			}
 		);
 
+		// Node features request from runtime: all features are disabled.
+		assert_matches!(
+			virtual_overseer.recv().await,
+			AllMessages::RuntimeApi(
+				RuntimeApiMessage::Request(parent, RuntimeApiRequest::NodeFeatures(_session_index, tx))
+			) if parent == hash => {
+				tx.send(Ok(Default::default())).unwrap();
+			}
+		);
+
 		// Check if subsystem job issues a request for the minimum backing votes.
 		assert_matches!(
 			virtual_overseer.recv().await,
@@ -195,6 +205,26 @@ async fn activate_leaf(
 				tx.send(Ok(test_state.minimum_backing_votes)).unwrap();
 			}
 		);
+
+		// Check that subsystem job issues a request for the runtime version.
+		assert_matches!(
+			virtual_overseer.recv().await,
+			AllMessages::RuntimeApi(
+				RuntimeApiMessage::Request(parent, RuntimeApiRequest::Version(tx))
+			) if parent == hash => {
+				tx.send(Ok(RuntimeApiRequest::DISABLED_VALIDATORS_RUNTIME_REQUIREMENT)).unwrap();
+			}
+		);
+
+		// Check that the subsystem job issues a request for the disabled validators.
+		assert_matches!(
+			virtual_overseer.recv().await,
+			AllMessages::RuntimeApi(
+				RuntimeApiMessage::Request(parent, RuntimeApiRequest::DisabledValidators(tx))
+			) if parent == hash => {
+				tx.send(Ok(Vec::new())).unwrap();
+			}
+		);
 	}
 }
 
@@ -202,38 +232,13 @@ async fn assert_validate_seconded_candidate(
 	virtual_overseer: &mut VirtualOverseer,
 	relay_parent: Hash,
 	candidate: &CommittedCandidateReceipt,
-	pov: &PoV,
-	pvd: &PersistedValidationData,
-	validation_code: &ValidationCode,
+	assert_pov: &PoV,
+	assert_pvd: &PersistedValidationData,
+	assert_validation_code: &ValidationCode,
 	expected_head_data: &HeadData,
 	fetch_pov: bool,
 ) {
-	assert_matches!(
-		virtual_overseer.recv().await,
-		AllMessages::RuntimeApi(
-			RuntimeApiMessage::Request(parent, RuntimeApiRequest::ValidationCodeByHash(hash, tx))
-		) if parent == relay_parent && hash == validation_code.hash() => {
-			tx.send(Ok(Some(validation_code.clone()))).unwrap();
-		}
-	);
-
-	assert_matches!(
-		virtual_overseer.recv().await,
-		AllMessages::RuntimeApi(
-			RuntimeApiMessage::Request(_, RuntimeApiRequest::SessionIndexForChild(tx))
-		) => {
-			tx.send(Ok(1u32.into())).unwrap();
-		}
-	);
-
-	assert_matches!(
-		virtual_overseer.recv().await,
-		AllMessages::RuntimeApi(
-			RuntimeApiMessage::Request(_, RuntimeApiRequest::SessionExecutorParams(sess_idx, tx))
-		) if sess_idx == 1 => {
-			tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
-		}
-	);
+	assert_validation_requests(virtual_overseer, assert_validation_code.clone()).await;
 
 	if fetch_pov {
 		assert_matches!(
@@ -245,29 +250,29 @@ async fn assert_validate_seconded_candidate(
 					..
 				}
 			) if hash == relay_parent => {
-				tx.send(pov.clone()).unwrap();
+				tx.send(assert_pov.clone()).unwrap();
 			}
 		);
 	}
 
 	assert_matches!(
 		virtual_overseer.recv().await,
-		AllMessages::CandidateValidation(CandidateValidationMessage::ValidateFromExhaustive(
-			_pvd,
-			_validation_code,
+		AllMessages::CandidateValidation(CandidateValidationMessage::ValidateFromExhaustive {
+			validation_data,
+			validation_code,
 			candidate_receipt,
-			_pov,
-			_,
-			timeout,
-			tx,
-		)) if &_pvd == pvd &&
-			&_validation_code == validation_code &&
-			&*_pov == pov &&
+			pov,
+			exec_kind,
+			response_sender,
+			..
+		}) if &validation_data == assert_pvd &&
+			&validation_code == assert_validation_code &&
+			&*pov == assert_pov &&
 			&candidate_receipt.descriptor == candidate.descriptor() &&
-			timeout == PvfExecTimeoutKind::Backing &&
+			exec_kind == PvfExecKind::Backing &&
 			candidate.commitments.hash() == candidate_receipt.commitments_hash =>
 		{
-			tx.send(Ok(ValidationResult::Valid(
+			response_sender.send(Ok(ValidationResult::Valid(
 				CandidateCommitments {
 					head_data: expected_head_data.clone(),
 					horizontal_messages: Default::default(),
@@ -276,7 +281,7 @@ async fn assert_validate_seconded_candidate(
 					processed_downward_messages: 0,
 					hrmp_watermark: 0,
 				},
-				pvd.clone(),
+				assert_pvd.clone(),
 			)))
 			.unwrap();
 		}
@@ -310,10 +315,11 @@ async fn assert_hypothetical_frontier_requests(
 			) => {
 				let idx = match expected_requests.iter().position(|r| r.0 == request) {
 					Some(idx) => idx,
-					None => panic!(
+					None =>
+						panic!(
 						"unexpected hypothetical frontier request, no match found for {:?}",
 						request
-					),
+						),
 				};
 				let resp = std::mem::take(&mut expected_requests[idx].1);
 				tx.send(resp).unwrap();
@@ -346,12 +352,7 @@ fn seconding_sanity_check_allowed() {
 		// `a` is grandparent of `b`.
 		let leaf_a_hash = Hash::from_low_u64_be(130);
 		let leaf_a_parent = get_parent_hash(leaf_a_hash);
-		let activated = ActivatedLeaf {
-			hash: leaf_a_hash,
-			number: LEAF_A_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_a_hash, LEAF_A_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_A_BLOCK_NUMBER - LEAF_A_ANCESTRY_LEN)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
 
@@ -359,12 +360,7 @@ fn seconding_sanity_check_allowed() {
 		const LEAF_B_ANCESTRY_LEN: BlockNumber = 4;
 
 		let leaf_b_hash = Hash::from_low_u64_be(128);
-		let activated = ActivatedLeaf {
-			hash: leaf_b_hash,
-			number: LEAF_B_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_b_hash, LEAF_B_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_B_BLOCK_NUMBER - LEAF_B_ANCESTRY_LEN)];
 		let test_leaf_b = TestLeaf { activated, min_relay_parents };
 
@@ -503,24 +499,14 @@ fn seconding_sanity_check_disallowed() {
 		// `a` is grandparent of `b`.
 		let leaf_a_hash = Hash::from_low_u64_be(130);
 		let leaf_a_parent = get_parent_hash(leaf_a_hash);
-		let activated = ActivatedLeaf {
-			hash: leaf_a_hash,
-			number: LEAF_A_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_a_hash, LEAF_A_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_A_BLOCK_NUMBER - LEAF_A_ANCESTRY_LEN)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
 
 		const LEAF_B_BLOCK_NUMBER: BlockNumber = LEAF_A_BLOCK_NUMBER + 2;
 		const LEAF_B_ANCESTRY_LEN: BlockNumber = 4;
 
-		let activated = ActivatedLeaf {
-			hash: leaf_b_hash,
-			number: LEAF_B_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_b_hash, LEAF_B_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_B_BLOCK_NUMBER - LEAF_B_ANCESTRY_LEN)];
 		let test_leaf_b = TestLeaf { activated, min_relay_parents };
 
@@ -722,12 +708,7 @@ fn prospective_parachains_reject_candidate() {
 
 		let leaf_a_hash = Hash::from_low_u64_be(130);
 		let leaf_a_parent = get_parent_hash(leaf_a_hash);
-		let activated = ActivatedLeaf {
-			hash: leaf_a_hash,
-			number: LEAF_A_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_a_hash, LEAF_A_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_A_BLOCK_NUMBER - LEAF_A_ANCESTRY_LEN)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
 
@@ -905,12 +886,7 @@ fn second_multiple_candidates_per_relay_parent() {
 		let leaf_hash = Hash::from_low_u64_be(130);
 		let leaf_parent = get_parent_hash(leaf_hash);
 		let leaf_grandparent = get_parent_hash(leaf_parent);
-		let activated = ActivatedLeaf {
-			hash: leaf_hash,
-			number: LEAF_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_hash, LEAF_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_BLOCK_NUMBER - LEAF_ANCESTRY_LEN)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
 
@@ -1046,12 +1022,7 @@ fn backing_works() {
 
 		let leaf_hash = Hash::from_low_u64_be(130);
 		let leaf_parent = get_parent_hash(leaf_hash);
-		let activated = ActivatedLeaf {
-			hash: leaf_hash,
-			number: LEAF_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_hash, LEAF_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_BLOCK_NUMBER - LEAF_ANCESTRY_LEN)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
 
@@ -1212,12 +1183,7 @@ fn concurrent_dependent_candidates() {
 		let leaf_hash = Hash::from_low_u64_be(130);
 		let leaf_parent = get_parent_hash(leaf_hash);
 		let leaf_grandparent = get_parent_hash(leaf_parent);
-		let activated = ActivatedLeaf {
-			hash: leaf_hash,
-			number: LEAF_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_hash, LEAF_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_BLOCK_NUMBER - LEAF_ANCESTRY_LEN)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
 
@@ -1313,6 +1279,7 @@ fn concurrent_dependent_candidates() {
 		let statement_b = CandidateBackingMessage::Statement(leaf_parent, signed_b.clone());
 
 		virtual_overseer.send(FromOrchestra::Communication { msg: statement_a }).await;
+
 		// At this point the subsystem waits for response, the previous message is received,
 		// send a second one without blocking.
 		let _ = virtual_overseer
@@ -1358,9 +1325,13 @@ fn concurrent_dependent_candidates() {
 					tx.send(pov.clone()).unwrap();
 				},
 				AllMessages::CandidateValidation(
-					CandidateValidationMessage::ValidateFromExhaustive(.., candidate, _, _, _, tx),
+					CandidateValidationMessage::ValidateFromExhaustive {
+						candidate_receipt,
+						response_sender,
+						..
+					},
 				) => {
-					let candidate_hash = candidate.hash();
+					let candidate_hash = candidate_receipt.hash();
 					let (head_data, pvd) = if candidate_hash == candidate_a_hash {
 						(&head_data[1], &pvd_a)
 					} else if candidate_hash == candidate_b_hash {
@@ -1368,18 +1339,19 @@ fn concurrent_dependent_candidates() {
 					} else {
 						panic!("unknown candidate hash")
 					};
-					tx.send(Ok(ValidationResult::Valid(
-						CandidateCommitments {
-							head_data: head_data.clone(),
-							horizontal_messages: Default::default(),
-							upward_messages: Default::default(),
-							new_validation_code: None,
-							processed_downward_messages: 0,
-							hrmp_watermark: 0,
-						},
-						pvd.clone(),
-					)))
-					.unwrap();
+					response_sender
+						.send(Ok(ValidationResult::Valid(
+							CandidateCommitments {
+								head_data: head_data.clone(),
+								horizontal_messages: Default::default(),
+								upward_messages: Default::default(),
+								new_validation_code: None,
+								processed_downward_messages: 0,
+								hrmp_watermark: 0,
+							},
+							pvd.clone(),
+						)))
+						.unwrap();
 				},
 				AllMessages::AvailabilityStore(AvailabilityStoreMessage::StoreAvailableData {
 					tx,
@@ -1428,7 +1400,19 @@ fn concurrent_dependent_candidates() {
 					assert_eq!(sess_idx, 1);
 					tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
 				},
+				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+					_parent,
+					RuntimeApiRequest::ValidatorGroups(tx),
+				)) => {
+					tx.send(Ok(test_state.validator_groups.clone())).unwrap();
+				},
 
+				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+					_parent,
+					RuntimeApiRequest::AvailabilityCores(tx),
+				)) => {
+					tx.send(Ok(test_state.availability_cores.clone())).unwrap();
+				},
 				_ => panic!("unexpected message received from overseer: {:?}", msg),
 			}
 		}
@@ -1458,13 +1442,7 @@ fn seconding_sanity_check_occupy_same_depth() {
 		let leaf_hash = Hash::from_low_u64_be(130);
 		let leaf_parent = get_parent_hash(leaf_hash);
 
-		let activated = ActivatedLeaf {
-			hash: leaf_hash,
-			number: LEAF_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
-
+		let activated = new_leaf(leaf_hash, LEAF_BLOCK_NUMBER);
 		let min_block_number = LEAF_BLOCK_NUMBER - LEAF_ANCESTRY_LEN;
 		let min_relay_parents = vec![(para_id_a, min_block_number), (para_id_b, min_block_number)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
@@ -1600,13 +1578,14 @@ fn occupied_core_assignment() {
 		const LEAF_A_BLOCK_NUMBER: BlockNumber = 100;
 		const LEAF_A_ANCESTRY_LEN: BlockNumber = 3;
 		let para_id = test_state.chain_ids[0];
+		let previous_para_id = test_state.chain_ids[1];
 
 		// Set the core state to occupied.
 		let mut candidate_descriptor = ::test_helpers::dummy_candidate_descriptor(Hash::zero());
-		candidate_descriptor.para_id = para_id;
+		candidate_descriptor.para_id = previous_para_id;
 		test_state.availability_cores[0] = CoreState::Occupied(OccupiedCore {
 			group_responsible: Default::default(),
-			next_up_on_available: None,
+			next_up_on_available: Some(ScheduledCore { para_id, collator: None }),
 			occupied_since: 100_u32,
 			time_out_at: 200_u32,
 			next_up_on_time_out: None,
@@ -1617,12 +1596,7 @@ fn occupied_core_assignment() {
 
 		let leaf_a_hash = Hash::from_low_u64_be(130);
 		let leaf_a_parent = get_parent_hash(leaf_a_hash);
-		let activated = ActivatedLeaf {
-			hash: leaf_a_hash,
-			number: LEAF_A_BLOCK_NUMBER,
-			status: LeafStatus::Fresh,
-			span: Arc::new(jaeger::Span::Disabled),
-		};
+		let activated = new_leaf(leaf_a_hash, LEAF_A_BLOCK_NUMBER);
 		let min_relay_parents = vec![(para_id, LEAF_A_BLOCK_NUMBER - LEAF_A_ANCESTRY_LEN)];
 		let test_leaf_a = TestLeaf { activated, min_relay_parents };
 

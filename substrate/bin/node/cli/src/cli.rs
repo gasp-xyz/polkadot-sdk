@@ -27,6 +27,10 @@ pub struct Cli {
 	#[clap(flatten)]
 	pub run: sc_cli::RunCmd,
 
+	#[allow(missing_docs)]
+	#[clap(flatten)]
+	pub mixnet_params: sc_cli::MixnetParams,
+
 	/// Disable automatic hardware benchmarks.
 	///
 	/// By default these benchmarks are automatically ran at startup and measure
@@ -59,7 +63,7 @@ pub enum Subcommand {
 
 	/// Try-runtime has migrated to a standalone CLI
 	/// (<https://github.com/paritytech/try-runtime-cli>). The subcommand exists as a stub and
-	/// deprecation notice. It will be removed entirely some time after Janurary 2024.
+	/// deprecation notice. It will be removed entirely some time after January 2024.
 	TryRuntime,
 
 	/// Key management cli utilities

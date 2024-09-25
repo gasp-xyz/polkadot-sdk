@@ -20,7 +20,7 @@
 use crate::{
 	generic::CheckedExtrinsic,
 	traits::{
-		self, Checkable, Extrinsic, ExtrinsicMetadata, Hash, IdentifyAccount,
+		self, Checkable, Extrinsic, ExtrinsicMetadata, IdentifyAccount,
 		IdentifyAccountWithLookup, LookupError, MaybeDisplay, Member, SignaturePayload,
 		SignedExtension,
 	},
@@ -34,7 +34,6 @@ use sp_io::hashing::blake2_256;
 #[cfg(all(not(feature = "std"), feature = "serde"))]
 use sp_std::alloc::format;
 use sp_std::{fmt, prelude::*};
-use sha3::{Digest, Keccak256};
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
@@ -46,16 +45,37 @@ const EXTRINSIC_FORMAT_VERSION: u8 = 4;
 /// The `SingaturePayload` of `UncheckedExtrinsic`.
 type UncheckedSignaturePayload<Address, Signature, Extra> = (Address, Signature, Extra);
 
-/// A extrinsic right from the external world. This is unchecked and so
-/// can contain a signature.
+/// An extrinsic right from the external world. This is unchecked and so can contain a signature.
+///
+/// An extrinsic is formally described as any external data that is originating from the outside of
+/// the runtime and fed into the runtime as a part of the block-body.
+///
+/// Inherents are special types of extrinsics that are placed into the block by the block-builder.
+/// They are unsigned because the assertion is that they are "inherently true" by virtue of getting
+/// past all validators.
+///
+/// Transactions are all other statements provided by external entities that the chain deems values
+/// and decided to include in the block. This value is typically in the form of fee payment, but it
+/// could in principle be any other interaction. Transactions are either signed or unsigned. A
+/// sensible transaction pool should ensure that only transactions that are worthwhile are
+/// considered for block-building.
+#[cfg_attr(feature = "std", doc = simple_mermaid::mermaid!("../../docs/mermaid/extrinsics.mmd"))]
+/// This type is by no means enforced within Substrate, but given its genericness, it is highly
+/// likely that for most use-cases it will suffice. Thus, the encoding of this type will dictate
+/// exactly what bytes should be sent to a runtime to transact with it.
+///
+/// This can be checked using [`Checkable`], yielding a [`CheckedExtrinsic`], which is the
+/// counterpart of this type after its signature (and other non-negotiable validity checks) have
+/// passed.
 #[derive(PartialEq, Eq, Clone)]
 pub struct UncheckedExtrinsic<Address, Call, Signature, Extra>
 where
 	Extra: SignedExtension,
 {
-	/// The signature, address, number of extrinsics have come before from
-	/// the same signer and an era describing the longevity of this transaction,
-	/// if this is a signed extrinsic.
+	/// The signature, address, number of extrinsics have come before from the same signer and an
+	/// era describing the longevity of this transaction, if this is a signed extrinsic.
+	///
+	/// `None` if it is unsigned or an inherent.
 	pub signature: Option<UncheckedSignaturePayload<Address, Signature, Extra>>,
 	/// The function that should be called.
 	pub function: Call,
@@ -137,10 +157,9 @@ impl<Address: TypeInfo, Call: TypeInfo, Signature: TypeInfo, Extra: SignedExtens
 	}
 }
 
+use alloy_sol_types::{sol, SolStruct};
 /// Metamask EIP712 compatible struct
 use sp_core::hexdisplay::HexDisplay;
-use alloy_primitives::address;
-use alloy_sol_types::{sol, SolStruct};
 sol! {
 	struct Message {
 		 string call;
@@ -148,30 +167,33 @@ sol! {
 	}
 }
 
-use codec::alloc::string::{String, ToString};
-pub use alloy_sol_types::Eip712Domain;
 pub use alloy_sol_types::eip712_domain;
+pub use alloy_sol_types::Eip712Domain;
+use codec::alloc::string::{String, ToString};
 
-pub struct MetamaskSigningCtx{
+/// Metamask singer extra data struct
+pub struct MetamaskSigningCtx {
+	/// string call data
 	pub call: String,
+	/// encoded eip712
 	pub eip712: Eip712Domain,
 }
 
-
+/// Extra context for metamask singer
 pub trait ExtendedCall {
 	fn context(&self) -> Option<MetamaskSigningCtx>;
 }
 
-impl<Address, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
-	for UncheckedExtrinsic<Address, Call, Signature, Extra>
+impl<LookupSource, AccountId, Call, Signature, Extra, Lookup> Checkable<Lookup>
+	for UncheckedExtrinsic<LookupSource, Call, Signature, Extra>
 where
-	Address: Member + MaybeDisplay,
+	LookupSource: Member + MaybeDisplay,
 	Call: Encode + Member + ExtendedCall,
 	Signature: Member + traits::Verify,
 	<Signature as traits::Verify>::Signer: IdentifyAccount<AccountId = AccountId>,
 	Extra: SignedExtension<AccountId = AccountId>,
 	AccountId: Member + MaybeDisplay,
-	Lookup: traits::Lookup<Source = Address, Target = AccountId>,
+	Lookup: traits::Lookup<Source = LookupSource, Target = AccountId>,
 {
 	type Checked = CheckedExtrinsic<AccountId, Call, Extra>;
 
@@ -187,22 +209,25 @@ where
 
 				let mut metamask_signature_validation = false;
 
-				if let Some(MetamaskSigningCtx{call, eip712}) = self.function.context() {
+				if let Some(MetamaskSigningCtx { call, eip712 }) = self.function.context() {
 					let msg = Message {
 						call,
 						tx: HexDisplay::from(&raw_payload.inner().encode()).to_string(),
 					};
-					let signing_hash = msg.eip712_signing_hash(&eip712);
-					if signature.verify(signing_hash.as_ref(), &signed) {
+					let mut signing_data = [0u8; 2 + 32 + 32];
+					signing_data[0] = 0x19;
+					signing_data[1] = 0x01;
+					signing_data[2..34].copy_from_slice(&eip712.hash_struct()[..]);
+					signing_data[34..66].copy_from_slice(&msg.eip712_hash_struct()[..]);
+					if signature.verify(signing_data.as_ref(), &signed) {
 						metamask_signature_validation = true;
 					}
 				}
 
-				// We send the prehashed payload to verify here so that it works with metamask impl
-				if !metamask_signature_validation &&
-					!raw_payload.using_encoded(|payload| signature.verify(Keccak256::digest(payload).as_slice(), &signed))
+				if !metamask_signature_validation
+					&& !raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
 				{
-					return Err(InvalidTransaction::BadProof.into())
+					return Err(InvalidTransaction::BadProof.into());
 				}
 
 				let (function, extra, _) = raw_payload.deconstruct();
@@ -337,7 +362,7 @@ where
 		let is_signed = version & 0b1000_0000 != 0;
 		let version = version & 0b0111_1111;
 		if version != EXTRINSIC_FORMAT_VERSION {
-			return Err("Invalid transaction version".into())
+			return Err("Invalid transaction version".into());
 		}
 
 		let signature = is_signed.then(|| Decode::decode(input)).transpose()?;
@@ -349,7 +374,7 @@ where
 			let length = before_length.saturating_sub(after_length);
 
 			if length != expected_length.0 as usize {
-				return Err("Invalid length prefix".into())
+				return Err("Invalid length prefix".into());
 			}
 		}
 
@@ -357,6 +382,7 @@ where
 	}
 }
 
+#[docify::export(unchecked_extrinsic_encode_impl)]
 impl<Address, Call, Signature, Extra> Encode for UncheckedExtrinsic<Address, Call, Signature, Extra>
 where
 	Address: Encode,
@@ -468,16 +494,16 @@ mod tests {
 		testing::TestSignature as TestSig,
 		traits::{DispatchInfoOf, IdentityLookup, SignedExtension},
 	};
-	use sp_core::{crypto::UncheckedFrom, keccak_256};
 	use sp_io::hashing::blake2_256;
-	use codec::alloc::string::String;
 
 	type TestContext = IdentityLookup<u64>;
 	type TestAccountId = u64;
 	type TestCall = Vec<u8>;
 
 	impl ExtendedCall for TestCall {
-		fn context(&self) -> Option<MetamaskSigningCtx>{ None }
+		fn context(&self) -> Option<MetamaskSigningCtx> {
+			None
+		}
 	}
 
 	const TEST_ACCOUNT: TestAccountId = 0;

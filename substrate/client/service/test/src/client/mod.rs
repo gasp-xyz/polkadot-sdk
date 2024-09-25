@@ -19,7 +19,7 @@
 use async_channel::TryRecvError;
 use futures::executor::block_on;
 use parity_scale_codec::{Decode, Encode, Joiner};
-use sc_block_builder::BlockBuilderProvider;
+use sc_block_builder::BlockBuilderBuilder;
 use sc_client_api::{
 	in_mem, BlockBackend, BlockchainEvents, ExecutorProvider, FinalityNotifications, HeaderBackend,
 	StorageProvider,
@@ -39,7 +39,6 @@ use sp_runtime::{
 };
 use sp_state_machine::{backend::Backend as _, InMemoryBackend, OverlayedChanges, StateMachine};
 use sp_storage::{ChildInfo, StorageKey};
-use sp_trie::{LayoutV0, TrieConfiguration};
 use std::{collections::HashSet, sync::Arc};
 use substrate_test_runtime::TestAPI;
 use substrate_test_runtime_client::{
@@ -62,24 +61,19 @@ fn construct_block(
 	backend: &InMemoryBackend<BlakeTwo256>,
 	number: BlockNumber,
 	parent_hash: Hash,
-	state_root: Hash,
 	txs: Vec<Transfer>,
-) -> (Vec<u8>, Hash) {
+) -> Vec<u8> {
 	let transactions = txs.into_iter().map(|tx| tx.into_unchecked_extrinsic()).collect::<Vec<_>>();
-
-	let iter = transactions.iter().map(Encode::encode);
-	let extrinsics_root = LayoutV0::<BlakeTwo256>::ordered_trie_root(iter).into();
 
 	let mut header = Header {
 		parent_hash,
 		number,
-		state_root,
-		extrinsics_root,
+		state_root: Default::default(),
+		extrinsics_root: Default::default(),
 		digest: Digest { logs: vec![] },
 		count: Default::default(),
 		seed: Default::default(),
 	};
-	let hash = header.hash();
 	let mut overlay = OverlayedChanges::default();
 	let backend_runtime_code = sp_state_machine::backend::BackendRuntimeCode::new(backend);
 	let runtime_code = backend_runtime_code.runtime_code().expect("Code is part of the backend");
@@ -126,19 +120,16 @@ fn construct_block(
 	.unwrap();
 	header = Header::decode(&mut &ret_data[..]).unwrap();
 
-	(vec![].and(&Block { header, extrinsics: transactions }), hash)
+	vec![].and(&Block { header, extrinsics: transactions })
 }
 
-fn block1(genesis_hash: Hash, backend: &InMemoryBackend<BlakeTwo256>) -> (Vec<u8>, Hash) {
+fn block1(genesis_hash: Hash, backend: &InMemoryBackend<BlakeTwo256>) -> Vec<u8> {
 	construct_block(
 		backend,
 		1,
 		genesis_hash,
-		array_bytes::hex_n_into_unchecked(
-			"25e5b37074063ab75c889326246640729b40d0c86932edc527bc80db0e04fe5c",
-		),
 		vec![Transfer {
-			from: AccountKeyring::Alice.into(),
+			from: AccountKeyring::One.into(),
 			to: AccountKeyring::Two.into(),
 			amount: 69 * DOLLARS,
 			nonce: 0,
@@ -177,7 +168,7 @@ fn construct_genesis_should_work_with_native() {
 	let genesis_hash = insert_genesis_block(&mut storage);
 
 	let backend = InMemoryBackend::from((storage, StateVersion::default()));
-	let (b1data, _b1hash) = block1(genesis_hash, &backend);
+	let b1data = block1(genesis_hash, &backend);
 	let backend_runtime_code = sp_state_machine::backend::BackendRuntimeCode::new(&backend);
 	let runtime_code = backend_runtime_code.runtime_code().expect("Code is part of the backend");
 
@@ -208,7 +199,7 @@ fn construct_genesis_should_work_with_wasm() {
 	let genesis_hash = insert_genesis_block(&mut storage);
 
 	let backend = InMemoryBackend::from((storage, StateVersion::default()));
-	let (b1data, _b1hash) = block1(genesis_hash, &backend);
+	let b1data = block1(genesis_hash, &backend);
 	let backend_runtime_code = sp_state_machine::backend::BackendRuntimeCode::new(&backend);
 	let runtime_code = backend_runtime_code.runtime_code().expect("Code is part of the backend");
 
@@ -252,7 +243,14 @@ fn client_initializes_from_genesis_ok() {
 fn block_builder_works_with_no_transactions() {
 	let mut client = substrate_test_runtime_client::new();
 
-	let block = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let block = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 
 	block_on(client.import(BlockOrigin::Own, block)).unwrap();
 
@@ -263,7 +261,11 @@ fn block_builder_works_with_no_transactions() {
 fn block_builder_works_with_transactions() {
 	let mut client = substrate_test_runtime_client::new();
 
-	let mut builder = client.new_block(Default::default()).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap();
 
 	builder
 		.push_transfer(Transfer {
@@ -318,7 +320,11 @@ fn block_builder_works_with_transactions() {
 #[test]
 fn block_builder_does_not_include_invalid() {
 	let mut client = substrate_test_runtime_client::new();
-	let mut builder = client.new_block(Default::default()).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap();
 
 	builder
 		.push_transfer(Transfer {
@@ -390,11 +396,25 @@ fn uncles_with_only_ancestors() {
 	let mut client = substrate_test_runtime_client::new();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(*a1.header().number())
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 	let v: Vec<H256> = Vec::new();
 	assert_eq!(v, client.uncles(a2.hash(), 3).unwrap());
@@ -410,12 +430,21 @@ fn uncles_with_multiple_forks() {
 	let mut client = substrate_test_runtime_client::new();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -423,8 +452,10 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
 	// A2 -> A3
-	let a3 = client
-		.new_block_at(a2.hash(), Default::default(), false)
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -432,8 +463,10 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a3.clone())).unwrap();
 
 	// A3 -> A4
-	let a4 = client
-		.new_block_at(a3.hash(), Default::default(), false)
+	let a4 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a3.hash())
+		.with_parent_block_number(3)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -441,8 +474,10 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a4.clone())).unwrap();
 
 	// A4 -> A5
-	let a5 = client
-		.new_block_at(a4.hash(), Default::default(), false)
+	let a5 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a4.hash())
+		.with_parent_block_number(4)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -450,7 +485,12 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a5.clone())).unwrap();
 
 	// A1 -> B2
-	let mut builder = client.new_block_at(a1.hash(), Default::default(), false).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap();
+
 	// this push is required as otherwise B2 has the same hash as A2 and won't get imported
 	builder
 		.push_transfer(Transfer {
@@ -464,8 +504,10 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, b2.clone())).unwrap();
 
 	// B2 -> B3
-	let b3 = client
-		.new_block_at(b2.hash(), Default::default(), false)
+	let b3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -473,8 +515,10 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, b3.clone())).unwrap();
 
 	// B3 -> B4
-	let b4 = client
-		.new_block_at(b3.hash(), Default::default(), false)
+	let b4 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b3.hash())
+		.with_parent_block_number(3)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -482,7 +526,11 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, b4.clone())).unwrap();
 
 	// // B2 -> C3
-	let mut builder = client.new_block_at(b2.hash(), Default::default(), false).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b2.hash())
+		.with_parent_block_number(2)
+		.build()
+		.unwrap();
 	// this push is required as otherwise C3 has the same hash as B3 and won't get imported
 	builder
 		.push_transfer(Transfer {
@@ -496,7 +544,11 @@ fn uncles_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, c3.clone())).unwrap();
 
 	// A1 -> D2
-	let mut builder = client.new_block_at(a1.hash(), Default::default(), false).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap();
 	// this push is required as otherwise D2 has the same hash as B2 and won't get imported
 	builder
 		.push_transfer(Transfer {
@@ -538,11 +590,25 @@ fn finality_target_on_longest_chain_with_single_chain_3_blocks() {
 	let (mut client, longest_chain_select) = TestClientBuilder::new().build_with_longest_chain();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(*a1.header().number())
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
 	let genesis_hash = client.chain_info().genesis_hash;
@@ -565,12 +631,21 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	let (mut client, longest_chain_select) = TestClientBuilder::new().build_with_longest_chain();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(*a1.header().number())
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -578,8 +653,10 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
 	// A2 -> A3
-	let a3 = client
-		.new_block_at(a2.hash(), Default::default(), false)
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(*a2.header().number())
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -587,8 +664,10 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a3.clone())).unwrap();
 
 	// A3 -> A4
-	let a4 = client
-		.new_block_at(a3.hash(), Default::default(), false)
+	let a4 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a3.hash())
+		.with_parent_block_number(*a3.header().number())
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -596,8 +675,10 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a4.clone())).unwrap();
 
 	// A4 -> A5
-	let a5 = client
-		.new_block_at(a4.hash(), Default::default(), false)
+	let a5 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a4.hash())
+		.with_parent_block_number(4)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -605,7 +686,11 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, a5.clone())).unwrap();
 
 	// A1 -> B2
-	let mut builder = client.new_block_at(a1.hash(), Default::default(), false).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap();
 	// this push is required as otherwise B2 has the same hash as A2 and won't get imported
 	builder
 		.push_transfer(Transfer {
@@ -619,8 +704,10 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, b2.clone())).unwrap();
 
 	// B2 -> B3
-	let b3 = client
-		.new_block_at(b2.hash(), Default::default(), false)
+	let b3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -628,8 +715,10 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, b3.clone())).unwrap();
 
 	// B3 -> B4
-	let b4 = client
-		.new_block_at(b3.hash(), Default::default(), false)
+	let b4 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b3.hash())
+		.with_parent_block_number(3)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -637,7 +726,12 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, b4.clone())).unwrap();
 
 	// B2 -> C3
-	let mut builder = client.new_block_at(b2.hash(), Default::default(), false).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b2.hash())
+		.with_parent_block_number(2)
+		.build()
+		.unwrap();
+
 	// this push is required as otherwise C3 has the same hash as B3 and won't get imported
 	builder
 		.push_transfer(Transfer {
@@ -651,7 +745,12 @@ fn finality_target_on_longest_chain_with_multiple_forks() {
 	block_on(client.import(BlockOrigin::Own, c3.clone())).unwrap();
 
 	// A1 -> D2
-	let mut builder = client.new_block_at(a1.hash(), Default::default(), false).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap();
+
 	// this push is required as otherwise D2 has the same hash as B2 and won't get imported
 	builder
 		.push_transfer(Transfer {
@@ -782,13 +881,28 @@ fn finality_target_on_longest_chain_with_max_depth_higher_than_best() {
 	// G -> A1 -> A2
 
 	let (mut client, chain_select) = TestClientBuilder::new().build_with_longest_chain();
+	let chain = client.chain_info();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(chain.best_hash)
+		.with_parent_block_number(chain.best_number)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
 	let genesis_hash = client.chain_info().genesis_hash;
@@ -804,30 +918,70 @@ fn finality_target_with_best_not_on_longest_chain() {
 	//                   ^best
 
 	let (mut client, chain_select) = TestClientBuilder::new().build_with_longest_chain();
-	let genesis_hash = client.chain_info().genesis_hash;
+	let chain = client.chain_info();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(chain.best_hash)
+		.with_parent_block_number(chain.best_number)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
 	// A2 -> A3
-	let a3 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a3.clone())).unwrap();
 
 	// A3 -> A4
-	let a4 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a4 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a3.hash())
+		.with_parent_block_number(3)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a4.clone())).unwrap();
 
 	// A3 -> A5
-	let a5 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a5 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a4.hash())
+		.with_parent_block_number(4)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a5.clone())).unwrap();
 
 	// A1 -> B2
-	let mut builder = client.new_block_at(a1.hash(), Default::default(), false).unwrap();
+	let mut builder = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap();
+
 	// this push is required as otherwise B2 has the same hash as A2 and won't get imported
 	builder
 		.push_transfer(Transfer {
@@ -840,7 +994,10 @@ fn finality_target_with_best_not_on_longest_chain() {
 	let b2 = builder.build().unwrap().block;
 	block_on(client.import(BlockOrigin::Own, b2.clone())).unwrap();
 
-	assert_eq!(a5.hash(), block_on(chain_select.finality_target(genesis_hash, None)).unwrap());
+	assert_eq!(
+		a5.hash(),
+		block_on(chain_select.finality_target(client.chain_info().genesis_hash, None)).unwrap()
+	);
 	assert_eq!(a5.hash(), block_on(chain_select.finality_target(a1.hash(), None)).unwrap());
 	assert_eq!(a5.hash(), block_on(chain_select.finality_target(a2.hash(), None)).unwrap());
 	assert_eq!(a5.hash(), block_on(chain_select.finality_target(a3.hash(), None)).unwrap());
@@ -848,8 +1005,10 @@ fn finality_target_with_best_not_on_longest_chain() {
 	assert_eq!(a5.hash(), block_on(chain_select.finality_target(a5.hash(), None)).unwrap());
 
 	// B2 -> B3
-	let b3 = client
-		.new_block_at(b2.hash(), Default::default(), false)
+	let b3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -857,8 +1016,10 @@ fn finality_target_with_best_not_on_longest_chain() {
 	block_on(client.import_as_best(BlockOrigin::Own, b3.clone())).unwrap();
 
 	// B3 -> B4
-	let b4 = client
-		.new_block_at(b3.hash(), Default::default(), false)
+	let b4 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b3.hash())
+		.with_parent_block_number(3)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -872,7 +1033,10 @@ fn finality_target_with_best_not_on_longest_chain() {
 	// double check that B3 is still the best...
 	assert_eq!(client.info().best_hash, b3.hash());
 
-	assert_eq!(b4.hash(), block_on(chain_select.finality_target(genesis_hash, None)).unwrap());
+	assert_eq!(
+		b4.hash(),
+		block_on(chain_select.finality_target(client.chain_info().genesis_hash, None)).unwrap()
+	);
 	assert_eq!(b4.hash(), block_on(chain_select.finality_target(a1.hash(), None)).unwrap());
 	assert!(block_on(chain_select.finality_target(a2.hash(), None)).is_err());
 	assert_eq!(b4.hash(), block_on(chain_select.finality_target(b2.hash(), None)).unwrap());
@@ -889,12 +1053,21 @@ fn import_with_justification() {
 	let mut finality_notifications = client.finality_notification_stream();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -904,8 +1077,10 @@ fn import_with_justification() {
 
 	// A2 -> A3
 	let justification = Justifications::from((TEST_ENGINE_ID, vec![1, 2, 3]));
-	let a3 = client
-		.new_block_at(a2.hash(), Default::default(), false)
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -935,24 +1110,30 @@ fn importing_diverged_finalized_block_should_trigger_reorg() {
 
 	let mut finality_notifications = client.finality_notification_stream();
 
-	let a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
-	let mut b1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut b1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 	// needed to make sure B1 gets a different hash from A1
 	b1.push_transfer(Transfer {
@@ -990,24 +1171,30 @@ fn finalizing_diverged_block_should_trigger_reorg() {
 
 	let mut finality_notifications = client.finality_notification_stream();
 
-	let a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
-	let mut b1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut b1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 	// needed to make sure B1 gets a different hash from A1
 	b1.push_transfer(Transfer {
@@ -1020,8 +1207,10 @@ fn finalizing_diverged_block_should_trigger_reorg() {
 	let b1 = b1.build().unwrap().block;
 	block_on(client.import(BlockOrigin::Own, b1.clone())).unwrap();
 
-	let b2 = client
-		.new_block_at(b1.hash(), Default::default(), false)
+	let b2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1046,8 +1235,10 @@ fn finalizing_diverged_block_should_trigger_reorg() {
 	assert_eq!(block_on(select_chain.best_chain()).unwrap().hash(), b2.hash());
 
 	// after we build B3 on top of B2 and import it, it should be the new best block
-	let b3 = client
-		.new_block_at(b2.hash(), Default::default(), false)
+	let b3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1078,32 +1269,40 @@ fn finality_notifications_content() {
 
 	let mut finality_notifications = client.finality_notification_stream();
 
-	let a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
-	let a3 = client
-		.new_block_at(a2.hash(), Default::default(), false)
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a3.clone())).unwrap();
 
-	let mut b1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut b1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 	// needed to make sure B1 gets a different hash from A1
 	b1.push_transfer(Transfer {
@@ -1116,16 +1315,20 @@ fn finality_notifications_content() {
 	let b1 = b1.build().unwrap().block;
 	block_on(client.import(BlockOrigin::Own, b1.clone())).unwrap();
 
-	let b2 = client
-		.new_block_at(b1.hash(), Default::default(), false)
+	let b2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, b2.clone())).unwrap();
 
-	let mut c1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut c1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 	// needed to make sure B1 gets a different hash from A1
 	c1.push_transfer(Transfer {
@@ -1138,7 +1341,12 @@ fn finality_notifications_content() {
 	let c1 = c1.build().unwrap().block;
 	block_on(client.import(BlockOrigin::Own, c1.clone())).unwrap();
 
-	let mut d3 = client.new_block_at(a2.hash(), Default::default(), false).unwrap();
+	let mut d3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
+		.unwrap();
+
 	// needed to make sure D3 gets a different hash from A3
 	d3.push_transfer(Transfer {
 		from: AccountKeyring::Alice.into(),
@@ -1150,8 +1358,10 @@ fn finality_notifications_content() {
 	let d3 = d3.build().unwrap().block;
 	block_on(client.import(BlockOrigin::Own, d3.clone())).unwrap();
 
-	let d4 = client
-		.new_block_at(d3.hash(), Default::default(), false)
+	let d4 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(d3.hash())
+		.with_parent_block_number(3)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1211,8 +1421,10 @@ fn state_reverted_on_reorg() {
 	// G -> A1 -> A2
 	//   \
 	//    -> B1
-	let mut a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 	a1.push_transfer(Transfer {
 		from: AccountKeyring::Alice.into(),
@@ -1224,8 +1436,10 @@ fn state_reverted_on_reorg() {
 	let a1 = a1.build().unwrap().block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
-	let mut b1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut b1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 	b1.push_transfer(Transfer {
 		from: AccountKeyring::Alice.into(),
@@ -1239,7 +1453,11 @@ fn state_reverted_on_reorg() {
 	block_on(client.import_as_best(BlockOrigin::Own, b1.clone())).unwrap();
 
 	assert_eq!(950 * DOLLARS, current_balance(&client));
-	let mut a2 = client.new_block_at(a1.hash(), Default::default(), false).unwrap();
+	let mut a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
+		.unwrap();
 	a2.push_transfer(Transfer {
 		from: AccountKeyring::Alice.into(),
 		to: AccountKeyring::Charlie.into(),
@@ -1283,24 +1501,30 @@ fn doesnt_import_blocks_that_revert_finality() {
 	//   \
 	//    -> B1 -> B2 -> B3
 
-	let a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
-	let mut b1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut b1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 
 	// needed to make sure B1 gets a different hash from A1
@@ -1314,8 +1538,10 @@ fn doesnt_import_blocks_that_revert_finality() {
 	let b1 = b1.build().unwrap().block;
 	block_on(client.import(BlockOrigin::Own, b1.clone())).unwrap();
 
-	let b2 = client
-		.new_block_at(b1.hash(), Default::default(), false)
+	let b2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1324,8 +1550,10 @@ fn doesnt_import_blocks_that_revert_finality() {
 
 	// prepare B3 before we finalize A2, because otherwise we won't be able to
 	// read changes trie configuration after A2 is finalized
-	let b3 = client
-		.new_block_at(b2.hash(), Default::default(), false)
+	let b3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1343,8 +1571,10 @@ fn doesnt_import_blocks_that_revert_finality() {
 
 	// adding a C1 block which is lower than the last finalized should also
 	// fail (with a cheaper check that doesn't require checking ancestry).
-	let mut c1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut c1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 
 	// needed to make sure C1 gets a different hash from A1 and B1
@@ -1363,8 +1593,10 @@ fn doesnt_import_blocks_that_revert_finality() {
 
 	assert_eq!(import_err.to_string(), expected_err.to_string());
 
-	let a3 = client
-		.new_block_at(a2.hash(), Default::default(), false)
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1411,8 +1643,10 @@ fn respects_block_rules() {
 		// B'[2] - block not ok, (incorrect fork)
 
 		// build B[1]
-		let block_ok = client
-			.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+		let block_ok = BlockBuilderBuilder::new(&client)
+			.on_parent_block(client.chain_info().genesis_hash)
+			.with_parent_block_number(0)
+			.build()
 			.unwrap()
 			.build()
 			.unwrap()
@@ -1430,8 +1664,10 @@ fn respects_block_rules() {
 		assert_eq!(block_on(client.check_block(params)).unwrap(), ImportResult::imported(false));
 
 		// build B'[1]
-		let mut block_not_ok = client
-			.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+		let mut block_not_ok = BlockBuilderBuilder::new(&client)
+			.on_parent_block(client.chain_info().genesis_hash)
+			.with_parent_block_number(0)
+			.build()
 			.unwrap();
 		block_not_ok.push_storage_change(vec![0], Some(vec![1])).unwrap();
 		let block_not_ok = block_not_ok.build().unwrap().block;
@@ -1454,7 +1690,11 @@ fn respects_block_rules() {
 		block_on(client.import_as_final(BlockOrigin::Own, block_ok)).unwrap();
 
 		// And check good fork (build B[2])
-		let mut block_ok = client.new_block_at(block_ok_1_hash, Default::default(), false).unwrap();
+		let mut block_ok = BlockBuilderBuilder::new(&client)
+			.on_parent_block(block_ok_1_hash)
+			.with_parent_block_number(1)
+			.build()
+			.unwrap();
 		block_ok.push_storage_change(vec![0], Some(vec![2])).unwrap();
 		let block_ok = block_ok.build().unwrap().block;
 		assert_eq!(*block_ok.header().number(), 2);
@@ -1473,8 +1713,11 @@ fn respects_block_rules() {
 		assert_eq!(block_on(client.check_block(params)).unwrap(), ImportResult::imported(false));
 
 		// And now try bad fork (build B'[2])
-		let mut block_not_ok =
-			client.new_block_at(block_ok_1_hash, Default::default(), false).unwrap();
+		let mut block_not_ok = BlockBuilderBuilder::new(&client)
+			.on_parent_block(block_ok_1_hash)
+			.with_parent_block_number(1)
+			.build()
+			.unwrap();
 		block_not_ok.push_storage_change(vec![0], Some(vec![3])).unwrap();
 		let block_not_ok = block_not_ok.build().unwrap().block;
 		assert_eq!(*block_not_ok.header().number(), 2);
@@ -1529,15 +1772,19 @@ fn returns_status_for_pruned_blocks() {
 
 	let mut client = TestClientBuilder::with_backend(backend).build();
 
-	let a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 
-	let mut b1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut b1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
 
 	// b1 is created, but not imported
@@ -1573,8 +1820,10 @@ fn returns_status_for_pruned_blocks() {
 	);
 	assert_eq!(client.block_status(check_block_a1.hash).unwrap(), BlockStatus::InChainWithState);
 
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1601,8 +1850,10 @@ fn returns_status_for_pruned_blocks() {
 	);
 	assert_eq!(client.block_status(check_block_a2.hash).unwrap(), BlockStatus::InChainWithState);
 
-	let a3 = client
-		.new_block_at(a2.hash(), Default::default(), false)
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1866,7 +2117,15 @@ fn cleans_up_closed_notification_sinks_on_block_import() {
 
 	// for some reason I can't seem to use `ClientBlockImportExt`
 	let bake_and_import_block = |client: &mut TestClient, origin| {
-		let block = client.new_block(Default::default()).unwrap().build().unwrap().block;
+		let chain = client.chain_info();
+		let block = BlockBuilderBuilder::new(&*client)
+			.on_parent_block(chain.best_hash)
+			.with_parent_block_number(chain.best_number)
+			.build()
+			.unwrap()
+			.build()
+			.unwrap()
+			.block;
 
 		let (header, extrinsics) = block.deconstruct();
 		let mut import = BlockImportParams::new(origin, header);
@@ -1909,25 +2168,32 @@ fn reorg_triggers_a_notification_even_for_sources_that_should_not_trigger_notifi
 	let mut notification_stream =
 		futures::executor::block_on_stream(client.import_notification_stream());
 
-	let a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::NetworkInitialSync, a1.clone())).unwrap();
 
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
 		.block;
 	block_on(client.import(BlockOrigin::NetworkInitialSync, a2.clone())).unwrap();
 
-	let mut b1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let mut b1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap();
+
 	// needed to make sure B1 gets a different hash from A1
 	b1.push_transfer(Transfer {
 		from: AccountKeyring::Alice.into(),
@@ -1939,8 +2205,10 @@ fn reorg_triggers_a_notification_even_for_sources_that_should_not_trigger_notifi
 	let b1 = b1.build().unwrap().block;
 	block_on(client.import(BlockOrigin::NetworkInitialSync, b1.clone())).unwrap();
 
-	let b2 = client
-		.new_block_at(b1.hash(), Default::default(), false)
+	let b2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(b1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1975,8 +2243,10 @@ fn use_dalek_ext_works() {
 		),
 	);
 
-	let a1 = client
-		.new_block_at(client.chain_info().genesis_hash, Default::default(), false)
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -1999,12 +2269,21 @@ fn finalize_after_best_block_updates_best() {
 	let mut client = substrate_test_runtime_client::new();
 
 	// G -> A1
-	let a1 = client.new_block(Default::default()).unwrap().build().unwrap().block;
+	let a1 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(client.chain_info().genesis_hash)
+		.with_parent_block_number(0)
+		.build()
+		.unwrap()
+		.build()
+		.unwrap()
+		.block;
 	block_on(client.import(BlockOrigin::Own, a1.clone())).unwrap();
 
 	// A1 -> A2
-	let a2 = client
-		.new_block_at(a1.hash(), Default::default(), false)
+	let a2 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a1.hash())
+		.with_parent_block_number(1)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()
@@ -2012,8 +2291,10 @@ fn finalize_after_best_block_updates_best() {
 	block_on(client.import(BlockOrigin::Own, a2.clone())).unwrap();
 
 	// A2 -> A3
-	let a3 = client
-		.new_block_at(a2.hash(), Default::default(), false)
+	let a3 = BlockBuilderBuilder::new(&client)
+		.on_parent_block(a2.hash())
+		.with_parent_block_number(2)
+		.build()
 		.unwrap()
 		.build()
 		.unwrap()

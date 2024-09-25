@@ -20,7 +20,6 @@ futures-timer = "3.0.1"
 log = "0.4.17"
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", path = "../../utils/prometheus" }
 sc-block-builder-ver = { path = "../block-builder-ver" }
-sc-client-api = { path = "../api" }
 sc-proposer-metrics = { path = "../proposer-metrics" }
 sc-telemetry = { path = "../telemetry" }
 sc-transaction-pool-api = { path = "../transaction-pool/api" }
@@ -28,6 +27,7 @@ sp-api = { path = "../../primitives/api" }
 sp-blockchain = { path = "../../primitives/blockchain" }
 sp-consensus = { path = "../../primitives/consensus/common" }
 sp-core = { path = "../../primitives/core" }
+sp-trie = { path = "../../primitives/trie" }
 sp-inherents = { path = "../../primitives/inherents" }
 sp-runtime = { path = "../../primitives/runtime" }
 ver-api = { path="../../primitives/ver-api" }
@@ -35,6 +35,7 @@ sp-ver = { path="../../primitives/ver" }
 
 [dev-dependencies]
 parking_lot = "0.12.1"
+sc-client-api = { path = "../api" }
 sc-transaction-pool = { path = "../transaction-pool" }
 substrate-test-runtime-client = { path = "../../test-utils/runtime/client" }
 env_logger = "0.9.0"

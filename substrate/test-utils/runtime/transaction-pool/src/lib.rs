@@ -22,6 +22,7 @@
 use codec::Encode;
 use futures::future::ready;
 use parking_lot::RwLock;
+use sc_transaction_pool::ChainApi;
 use sp_blockchain::{CachedHeaderMetadata, TreeRoute};
 use sp_runtime::{
 	generic::{self, BlockId},
@@ -80,6 +81,7 @@ pub struct ChainState {
 	pub block_by_hash: HashMap<Hash, Block>,
 	pub nonces: HashMap<AccountId, u64>,
 	pub invalid_hashes: HashSet<Hash>,
+	pub priorities: HashMap<Hash, u64>,
 }
 
 /// Test Api for transaction pool.
@@ -215,6 +217,22 @@ impl TestApi {
 		self.chain.write().invalid_hashes.insert(Self::hash_and_length_inner(xts).0);
 	}
 
+	/// Remove a transaction that was previously declared as invalid via `[Self::add_invalid]`.
+	///
+	/// Next time transaction pool will try to validate this
+	/// extrinsic, api will succeed.
+	pub fn remove_invalid(&self, xts: &Extrinsic) {
+		self.chain.write().invalid_hashes.remove(&Self::hash_and_length_inner(xts).0);
+	}
+
+	/// Set a transaction priority.
+	pub fn set_priority(&self, xts: &Extrinsic, priority: u64) {
+		self.chain
+			.write()
+			.priorities
+			.insert(Self::hash_and_length_inner(xts).0, priority);
+	}
+
 	/// Query validation requests received.
 	pub fn validation_requests(&self) -> Vec<Extrinsic> {
 		self.validation_requests.read().clone()
@@ -239,9 +257,14 @@ impl TestApi {
 	) -> Result<sp_blockchain::TreeRoute<Block>, Error> {
 		sp_blockchain::tree_route(self, from, to)
 	}
+
+	/// Helper function for mapping block number to hash. Use if mapping shall not fail.
+	pub fn expect_hash_from_number(&self, n: BlockNumber) -> Hash {
+		self.block_id_to_hash(&BlockId::Number(n)).unwrap().unwrap()
+	}
 }
 
-impl sc_transaction_pool::ChainApi for TestApi {
+impl ChainApi for TestApi {
 	type Block = Block;
 	type Error = Error;
 	type ValidationFuture = futures::future::Ready<Result<TransactionValidity, Error>>;
@@ -249,13 +272,13 @@ impl sc_transaction_pool::ChainApi for TestApi {
 
 	fn validate_transaction(
 		&self,
-		at: &BlockId<Self::Block>,
+		at: <Self::Block as BlockT>::Hash,
 		_source: TransactionSource,
 		uxt: <Self::Block as BlockT>::Extrinsic,
 	) -> Self::ValidationFuture {
 		self.validation_requests.write().push(uxt.clone());
 
-		match self.block_id_to_number(at) {
+		match self.block_id_to_number(&BlockId::Hash(at)) {
 			Ok(Some(number)) => {
 				let found_best = self
 					.chain
@@ -296,8 +319,14 @@ impl sc_transaction_pool::ChainApi for TestApi {
 			return ready(Ok(Err(TransactionValidityError::Invalid(InvalidTransaction::Custom(0)))))
 		}
 
-		let mut validity =
-			ValidTransaction { priority: 1, requires, provides, longevity: 64, propagate: true };
+		let priority = self.chain.read().priorities.get(&self.hash_and_length(&uxt).0).cloned();
+		let mut validity = ValidTransaction {
+			priority: priority.unwrap_or(1),
+			requires,
+			provides,
+			longevity: 64,
+			propagate: true,
+		};
 
 		(self.valid_modifier.read())(&mut validity);
 

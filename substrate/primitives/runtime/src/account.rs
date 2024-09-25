@@ -23,7 +23,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
-use sp_core::{ecdsa, H160};
+use sp_core::{crypto::FromEntropy, ecdsa, H160};
 use crate::traits::IdentifyAccount;
 
 #[cfg(feature = "std")]
@@ -138,6 +138,14 @@ impl std::str::FromStr for AccountId20 {
 	}
 }
 
+/// Creates an [`AccountId20`] from the input, which should contain at least 20 bytes.
+impl FromEntropy for AccountId20 {
+	fn from_entropy(input: &mut impl codec::Input) -> Result<Self, codec::Error> {
+		Ok(AccountId20(FromEntropy::from_entropy(input)?))
+	}
+}
+
+/// Eth signature verification type
 #[derive(
 	Eq, PartialEq, Clone, Encode, Decode, sp_core::RuntimeDebug, TypeInfo
 )]
@@ -151,11 +159,9 @@ impl From<ecdsa::Signature> for EthereumSignature {
 
 impl crate::traits::Verify for EthereumSignature {
 	type Signer = EthereumSigner;
-	fn verify<L: crate::traits::Lazy<[u8]>>(&self, mut prehashed_msg: L, signer: &AccountId20) -> bool {
+	fn verify<L: crate::traits::Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId20) -> bool {
 		let mut m = [0u8; 32];
-		// The following has been edited from origin impl to accept prehashed msg
-		// to maintain compatibility with metamask
-		m.copy_from_slice(prehashed_msg.get());
+		m.copy_from_slice(Keccak256::digest(msg.get()).as_slice());
 		match sp_io::crypto::secp256k1_ecdsa_recover(self.0.as_ref(), &m) {
 			Ok(pubkey) => {
 				AccountId20(H160::from_slice(&Keccak256::digest(pubkey).as_slice()[12..32]).0)

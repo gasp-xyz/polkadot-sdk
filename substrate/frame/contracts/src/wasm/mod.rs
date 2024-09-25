@@ -21,16 +21,21 @@
 mod prepare;
 mod runtime;
 
+#[cfg(test)]
+pub use runtime::STABLE_API_COUNT;
+
 #[cfg(doc)]
 pub use crate::wasm::runtime::api_doc;
+
+pub use crate::wasm::runtime::{
+	AllowDeprecatedInterface, AllowUnstableInterface, Environment, Runtime, RuntimeCosts,
+};
 
 #[cfg(test)]
 pub use tests::MockExt;
 
-pub use crate::wasm::runtime::{
-	AllowDeprecatedInterface, AllowUnstableInterface, CallFlags, Environment, ReturnCode, Runtime,
-	RuntimeCosts,
-};
+#[cfg(test)]
+pub use crate::wasm::runtime::ReturnErrorCode;
 
 use crate::{
 	exec::{ExecResult, Executable, ExportedFunction, Ext},
@@ -49,7 +54,7 @@ use frame_support::{
 use sp_core::Get;
 use sp_runtime::{DispatchError, RuntimeDebug};
 use sp_std::prelude::*;
-use wasmi::{Instance, Linker, Memory, MemoryType, StackLimits, Store};
+use wasmi::{InstancePre, Linker, Memory, MemoryType, StackLimits, Store};
 
 const BYTES_PER_PAGE: usize = 64 * 1024;
 
@@ -164,7 +169,30 @@ impl<T: Config> WasmBlob<T> {
 	///
 	/// Applies all necessary checks before removing the code.
 	pub fn remove(origin: &T::AccountId, code_hash: CodeHash<T>) -> DispatchResult {
-		Self::try_remove_code(origin, code_hash)
+		<CodeInfoOf<T>>::try_mutate_exists(&code_hash, |existing| {
+			if let Some(code_info) = existing {
+				ensure!(code_info.refcount == 0, <Error<T>>::CodeInUse);
+				ensure!(&code_info.owner == origin, BadOrigin);
+				let _ = T::Currency::release(
+					&HoldReason::CodeUploadDepositReserve.into(),
+					&code_info.owner,
+					code_info.deposit,
+					BestEffort,
+				);
+				let deposit_released = code_info.deposit;
+				let remover = code_info.owner.clone();
+
+				*existing = None;
+				<PristineCode<T>>::remove(&code_hash);
+				<Pallet<T>>::deposit_event(
+					vec![code_hash],
+					Event::CodeRemoved { code_hash, deposit_released, remover },
+				);
+				Ok(())
+			} else {
+				Err(<Error<T>>::CodeNotFound.into())
+			}
+		})
 	}
 
 	/// Creates and returns an instance of the supplied code.
@@ -179,7 +207,7 @@ impl<T: Config> WasmBlob<T> {
 		determinism: Determinism,
 		stack_limits: StackLimits,
 		allow_deprecated: AllowDeprecatedInterface,
-	) -> Result<(Store<H>, Memory, Instance), &'static str>
+	) -> Result<(Store<H>, Memory, InstancePre), &'static str>
 	where
 		E: Environment<H>,
 	{
@@ -217,9 +245,7 @@ impl<T: Config> WasmBlob<T> {
 
 		let instance = linker
 			.instantiate(&mut store, &contract.module)
-			.map_err(|_| "can't instantiate module with provided definitions")?
-			.ensure_no_start(&mut store)
-			.map_err(|_| "start function is forbidden but found in the module")?;
+			.map_err(|_| "can't instantiate module with provided definitions")?;
 
 		Ok((store, memory, instance))
 	}
@@ -261,45 +287,6 @@ impl<T: Config> WasmBlob<T> {
 		})
 	}
 
-	/// Try to remove code together with all associated information.
-	fn try_remove_code(origin: &T::AccountId, code_hash: CodeHash<T>) -> DispatchResult {
-		<CodeInfoOf<T>>::try_mutate_exists(&code_hash, |existing| {
-			if let Some(code_info) = existing {
-				ensure!(code_info.refcount == 0, <Error<T>>::CodeInUse);
-				ensure!(&code_info.owner == origin, BadOrigin);
-				let _ = T::Currency::release(
-					&HoldReason::CodeUploadDepositReserve.into(),
-					&code_info.owner,
-					code_info.deposit,
-					BestEffort,
-				);
-				let deposit_released = code_info.deposit;
-				let remover = code_info.owner.clone();
-
-				*existing = None;
-				<PristineCode<T>>::remove(&code_hash);
-				<Pallet<T>>::deposit_event(
-					vec![code_hash],
-					Event::CodeRemoved { code_hash, deposit_released, remover },
-				);
-				Ok(())
-			} else {
-				Err(<Error<T>>::CodeNotFound.into())
-			}
-		})
-	}
-
-	/// Load code with the given code hash.
-	fn load_code(
-		code_hash: CodeHash<T>,
-		gas_meter: &mut GasMeter<T>,
-	) -> Result<(CodeVec<T>, CodeInfo<T>), DispatchError> {
-		let code_info = <CodeInfoOf<T>>::get(code_hash).ok_or(Error::<T>::CodeNotFound)?;
-		gas_meter.charge(CodeLoadToken(code_info.code_len))?;
-		let code = <PristineCode<T>>::get(code_hash).ok_or(Error::<T>::CodeNotFound)?;
-		Ok((code, code_info))
-	}
-
 	/// Create the module without checking the passed code.
 	///
 	/// # Note
@@ -318,12 +305,6 @@ impl<T: Config> WasmBlob<T> {
 }
 
 impl<T: Config> CodeInfo<T> {
-	/// Return the refcount of the module.
-	#[cfg(test)]
-	pub fn refcount(&self) -> u64 {
-		self.refcount
-	}
-
 	#[cfg(test)]
 	pub fn new(owner: T::AccountId) -> Self {
 		CodeInfo {
@@ -333,6 +314,21 @@ impl<T: Config> CodeInfo<T> {
 			code_len: 0,
 			determinism: Determinism::Enforced,
 		}
+	}
+
+	/// Returns the determinism of the module.
+	pub fn determinism(&self) -> Determinism {
+		self.determinism
+	}
+
+	/// Returns reference count of the module.
+	pub fn refcount(&self) -> u64 {
+		self.refcount
+	}
+
+	/// Return mutable reference to the refcount of the module.
+	pub fn refcount_mut(&mut self) -> &mut u64 {
+		&mut self.refcount
 	}
 
 	/// Returns the deposit of the module.
@@ -346,27 +342,10 @@ impl<T: Config> Executable<T> for WasmBlob<T> {
 		code_hash: CodeHash<T>,
 		gas_meter: &mut GasMeter<T>,
 	) -> Result<Self, DispatchError> {
-		let (code, code_info) = Self::load_code(code_hash, gas_meter)?;
+		let code_info = <CodeInfoOf<T>>::get(code_hash).ok_or(Error::<T>::CodeNotFound)?;
+		gas_meter.charge(CodeLoadToken(code_info.code_len))?;
+		let code = <PristineCode<T>>::get(code_hash).ok_or(Error::<T>::CodeNotFound)?;
 		Ok(Self { code, code_info, code_hash })
-	}
-
-	fn increment_refcount(code_hash: CodeHash<T>) -> Result<(), DispatchError> {
-		<CodeInfoOf<T>>::mutate(code_hash, |existing| -> Result<(), DispatchError> {
-			if let Some(info) = existing {
-				info.refcount = info.refcount.saturating_add(1);
-				Ok(())
-			} else {
-				Err(Error::<T>::CodeNotFound.into())
-			}
-		})
-	}
-
-	fn decrement_refcount(code_hash: CodeHash<T>) {
-		<CodeInfoOf<T>>::mutate(code_hash, |existing| {
-			if let Some(info) = existing {
-				info.refcount = info.refcount.saturating_sub(1);
-			}
-		});
 	}
 
 	fn execute<E: Ext<T = T>>(
@@ -410,25 +389,38 @@ impl<T: Config> Executable<T> for WasmBlob<T> {
 			.add_fuel(fuel_limit)
 			.expect("We've set up engine to fuel consuming mode; qed");
 
-		let exported_func = instance
-			.get_export(&store, function.identifier())
-			.and_then(|export| export.into_func())
-			.ok_or_else(|| {
-				log::error!(target: LOG_TARGET, "failed to find entry point");
-				Error::<T>::CodeRejected
-			})?;
+		// Sync this frame's gas meter with the engine's one.
+		let process_result = |mut store: Store<Runtime<E>>, result| {
+			let engine_consumed_total =
+				store.fuel_consumed().expect("Fuel metering is enabled; qed");
+			let gas_meter = store.data_mut().ext().gas_meter_mut();
+			let _ = gas_meter.sync_from_executor(engine_consumed_total)?;
+			store.into_data().to_execution_result(result)
+		};
 
+		// Start function should already see the correct refcount in case it will be ever inspected.
 		if let &ExportedFunction::Constructor = function {
-			WasmBlob::<T>::increment_refcount(self.code_hash)?;
+			E::increment_refcount(self.code_hash)?;
 		}
 
-		let result = exported_func.call(&mut store, &[], &mut []);
-		let engine_consumed_total = store.fuel_consumed().expect("Fuel metering is enabled; qed");
-		// Sync this frame's gas meter with the engine's one.
-		let gas_meter = store.data_mut().ext().gas_meter_mut();
-		gas_meter.charge_fuel(engine_consumed_total)?;
+		// Any abort in start function (includes `return` + `terminate`) will make us skip the
+		// call into the subsequent exported function. This means that calling `return` returns data
+		// from the whole contract execution.
+		match instance.start(&mut store) {
+			Ok(instance) => {
+				let exported_func = instance
+					.get_export(&store, function.identifier())
+					.and_then(|export| export.into_func())
+					.ok_or_else(|| {
+						log::error!(target: LOG_TARGET, "failed to find entry point");
+						Error::<T>::CodeRejected
+					})?;
 
-		store.into_data().to_execution_result(result)
+				let result = exported_func.call(&mut store, &[], &mut []);
+				process_result(store, result)
+			},
+			Err(err) => process_result(store, Err(err)),
+		}
 	}
 
 	fn code_hash(&self) -> &CodeHash<T> {
@@ -454,6 +446,7 @@ mod tests {
 	use crate::{
 		exec::{AccountIdOf, ErrorOrigin, ExecError, Executable, Ext, Key, SeedOf},
 		gas::GasMeter,
+		primitives::ExecReturnValue,
 		storage::WriteOutcome,
 		tests::{RuntimeCall, Test, ALICE, BOB},
 		BalanceOf, CodeHash, Error, Origin, Pallet as Contracts,
@@ -463,7 +456,7 @@ mod tests {
 		assert_err, assert_ok, dispatch::DispatchResultWithPostInfo, weights::Weight,
 	};
 	use frame_system::pallet_prelude::BlockNumberFor;
-	use pallet_contracts_primitives::{ExecReturnValue, ReturnFlags};
+	use pallet_contracts_uapi::ReturnFlags;
 	use pretty_assertions::assert_eq;
 	use sp_core::H256;
 	use sp_runtime::DispatchError;
@@ -702,6 +695,10 @@ mod tests {
 			&mut self.gas_meter
 		}
 		fn charge_storage(&mut self, _diff: &crate::storage::meter::Diff) {}
+
+		fn debug_buffer_enabled(&self) -> bool {
+			true
+		}
 		fn append_debug_buffer(&mut self, msg: &str) -> bool {
 			self.debug_buffer.extend(msg.as_bytes());
 			true
@@ -740,16 +737,18 @@ mod tests {
 		fn nonce(&mut self) -> u64 {
 			995
 		}
-
-		fn add_delegate_dependency(
+		fn increment_refcount(_code_hash: CodeHash<Self::T>) -> Result<(), DispatchError> {
+			Ok(())
+		}
+		fn decrement_refcount(_code_hash: CodeHash<Self::T>) {}
+		fn lock_delegate_dependency(
 			&mut self,
 			code: CodeHash<Self::T>,
 		) -> Result<(), DispatchError> {
 			self.delegate_dependencies.borrow_mut().insert(code);
 			Ok(())
 		}
-
-		fn remove_delegate_dependency(
+		fn unlock_delegate_dependency(
 			&mut self,
 			code: &CodeHash<Self::T>,
 		) -> Result<(), DispatchError> {
@@ -790,9 +789,18 @@ mod tests {
 		executable.execute(ext.borrow_mut(), entry_point, input_data)
 	}
 
-	/// Execute the supplied code.
+	/// Execute the `call` function within the supplied code.
 	fn execute<E: BorrowMut<MockExt>>(wat: &str, input_data: Vec<u8>, ext: E) -> ExecResult {
 		execute_internal(wat, input_data, ext, &ExportedFunction::Call, true, false)
+	}
+
+	/// Execute the `deploy` function within the supplied code.
+	fn execute_instantiate<E: BorrowMut<MockExt>>(
+		wat: &str,
+		input_data: Vec<u8>,
+		ext: E,
+	) -> ExecResult {
+		execute_internal(wat, input_data, ext, &ExportedFunction::Constructor, true, false)
 	}
 
 	/// Execute the supplied code with disabled unstable functions.
@@ -1513,7 +1521,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1538,7 +1546,7 @@ mod tests {
 		)
 
 		;; Find out the size of the buffer
-		(set_local $buf_size
+		(local.set $buf_size
 			(i32.load (i32.const 32))
 		)
 
@@ -1546,7 +1554,7 @@ mod tests {
 		(call $seal_return
 			(i32.const 0)
 			(i32.const 36)
-			(get_local $buf_size)
+			(local.get $buf_size)
 		)
 
 		;; env:seal_return doesn't return, so this is effectively unreachable.
@@ -1582,7 +1590,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1640,7 +1648,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1687,7 +1695,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1733,7 +1741,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1780,7 +1788,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1821,17 +1829,6 @@ mod tests {
 		assert!(weight_left.all_gt(actual_left), "gas_left must be greater than final");
 	}
 
-	/// Test that [`frame_support::weights::OldWeight`] en/decodes the same as our
-	/// [`crate::OldWeight`].
-	#[test]
-	fn old_weight_decode() {
-		#![allow(deprecated)]
-		let sp = frame_support::weights::OldWeight(42).encode();
-		let our = crate::OldWeight::decode(&mut &*sp).unwrap();
-
-		assert_eq!(our, 42);
-	}
-
 	const CODE_VALUE_TRANSFERRED: &str = r#"
 (module
 	(import "seal0" "seal_value_transferred" (func $seal_value_transferred (param i32 i32)))
@@ -1843,7 +1840,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1878,32 +1875,47 @@ mod tests {
 		assert_ok!(execute(CODE_VALUE_TRANSFERRED, vec![], MockExt::default()));
 	}
 
-	const START_FN_ILLEGAL: &str = r#"
+	const START_FN_DOES_RUN: &str = r#"
 (module
-	(import "seal0" "seal_return" (func $seal_return (param i32 i32 i32)))
+	(import "seal0" "seal_deposit_event" (func $seal_deposit_event (param i32 i32 i32 i32)))
 	(import "env" "memory" (memory 1 1))
 
 	(start $start)
 	(func $start
-		(unreachable)
+		(call $seal_deposit_event
+			(i32.const 0) ;; Pointer to the start of topics buffer
+			(i32.const 0) ;; The length of the topics buffer.
+			(i32.const 0) ;; Pointer to the start of the data buffer
+			(i32.const 13) ;; Length of the buffer
+		)
 	)
 
-	(func (export "call")
-		(unreachable)
-	)
+	(func (export "call"))
 
-	(func (export "deploy")
-		(unreachable)
-	)
+	(func (export "deploy"))
 
-	(data (i32.const 8) "\01\02\03\04")
+	(data (i32.const 0) "\00\01\2A\00\00\00\00\00\00\00\E5\14\00")
 )
 "#;
 
 	#[test]
-	fn start_fn_illegal() {
-		let output = execute(START_FN_ILLEGAL, vec![], MockExt::default());
-		assert_err!(output, <Error<Test>>::CodeRejected,);
+	fn start_fn_does_run_on_call() {
+		let mut ext = MockExt::default();
+		execute(START_FN_DOES_RUN, vec![], &mut ext).unwrap();
+		assert_eq!(
+			ext.events[0].1,
+			[0x00_u8, 0x01, 0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe5, 0x14, 0x00]
+		);
+	}
+
+	#[test]
+	fn start_fn_does_run_on_deploy() {
+		let mut ext = MockExt::default();
+		execute_instantiate(START_FN_DOES_RUN, vec![], &mut ext).unwrap();
+		assert_eq!(
+			ext.events[0].1,
+			[0x00_u8, 0x01, 0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe5, 0x14, 0x00]
+		);
 	}
 
 	const CODE_TIMESTAMP_NOW: &str = r#"
@@ -1917,7 +1929,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -1958,7 +1970,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -2005,7 +2017,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -2059,7 +2071,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -2129,7 +2141,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -2319,7 +2331,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -2449,7 +2461,7 @@ mod tests {
 		assert_eq!(
 			result,
 			Err(ExecError {
-				error: Error::<Test>::OutOfBounds.into(),
+				error: Error::<Test>::DecodingFailed.into(),
 				origin: ErrorOrigin::Caller,
 			})
 		);
@@ -2731,7 +2743,7 @@ mod tests {
 		let result = execute(CODE, input, &mut ext).unwrap();
 		assert_eq!(
 			u32::from_le_bytes(result.data[0..4].try_into().unwrap()),
-			ReturnCode::KeyNotFound as u32
+			ReturnErrorCode::KeyNotFound as u32
 		);
 
 		// value exists
@@ -2739,7 +2751,7 @@ mod tests {
 		let result = execute(CODE, input, &mut ext).unwrap();
 		assert_eq!(
 			u32::from_le_bytes(result.data[0..4].try_into().unwrap()),
-			ReturnCode::Success as u32
+			ReturnErrorCode::Success as u32
 		);
 		assert_eq!(ext.storage.get(&[1u8; 64].to_vec()).unwrap(), &[42u8]);
 		assert_eq!(&result.data[4..], &[42u8]);
@@ -2749,7 +2761,7 @@ mod tests {
 		let result = execute(CODE, input, &mut ext).unwrap();
 		assert_eq!(
 			u32::from_le_bytes(result.data[0..4].try_into().unwrap()),
-			ReturnCode::Success as u32
+			ReturnErrorCode::Success as u32
 		);
 		assert_eq!(ext.storage.get(&[2u8; 19].to_vec()), Some(&vec![]));
 		assert_eq!(&result.data[4..], &([] as [u8; 0]));
@@ -2912,7 +2924,7 @@ mod tests {
 		let result = execute(CODE, input, &mut ext).unwrap();
 		assert_eq!(
 			u32::from_le_bytes(result.data[0..4].try_into().unwrap()),
-			ReturnCode::KeyNotFound as u32
+			ReturnErrorCode::KeyNotFound as u32
 		);
 
 		// value did exist -> value returned
@@ -2920,7 +2932,7 @@ mod tests {
 		let result = execute(CODE, input, &mut ext).unwrap();
 		assert_eq!(
 			u32::from_le_bytes(result.data[0..4].try_into().unwrap()),
-			ReturnCode::Success as u32
+			ReturnErrorCode::Success as u32
 		);
 		assert_eq!(ext.storage.get(&[1u8; 64].to_vec()), None);
 		assert_eq!(&result.data[4..], &[42u8]);
@@ -2930,7 +2942,7 @@ mod tests {
 		let result = execute(CODE, input, &mut ext).unwrap();
 		assert_eq!(
 			u32::from_le_bytes(result.data[0..4].try_into().unwrap()),
-			ReturnCode::Success as u32
+			ReturnErrorCode::Success as u32
 		);
 		assert_eq!(ext.storage.get(&[2u8; 19].to_vec()), None);
 		assert_eq!(&result.data[4..], &[0u8; 0]);
@@ -2987,7 +2999,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -3039,7 +3051,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -3154,18 +3166,18 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
 	)
 	(func (export "call")
 		(local $exit_code i32)
-		(set_local $exit_code
+		(local.set $exit_code
 			(call $seal_set_code_hash (i32.const 0))
 		)
 		(call $assert
-			(i32.eq (get_local $exit_code) (i32.const 0)) ;; ReturnCode::Success
+			(i32.eq (local.get $exit_code) (i32.const 0)) ;; ReturnCode::Success
 		)
 	)
 
@@ -3194,18 +3206,18 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
 	)
 	(func (export "call")
 		(local $return_val i32)
-		(set_local $return_val
+		(local.set $return_val
 			(call $reentrance_count)
 		)
 		(call $assert
-			(i32.eq (get_local $return_val) (i32.const 12))
+			(i32.eq (local.get $return_val) (i32.const 12))
 		)
 	)
 
@@ -3226,18 +3238,18 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
 	)
 	(func (export "call")
 		(local $return_val i32)
-		(set_local $return_val
+		(local.set $return_val
 			(call $account_reentrance_count (i32.const 0))
 		)
 		(call $assert
-			(i32.eq (get_local $return_val) (i32.const 12))
+			(i32.eq (local.get $return_val) (i32.const 12))
 		)
 	)
 
@@ -3259,7 +3271,7 @@ mod tests {
 	(func $assert (param i32)
 		(block $ok
 			(br_if $ok
-				(get_local 0)
+				(local.get 0)
 			)
 			(unreachable)
 		)
@@ -3384,16 +3396,16 @@ mod tests {
 	}
 
 	#[test]
-	fn add_remove_delegate_dependency() {
-		const CODE_ADD_REMOVE_DELEGATE_DEPENDENCY: &str = r#"
+	fn lock_unlock_delegate_dependency() {
+		const CODE_LOCK_UNLOCK_DELEGATE_DEPENDENCY: &str = r#"
 (module
-	(import "seal0" "add_delegate_dependency" (func $add_delegate_dependency (param i32)))
-	(import "seal0" "remove_delegate_dependency" (func $remove_delegate_dependency (param i32)))
+	(import "seal0" "lock_delegate_dependency" (func $lock_delegate_dependency (param i32)))
+	(import "seal0" "unlock_delegate_dependency" (func $unlock_delegate_dependency (param i32)))
 	(import "env" "memory" (memory 1 1))
 	(func (export "call")
-		(call $add_delegate_dependency (i32.const 0))
-		(call $add_delegate_dependency (i32.const 32))
-		(call $remove_delegate_dependency (i32.const 32))
+		(call $lock_delegate_dependency (i32.const 0))
+		(call $lock_delegate_dependency (i32.const 32))
+		(call $unlock_delegate_dependency (i32.const 32))
 	)
 	(func (export "deploy"))
 
@@ -3411,10 +3423,44 @@ mod tests {
 )
 "#;
 		let mut mock_ext = MockExt::default();
-		assert_ok!(execute(&CODE_ADD_REMOVE_DELEGATE_DEPENDENCY, vec![], &mut mock_ext));
+		assert_ok!(execute(&CODE_LOCK_UNLOCK_DELEGATE_DEPENDENCY, vec![], &mut mock_ext));
 		let delegate_dependencies: Vec<_> =
 			mock_ext.delegate_dependencies.into_inner().into_iter().collect();
 		assert_eq!(delegate_dependencies.len(), 1);
 		assert_eq!(delegate_dependencies[0].as_bytes(), [1; 32]);
+	}
+
+	// This test checks that [`Runtime::read_sandbox_memory_as`] works, when the decoded type has a
+	// max_len greater than the memory size, but the decoded data fits into the memory.
+	#[test]
+	fn read_sandbox_memory_as_works_with_max_len_out_of_bounds_but_fitting_actual_data() {
+		use frame_support::BoundedVec;
+		use sp_core::ConstU32;
+
+		let mut ext = MockExt::default();
+		let runtime = Runtime::new(&mut ext, vec![]);
+		let data = vec![1u8, 2, 3];
+		let memory = data.encode();
+		let decoded: BoundedVec<u8, ConstU32<128>> =
+			runtime.read_sandbox_memory_as(&memory, 0u32).unwrap();
+		assert_eq!(decoded.into_inner(), data);
+	}
+
+	#[test]
+	fn run_out_of_gas_in_start_fn() {
+		const CODE: &str = r#"
+(module
+	(import "env" "memory" (memory 1 1))
+	(start $start)
+	(func $start
+		(loop $inf (br $inf)) ;; just run out of gas
+		(unreachable)
+	)
+	(func (export "call"))
+	(func (export "deploy"))
+)
+"#;
+		let mut mock_ext = MockExt::default();
+		assert_err!(execute(&CODE, vec![], &mut mock_ext), <Error<Test>>::OutOfGas);
 	}
 }
