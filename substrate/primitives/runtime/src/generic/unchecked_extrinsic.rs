@@ -224,8 +224,14 @@ where
 					}
 				}
 
+				log::debug!(target: "metamask", "payload : {:?}", HexDisplay::from(&raw_payload.inner().encode()).to_string());
+
 				if !metamask_signature_validation
-					&& !raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
+					&& !raw_payload.using_encoded(|payload| {
+					// log::debug!(target: "metamask", "signature verification on payload : {:?}", HexDisplay::from(payload).to_string());
+					signature.verify(payload, &signed)
+					}
+				)
 				{
 					return Err(InvalidTransaction::BadProof.into());
 				}
