@@ -410,4 +410,10 @@ pub trait AssetRegistryProviderTrait<AssetId> {
 	fn get_l1_asset_id(l1_asset: L1Asset) -> Option<AssetId>;
 
 	fn create_l1_asset(l1_asset: L1Asset) -> Result<AssetId, DispatchError>;
+
+	fn create_pool_asset(
+		lp_asset: AssetId,
+		asset_1: AssetId,
+		asset_2: AssetId,
+	) -> DispatchResult;
 }
