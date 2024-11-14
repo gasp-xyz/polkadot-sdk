@@ -37,6 +37,11 @@ pub trait Inspect<AccountId> {
 		pool_id: Self::CurrencyId,
 		lp_burn_amount: Self::Balance,
 	) -> Option<(Self::Balance, Self::Balance)>;
+	
+	fn get_mint_amount(
+		pool_id: Self::CurrencyId,
+		amounts: (Self::Balance, Self::Balance),
+	) -> Option<Self::Balance>;
 
 	fn get_non_empty_pools() -> Option<Vec<Self::CurrencyId>>;
 }
@@ -78,7 +83,7 @@ pub trait Mutate<AccountId>: Inspect<AccountId> {
 		pool_id: Self::CurrencyId,
 		liquidity_asset_amount: Self::Balance,
 		min_asset_amounts_out: (Self::Balance, Self::Balance),
-	) -> DispatchResult;
+	) -> Result<(Self::Balance, Self::Balance), DispatchError>;
 
 	fn swap(
 		sender: &AccountId,
