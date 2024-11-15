@@ -5,6 +5,7 @@ use sp_std::vec::Vec;
 // trait modeled for stable swap pallet & pools of two assets
 // pair of currency ids
 pub type PoolInfo<CurrencyId> = (CurrencyId, CurrencyId);
+pub type PoolReserves<Balance> = (Balance, Balance);
 
 pub struct SwapResult<Balance> {
 	pub amount_out: Balance,
@@ -18,6 +19,8 @@ pub trait Inspect<AccountId> {
 	type Balance;
 
 	fn get_pool_info(pool_id: Self::CurrencyId) -> Option<PoolInfo<Self::CurrencyId>>;
+
+	fn get_pool_reserves(pool_id: Self::CurrencyId) -> Option<PoolReserves<Self::Balance>>;
 
 	fn get_dy(
 		pool_id: Self::CurrencyId,
