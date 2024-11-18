@@ -422,4 +422,6 @@ pub trait AssetRegistryProviderTrait<AssetId> {
 		asset_1: AssetId,
 		asset_2: AssetId,
 	) -> DispatchResult;
+
+	fn get_asset_l1_id(asset_id: AssetId) -> Option<L1Asset>;
 }
