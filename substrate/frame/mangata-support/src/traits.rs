@@ -222,6 +222,8 @@ pub trait ProofOfStakeRewardsApi<AccountId, Balance, CurrencyId> {
 		user: AccountId,
 		liquidity_asset_id: CurrencyId,
 	) -> Result<Balance, DispatchError>;
+
+	fn rewards_period() -> u32;
 }
 
 fn enable<CurrencyId>(liquidity_token_id: CurrencyId, weight: u8) {
