@@ -79,5 +79,6 @@ pub struct XykMetadata {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum L1Asset {
 	Ethereum([u8;20]),
-	Arbitrum([u8;20])
+	Arbitrum([u8;20]),
+	Base([u8;20])
 }
