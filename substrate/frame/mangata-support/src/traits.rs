@@ -62,7 +62,7 @@ pub trait XykFunctionsTrait<AccountId, Balance, CurrencyId> {
 		first_asset_amount: Balance,
 		second_asset_id: CurrencyId,
 		second_asset_amount: Balance,
-	) -> DispatchResult;
+	) -> Result<CurrencyId, DispatchError>;
 
 	fn sell_asset(
 		sender: AccountId,
@@ -121,7 +121,7 @@ pub trait XykFunctionsTrait<AccountId, Balance, CurrencyId> {
 		first_asset_amount: Balance,
 		expected_second_asset_amount: Balance,
 		activate_minted_liquidity: bool,
-	) -> Result<(CurrencyId, Balance), DispatchError>;
+	) -> Result<(CurrencyId, Balance, Balance), DispatchError>;
 
 	fn provide_liquidity_with_conversion(
 		sender: AccountId,
@@ -137,7 +137,7 @@ pub trait XykFunctionsTrait<AccountId, Balance, CurrencyId> {
 		first_asset_id: CurrencyId,
 		second_asset_id: CurrencyId,
 		liquidity_asset_amount: Balance,
-	) -> DispatchResult;
+	) -> Result<(Balance, Balance), DispatchError>;
 
 	fn get_tokens_required_for_minting(
 		liquidity_asset_id: CurrencyId,
@@ -151,6 +151,12 @@ pub trait XykFunctionsTrait<AccountId, Balance, CurrencyId> {
 	) -> DispatchResult;
 
 	fn is_liquidity_token(liquidity_asset_id: CurrencyId) -> bool;
+
+	fn expected_amount_for_minting(
+		liquidity_asset_id: CurrencyId,
+		asset_id: CurrencyId,
+		amount: Balance
+	) -> Option<Balance>;
 }
 
 pub trait ProofOfStakeRewardsApi<AccountId, Balance, CurrencyId> {
@@ -216,6 +222,8 @@ pub trait ProofOfStakeRewardsApi<AccountId, Balance, CurrencyId> {
 		user: AccountId,
 		liquidity_asset_id: CurrencyId,
 	) -> Result<Balance, DispatchError>;
+
+	fn rewards_period() -> u32;
 }
 
 fn enable<CurrencyId>(liquidity_token_id: CurrencyId, weight: u8) {
@@ -410,6 +418,12 @@ pub trait AssetRegistryProviderTrait<AssetId> {
 	fn get_l1_asset_id(l1_asset: L1Asset) -> Option<AssetId>;
 
 	fn create_l1_asset(l1_asset: L1Asset) -> Result<AssetId, DispatchError>;
+
+	fn create_pool_asset(
+		lp_asset: AssetId,
+		asset_1: AssetId,
+		asset_2: AssetId,
+	) -> DispatchResult;
 
 	fn get_asset_l1_id(asset_id: AssetId) -> Option<L1Asset>;
 }
