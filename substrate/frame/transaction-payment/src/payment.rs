@@ -85,11 +85,11 @@ where
 	C::PositiveImbalance: Imbalance<
 		<C as Currency<<T as frame_system::Config>::AccountId>>::Balance,
 		Opposite = C::NegativeImbalance,
-	>,
+	> + Default,
 	C::NegativeImbalance: Imbalance<
 		<C as Currency<<T as frame_system::Config>::AccountId>>::Balance,
 		Opposite = C::PositiveImbalance,
-	>,
+	> + Default,
 	OU: OnUnbalanced<NegativeImbalanceOf<C, T>>,
 {
 	type LiquidityInfo = Option<NegativeImbalanceOf<C, T>>;

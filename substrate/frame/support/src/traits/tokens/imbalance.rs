@@ -58,7 +58,7 @@ pub use split_two_ways::SplitTwoWays;
 ///
 /// You can always retrieve the raw balance value using `peek`.
 #[must_use]
-pub trait Imbalance<Balance>: Sized + TryDrop + Default {
+pub trait Imbalance<Balance>: Sized + TryDrop {
 	/// The oppositely imbalanced type. They come in pairs.
 	type Opposite: Imbalance<Balance>;
 
