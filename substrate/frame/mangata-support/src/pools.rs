@@ -29,6 +29,13 @@ pub trait Inspect<AccountId> {
 		dx: Self::Balance,
 	) -> Option<Self::Balance>;
 
+	fn get_dy_with_impact(
+		pool_id: Self::CurrencyId,
+		asset_in: Self::CurrencyId,
+		asset_out: Self::CurrencyId,
+		dx: Self::Balance,
+	) -> Option<(Self::Balance, Self::Balance)>;
+
 	fn get_dx(
 		pool_id: Self::CurrencyId,
 		asset_in: Self::CurrencyId,
@@ -36,11 +43,18 @@ pub trait Inspect<AccountId> {
 		dy: Self::Balance,
 	) -> Option<Self::Balance>;
 
+	fn get_dx_with_impact(
+		pool_id: Self::CurrencyId,
+		asset_in: Self::CurrencyId,
+		asset_out: Self::CurrencyId,
+		dy: Self::Balance,
+	) -> Option<(Self::Balance, Self::Balance)>;
+
 	fn get_burn_amounts(
 		pool_id: Self::CurrencyId,
 		lp_burn_amount: Self::Balance,
 	) -> Option<(Self::Balance, Self::Balance)>;
-	
+
 	fn get_mint_amount(
 		pool_id: Self::CurrencyId,
 		amounts: (Self::Balance, Self::Balance),
@@ -62,9 +76,9 @@ pub trait Mutate<AccountId>: Inspect<AccountId> {
 	fn create_pool(
 		sender: &AccountId,
 		asset_1: Self::CurrencyId,
-		asset_1_decimals: u32,
+		amount_1: Self::Balance,
 		asset_2: Self::CurrencyId,
-		asset_2_decimals: u32,
+		amount_2: Self::Balance,
 	) -> Result<Self::CurrencyId, DispatchError>;
 
 	/// Add liquidity to the pool using single asset, with fixed amounts.
