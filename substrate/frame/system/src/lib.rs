@@ -1081,9 +1081,17 @@ pub mod pallet {
 	pub(super) type AuthorizedUpgrade<T: Config> =
 		StorageValue<_, CodeUpgradeAuthorization<T>, OptionQuery>;
 
+	
+	/// Should always be set!
+	#[pallet::storage]
+	#[pallet::getter(fn chain_genesis_salt)]
+	pub(super) type ChainGenesisSalt<T: Config> =
+		StorageValue<_, sp_core::H256, ValueQuery>;
+
 	#[derive(frame_support::DefaultNoBound)]
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
+		pub chain_genesis_salt: sp_core::H256,
 		#[serde(skip)]
 		pub _config: sp_std::marker::PhantomData<T>,
 	}
@@ -1097,6 +1105,7 @@ pub mod pallet {
 			<LastRuntimeUpgrade<T>>::put(LastRuntimeUpgradeInfo::from(T::Version::get()));
 			<UpgradedToU32RefCount<T>>::put(true);
 			<UpgradedToTripleRefCount<T>>::put(true);
+			<ChainGenesisSalt<T>>::put(self.chain_genesis_salt);
 
 			sp_io::storage::set(well_known_keys::EXTRINSIC_INDEX, &0u32.encode());
 		}
