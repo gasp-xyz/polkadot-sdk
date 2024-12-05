@@ -178,7 +178,7 @@ pub trait ProofOfStakeRewardsApi<AccountId, Balance, CurrencyId> {
 	#[cfg(feature = "runtime-benchmarks")]
 	fn enable_3rdparty_rewards(
 		account: AccountId,
-		pool: (CurrencyId, CurrencyId),
+		pool: CurrencyId,
 		reward_token_id: CurrencyId,
 		last_block: u32,
 		amount: Balance,
