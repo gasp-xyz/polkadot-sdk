@@ -60,6 +60,12 @@ pub trait Inspect<AccountId> {
 		amounts: (Self::Balance, Self::Balance),
 	) -> Option<Self::Balance>;
 
+	fn get_expected_amount_for_mint(
+		pool_id: Self::CurrencyId,
+		asset_id: Self::CurrencyId,
+		amount: Self::Balance,
+	) -> Option<Self::Balance>;
+
 	fn get_non_empty_pools() -> Option<Vec<Self::CurrencyId>>;
 }
 
