@@ -1,11 +1,14 @@
-use frame_support::dispatch::DispatchResult;
+use frame_support::{dispatch::DispatchResult, traits::tokens::CurrencyId};
+use sp_core::Get;
 use sp_runtime::DispatchError;
 use sp_std::vec::Vec;
 
 // trait modeled for stable swap pallet & pools of two assets
 // pair of currency ids
-pub type PoolInfo<CurrencyId> = (CurrencyId, CurrencyId);
+pub type PoolPair<CurrencyId> = (CurrencyId, CurrencyId);
 pub type PoolReserves<Balance> = (Balance, Balance);
+// id, pair, reserves
+pub type PoolInfo<CurrencyId, Balance> = (CurrencyId, PoolPair<CurrencyId>, PoolReserves<Balance>);
 
 pub struct SwapResult<Balance> {
 	pub amount_out: Balance,
@@ -14,14 +17,18 @@ pub struct SwapResult<Balance> {
 	pub bnb_fee: Balance,
 }
 
-pub trait Inspect<AccountId> {
+pub trait Inspect {
 	type CurrencyId;
 	type Balance;
 
-	fn get_pool_info(pool_id: Self::CurrencyId) -> Option<PoolInfo<Self::CurrencyId>>;
+	fn get_pool_info(pool_id: Self::CurrencyId) -> Option<PoolPair<Self::CurrencyId>>;
 
 	fn get_pool_reserves(pool_id: Self::CurrencyId) -> Option<PoolReserves<Self::Balance>>;
 
+	fn get_non_empty_pools() -> Option<Vec<Self::CurrencyId>>;
+}
+
+pub trait ComputeBalances: Inspect {
 	fn get_dy(
 		pool_id: Self::CurrencyId,
 		asset_in: Self::CurrencyId,
@@ -59,11 +66,9 @@ pub trait Inspect<AccountId> {
 		pool_id: Self::CurrencyId,
 		amounts: (Self::Balance, Self::Balance),
 	) -> Option<Self::Balance>;
-
-	fn get_non_empty_pools() -> Option<Vec<Self::CurrencyId>>;
 }
 
-pub trait TreasuryBurn<AccountId>: Inspect<AccountId> {
+pub trait TreasuryBurn: Inspect {
 	fn settle_treasury_and_burn(
 		asset_id: Self::CurrencyId,
 		burn_amount: Self::Balance,
@@ -71,7 +76,7 @@ pub trait TreasuryBurn<AccountId>: Inspect<AccountId> {
 	) -> DispatchResult;
 }
 
-pub trait Mutate<AccountId>: Inspect<AccountId> {
+pub trait Mutate<AccountId>: Inspect {
 	/// Create a pool for two assets, with possible different decimals
 	fn create_pool(
 		sender: &AccountId,
@@ -110,4 +115,45 @@ pub trait Mutate<AccountId>: Inspect<AccountId> {
 		amount_in: Self::Balance,
 		min_amount_out: Self::Balance,
 	) -> Result<SwapResult<Self::Balance>, DispatchError>;
+}
+
+
+pub trait Valuate {
+	type CurrencyId;
+	type Balance;
+
+	fn find_paired_pool(base_id: Self::CurrencyId, asset_id: Self::CurrencyId) -> Result<PoolInfo<Self::CurrencyId, Self::Balance>, DispatchError>;
+
+	fn check_can_valuate(base_id: Self::CurrencyId, pool_id: Self::CurrencyId) -> Result<(), DispatchError>;
+	
+	fn check_pool_exist(pool_id: Self::CurrencyId) -> Result<(), DispatchError>;
+
+	fn get_reserve_and_lp_supply(base_id: Self::CurrencyId, pool_id: Self::CurrencyId) -> Option<(Self::Balance, Self::Balance)>;
+
+	fn get_valuation_for_paired(base_id: Self::CurrencyId, pool_id: Self::CurrencyId, amount: Self::Balance) -> Self::Balance;
+
+	fn find_valuation(base_id: Self::CurrencyId, asset_id: Self::CurrencyId, amount: Self::Balance) -> Result<Self::Balance, DispatchError>; 
+}
+
+pub trait ValuateFor<ForAssetId: Get<Self::CurrencyId>>: Valuate {
+
+	fn find_paired_pool_for(asset_id: Self::CurrencyId) -> Result<PoolInfo<Self::CurrencyId, Self::Balance>, DispatchError> {
+		Self::find_paired_pool(ForAssetId::get(), asset_id)
+	}
+
+	fn check_can_valuate_for(pool_id: Self::CurrencyId) -> Result<(), DispatchError> {
+		Self::check_can_valuate(ForAssetId::get(), pool_id)
+	}
+	
+	fn get_reserve_and_lp_supply_for(pool_id: Self::CurrencyId) -> Option<(Self::Balance, Self::Balance)> {
+		Self::get_reserve_and_lp_supply(ForAssetId::get(), pool_id)
+	}
+
+	fn get_valuation_for_paired_for(pool_id: Self::CurrencyId, amount: Self::Balance) -> Self::Balance {
+		Self::get_valuation_for_paired(ForAssetId::get(), pool_id, amount)
+	}
+
+	fn find_valuation_for(asset_id: Self::CurrencyId, amount: Self::Balance) -> Result<Self::Balance, DispatchError> {
+		Self::find_valuation(ForAssetId::get(), asset_id, amount)
+	}
 }
