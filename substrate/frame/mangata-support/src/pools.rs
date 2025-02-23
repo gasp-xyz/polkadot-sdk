@@ -121,6 +121,13 @@ pub trait Mutate<AccountId>: Inspect {
 		amount_in: Self::Balance,
 		min_amount_out: Self::Balance,
 	) -> Result<SwapResult<Self::Balance>, DispatchError>;
+
+	fn settle_pool_fees(
+		who: &AccountId,
+		pool_id: Self::CurrencyId,
+		asset_id: Self::CurrencyId,
+		fee: Self::Balance,
+	) -> Result<(), DispatchError>;
 }
 
 
