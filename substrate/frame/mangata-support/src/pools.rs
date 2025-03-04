@@ -135,7 +135,7 @@ pub trait Valuate {
 	type CurrencyId;
 	type Balance;
 
-	fn find_paired_pool(base_id: Self::CurrencyId, asset_id: Self::CurrencyId) -> Result<PoolInfo<Self::CurrencyId, Self::Balance>, DispatchError>;
+	fn find_paired_pool(base_id: Self::CurrencyId, asset_id: Self::CurrencyId) -> Result<Vec<PoolInfo<Self::CurrencyId, Self::Balance>>, DispatchError>;
 
 	fn check_can_valuate(base_id: Self::CurrencyId, pool_id: Self::CurrencyId) -> Result<(), DispatchError>;
 	
@@ -150,7 +150,7 @@ pub trait Valuate {
 
 pub trait ValuateFor<ForAssetId: Get<Self::CurrencyId>>: Valuate {
 
-	fn find_paired_pool_for(asset_id: Self::CurrencyId) -> Result<PoolInfo<Self::CurrencyId, Self::Balance>, DispatchError> {
+	fn find_paired_pool_for(asset_id: Self::CurrencyId) -> Result<Vec<PoolInfo<Self::CurrencyId, Self::Balance>>, DispatchError> {
 		Self::find_paired_pool(ForAssetId::get(), asset_id)
 	}
 
