@@ -8,26 +8,26 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-codec = { workspace = true }
-jsonrpsee = { workspace = true, features = ["server", "macros"] }
-serde = { workspace = true, features = ["derive"], optional = true }
+codec = { package = "parity-scale-codec", version = "3.6.1" }
+jsonrpsee = { version = "0.22", features = ["client-core", "macros", "server"] }
 
-sp-api = { workspace = true, default-features = false }
-sp-blockchain = { workspace = true, default-features = false }
-sp-core = { workspace = true, default-features = false }
-sp-rpc = { workspace = true, default-features = false }
-sp-runtime = { workspace = true, default-features = false }
-sp-std = { workspace = true, default-features = false }
+sp-api = { path = "../../../primitives/api" }
+sp-blockchain = { path = "../../../primitives/blockchain" }
+sp-core = { path = "../../../primitives/core" }
+sp-rpc = { path = "../../../primitives/rpc" }
+sp-runtime = { path = "../../../primitives/runtime" }
+sp-std = { path = "../../../primitives/std" }
+frame-support = { path = "../../support", default-features = false }
 
 pallet-collective-mangata = { path = "../", default-features = false }
 
 [features]
 default = ["std"]
 std = [
-	"serde",
 	"sp-api/std",
 	"sp-core/std",
 	"sp-std/std",
 	"sp-runtime/std",
 	"pallet-collective-mangata/std",
+	"frame-support/std",
 ]

@@ -1181,13 +1181,13 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		Ok(())
 	}
 
-	fn get_length_and_weight_for_call(
+	pub fn get_length_and_weight_for_call(
 		call: <T as Config<I>>::Proposal
 	) -> Option<(u32, Weight)>{
-		Some(call.encoded_size(), call.get_dispatch_info().weight)
+		Some((call.encoded_size() as u32, call.get_dispatch_info().weight))
 	}
 
-	fn get_length_and_weight_for_proposal(
+	pub fn get_length_and_weight_for_proposal(
 		hash: T::Hash,
 	) -> Option<(u32, Weight)>{
 		let key = ProposalOf::<T, I>::hashed_key_for(hash);
@@ -1197,7 +1197,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		let proposal = ProposalOf::<T, I>::get(hash)?;
 		let proposal_weight = proposal.get_dispatch_info().weight;
 
-		Some(proposal_len, proposal_weight)
+		Some((proposal_len, proposal_weight))
 	}
 }
 
@@ -1430,7 +1430,8 @@ impl<A> GetMembers<A> for () {
 sp_api::decl_runtime_apis! {
 	pub trait CouncilRuntimeApi<Call, Hash>
 	where
-		Call: Codec,
+		Call: codec::Codec,
+		Hash: codec::Codec,
 	{
 		fn get_length_and_weight_for_call(
 			call: Call

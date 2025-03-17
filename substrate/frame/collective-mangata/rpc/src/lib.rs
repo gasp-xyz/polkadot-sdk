@@ -4,7 +4,7 @@ use jsonrpsee::{
 	proc_macros::rpc,
 	types::error::ErrorObject,
 };
-pub use pallet_market::CouncilRuntimeApi;
+pub use pallet_collective_mangata::CouncilRuntimeApi;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 
@@ -23,12 +23,14 @@ pub trait CouncilApi<BlockHash, Call, Hash> {
 
 	#[method(name = "council_get_length_and_weight_for_call")]
 	fn get_length_and_weight_for_call(
+		&self,
 		call: Call,
 		at: Option<BlockHash>,
 	) -> RpcResult<Option<(u32, Weight)>>;
 
 	#[method(name = "council_get_length_and_weight_for_proposal")]
 	fn get_length_and_weight_for_proposal(
+		&self,
 		proposal_hash: Hash,
 		at: Option<BlockHash>,
 	) -> RpcResult<Option<(u32, Weight)>>;
@@ -47,7 +49,7 @@ impl<C, P> Council<C, P> {
 
 #[async_trait]
 impl<C, Block, Call, Hash> CouncilApiServer<<Block as BlockT>::Hash, Call, Hash>
-	for Market<C, Block>
+	for Council<C, Block>
 where
 	Block: BlockT,
 	C: Send + Sync + 'static,
@@ -59,8 +61,9 @@ where
 {
 
 	fn get_length_and_weight_for_call(
+		&self,
 		call: Call,
-		at: Option<BlockHash>,
+		at: Option<<Block as BlockT>::Hash>,
 	) -> RpcResult<Option<(u32, Weight)>>{
 		let api = self.client.runtime_api();
 		let at = at.unwrap_or(self.client.info().best_hash);
@@ -72,8 +75,9 @@ where
 	}
 
 	fn get_length_and_weight_for_proposal(
+		&self,
 		proposal_hash: Hash,
-		at: Option<BlockHash>,
+		at: Option<<Block as BlockT>::Hash>,
 	) -> RpcResult<Option<(u32, Weight)>>{
 		let api = self.client.runtime_api();
 		let at = at.unwrap_or(self.client.info().best_hash);
