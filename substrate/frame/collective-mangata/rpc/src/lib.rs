@@ -19,14 +19,7 @@ use frame_support::{
 // We use Weight directly here without transform into a NumberOrHex type because Weight uses u64
 // and NumberOrHex supports u64 numbers
 #[rpc(client, server)]
-pub trait CouncilApi<BlockHash, Call, Hash> {
-
-	#[method(name = "council_get_length_and_weight_for_call")]
-	fn get_length_and_weight_for_call(
-		&self,
-		call: Call,
-		at: Option<BlockHash>,
-	) -> RpcResult<Option<(u32, Weight)>>;
+pub trait CouncilApi<BlockHash, Hash> {
 
 	#[method(name = "council_get_length_and_weight_for_proposal")]
 	fn get_length_and_weight_for_proposal(
@@ -48,31 +41,16 @@ impl<C, P> Council<C, P> {
 }
 
 #[async_trait]
-impl<C, Block, Call, Hash> CouncilApiServer<<Block as BlockT>::Hash, Call, Hash>
+impl<C, Block, Hash> CouncilApiServer<<Block as BlockT>::Hash, Hash>
 	for Council<C, Block>
 where
 	Block: BlockT,
 	C: Send + Sync + 'static,
 	C: ProvideRuntimeApi<Block>,
 	C: HeaderBackend<Block>,
-	C::Api: CouncilRuntimeApi<Block, Call, Hash>,
-	Call: Codec,
+	C::Api: CouncilRuntimeApi<Block, Hash>,
 	Hash: Codec,
 {
-
-	fn get_length_and_weight_for_call(
-		&self,
-		call: Call,
-		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Option<(u32, Weight)>>{
-		let api = self.client.runtime_api();
-		let at = at.unwrap_or(self.client.info().best_hash);
-
-		api.get_length_and_weight_for_call(at, call)
-			.map_err(|e| {
-				ErrorObject::owned(1, "Unable to serve the request", Some(format!("{:?}", e)))
-			})
-	}
 
 	fn get_length_and_weight_for_proposal(
 		&self,

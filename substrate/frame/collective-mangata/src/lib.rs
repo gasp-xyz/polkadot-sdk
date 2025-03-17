@@ -1428,15 +1428,19 @@ impl<A> GetMembers<A> for () {
 }
 
 sp_api::decl_runtime_apis! {
-	pub trait CouncilRuntimeApi<Call, Hash>
+	pub trait CouncilCallRuntimeApi<Call>
 	where
 		Call: codec::Codec,
-		Hash: codec::Codec,
 	{
 		fn get_length_and_weight_for_call(
 			call: Call
 		) -> Option<(u32, Weight)>;
+	}
 
+	pub trait CouncilRuntimeApi<Hash>
+	where
+		Hash: codec::Codec,
+	{
 		fn get_length_and_weight_for_proposal(
 			proposal_hash: Hash,
 		) -> Option<(u32, Weight)>;
