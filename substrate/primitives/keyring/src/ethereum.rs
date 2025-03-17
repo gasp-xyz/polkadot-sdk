@@ -33,6 +33,18 @@
 //     p: '0x037964b6c9d546da4646ada28a99e34acaa1d14e7aba861a9055f9bd200c8abf74',
 //     s: '0xb9d2ea9a615f3165812e8d44de0d24da9bbd164b65c4f0573e1ce2c8dbd9c8df', // nosemgrep
 //     type: 'ethereum'
+//   },
+//   {
+//     name: 'Getafix',
+//     p: '0x036cf9dad5f941b4889537edb56691dee1577153ba49d9ae7bede47b80a23d037e',
+//     s: '0xf4ad349d88affca950b57025bad4bcc82923229b4e7d20f739d2b2abbec6a847', // nosemgrep
+//     type: 'ethereum'
+//   },
+//   {
+//     name: 'Hiroshima',
+//     p: '0x029ef0aa26fbc1144a7f80298386fb9204c017be1a74d5fe5b8f254f77507ee7ac',
+//     s: '0x498c038f3c760eef32ae3a2bec31b3d51af1657be23a36032e07fd5151326c65', // nosemgrep
+//     type: 'ethereum'
 //   }
 
 // This file is part of Substrate.
@@ -73,6 +85,8 @@ pub enum Keyring {
 	Dorothy,
 	Ethan,
 	Faith,
+	Getafix,
+	Hiroshima,
 }
 
 impl Keyring {
@@ -134,6 +148,8 @@ impl From<Keyring> for &'static str {
 			Keyring::Dorothy => "Dorothy",
 			Keyring::Ethan => "Ethan",
 			Keyring::Faith => "Faith",
+			Keyring::Getafix => "Getafix",
+			Keyring::Hiroshima => "Hiroshima",
 		}
 	}
 }
@@ -164,6 +180,8 @@ impl FromStr for Keyring {
 			"Dorothy" => Ok(Keyring::Dorothy),
 			"Ethan" => Ok(Keyring::Ethan),
 			"Faith" => Ok(Keyring::Faith),
+			"Getafix" => Ok(Keyring::Getafix),
+			"Hiroshima" => Ok(Keyring::Hiroshima),
 			_ => Err(ParseKeyringError),
 		}
 	}
@@ -183,6 +201,10 @@ fn seed(keyring: Keyring) -> [u8; 32] {
 			hex2array!("7dce9bc8babb68fec1409be38c8e1a52650206a7ed90ff956ae8a6d15eeaaef4"),
 		Keyring::Faith =>
 			hex2array!("b9d2ea9a615f3165812e8d44de0d24da9bbd164b65c4f0573e1ce2c8dbd9c8df"),
+		Keyring::Getafix =>
+			hex2array!("f4ad349d88affca950b57025bad4bcc82923229b4e7d20f739d2b2abbec6a847"),
+		Keyring::Hiroshima =>
+			hex2array!("498c038f3c760eef32ae3a2bec31b3d51af1657be23a36032e07fd5151326c65"),
 	}
 }
 
@@ -219,6 +241,10 @@ impl From<Keyring> for [u8; 33] {
 				hex2array!("025cdc005b752651cd3f728fb9192182acb3a9c89e19072cbd5b03f3ee1f1b3ffa"),
 			Keyring::Faith =>
 				hex2array!("037964b6c9d546da4646ada28a99e34acaa1d14e7aba861a9055f9bd200c8abf74"),
+			Keyring::Getafix =>
+				hex2array!("036cf9dad5f941b4889537edb56691dee1577153ba49d9ae7bede47b80a23d037e"),
+			Keyring::Hiroshima =>
+				hex2array!("029ef0aa26fbc1144a7f80298386fb9204c017be1a74d5fe5b8f254f77507ee7ac"),
 		}
 	}
 }
