@@ -312,6 +312,7 @@ members = [
 	"substrate/frame/child-bounties",
 	"substrate/frame/collective",
 	"substrate/frame/collective-mangata",
+	"substrate/frame/collective-mangata/rpc",
 	# "substrate/frame/contracts",
 	# "substrate/frame/contracts/fixtures",
 	# "substrate/frame/contracts/mock-network",
