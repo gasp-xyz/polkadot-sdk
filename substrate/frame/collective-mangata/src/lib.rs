@@ -1180,6 +1180,25 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 		Ok(())
 	}
+
+	pub fn get_length_and_weight_for_call(
+		call: <T as Config<I>>::Proposal
+	) -> Option<(u32, Weight)>{
+		Some((call.encoded_size() as u32, call.get_dispatch_info().weight))
+	}
+
+	pub fn get_length_and_weight_for_proposal(
+		hash: T::Hash,
+	) -> Option<(u32, Weight)>{
+		let key = ProposalOf::<T, I>::hashed_key_for(hash);
+		// read the length of the proposal storage entry directly
+		let proposal_len =
+			storage::read(&key, &mut [0; 0], 0)?;
+		let proposal = ProposalOf::<T, I>::get(hash)?;
+		let proposal_weight = proposal.get_dispatch_info().weight;
+
+		Some((proposal_len, proposal_weight))
+	}
 }
 
 impl<T: Config<I>, I: 'static> ChangeMembers<T::AccountId> for Pallet<T, I> {
@@ -1405,5 +1424,25 @@ impl<T: Config<I>, I: 'static> GetMembers<T::AccountId> for Pallet<T, I> {
 impl<A> GetMembers<A> for () {
 	fn get_members() -> Vec<A> {
 		Vec::<A>::default()
+	}
+}
+
+sp_api::decl_runtime_apis! {
+	pub trait CouncilCallRuntimeApi<Call>
+	where
+		Call: codec::Codec,
+	{
+		fn get_length_and_weight_for_call(
+			call: Call
+		) -> Option<(u32, Weight)>;
+	}
+
+	pub trait CouncilRuntimeApi<Hash>
+	where
+		Hash: codec::Codec,
+	{
+		fn get_length_and_weight_for_proposal(
+			proposal_hash: Hash,
+		) -> Option<(u32, Weight)>;
 	}
 }
