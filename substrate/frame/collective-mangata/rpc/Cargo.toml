@@ -26,7 +26,6 @@ default = ["std"]
 std = [
 	"codec/std",
 	"sp-api/std",
-	"sp-blockchain/std",
 	"sp-rpc/std",
 	"sp-api/std",
 	"sp-core/std",
