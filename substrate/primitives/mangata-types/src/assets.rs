@@ -84,4 +84,5 @@ pub enum L1Asset {
 	Monad([u8;20]),
 	MegaEth([u8;20]),
 	Sonic([u8;20]),
+	Berachain([u8;20]),
 }
