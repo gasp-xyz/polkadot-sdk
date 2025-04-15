@@ -151,6 +151,13 @@ pub trait XykFunctionsTrait<AccountId, Balance, CurrencyId> {
 	) -> DispatchResult;
 
 	fn is_liquidity_token(liquidity_asset_id: CurrencyId) -> bool;
+
+	fn settle_pool_fees(
+		who: &AccountId,
+		pool_id: CurrencyId,
+		asset_id: CurrencyId,
+		fee: Balance,
+	) -> Result<(), DispatchError>;
 }
 
 pub trait ProofOfStakeRewardsApi<AccountId, Balance, CurrencyId> {
@@ -257,6 +264,15 @@ pub trait PreValidateSwaps<AccountId, Balance, CurrencyId> {
 }
 
 pub trait FeeLockTriggerTrait<AccountId, Balance, CurrencyId> {
+	fn is_swap_tokens_lockless(
+		token_id: CurrencyId,
+		token_amount: Balance
+	) -> bool;
+
+	fn is_fee_lock_init() -> bool;
+
+	fn get_fee_lock_amount(who: &AccountId) -> Result<Balance, DispatchError>;
+
 	fn process_fee_lock(who: &AccountId) -> DispatchResult;
 
 	fn can_unlock_fee(who: &AccountId) -> DispatchResult;
