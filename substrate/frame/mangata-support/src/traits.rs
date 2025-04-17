@@ -414,6 +414,7 @@ pub trait RolldownProviderTrait<ChainId, AccountId> {
 	fn new_sequencer_active(chain: ChainId, sequencer: &AccountId);
 	fn sequencer_unstaking(chain: ChainId, sequencer: &AccountId) -> DispatchResult;
 	fn handle_sequencer_deactivations(chain: ChainId, deactivated_sequencers: Vec<AccountId>);
+	fn get_dispute_period(chain: ChainId) -> Option<u128>;
 }
 
 impl<ChainId, AccountId> RolldownProviderTrait<ChainId, AccountId> for () {
@@ -422,6 +423,7 @@ impl<ChainId, AccountId> RolldownProviderTrait<ChainId, AccountId> for () {
 		Ok(())
 	}
 	fn handle_sequencer_deactivations(chain: ChainId, deactivated_sequencers: Vec<AccountId>) {}
+	fn get_dispute_period(chain: ChainId) -> Option<u128> {None}
 }
 
 pub trait AssetRegistryProviderTrait<AssetId> {
