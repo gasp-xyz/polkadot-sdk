@@ -64,24 +64,4 @@ pub struct XykMetadata {
 	pub operations_disabled: bool,
 }
 
-#[derive(
-	Clone,
-	PartialOrd,
-	Ord,
-	PartialEq,
-	Eq,
-	Debug,
-	Encode,
-	Decode,
-	TypeInfo,
-	MaxEncodedLen
-)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum L1Asset {
-	Ethereum([u8;20]),
-	Arbitrum([u8;20]),
-	Base([u8;20]),
-	Monad([u8;20]),
-	MegaEth([u8;20]),
-	Sonic([u8;20]),
-}
+pub type L1Asset = (sp_core::U256, [u8;20]);
