@@ -64,4 +64,4 @@ pub struct XykMetadata {
 	pub operations_disabled: bool,
 }
 
-pub type L1Asset = (sp_core::U256, [u8;20]);
+pub type L1Asset = (u64, [u8;20]);
